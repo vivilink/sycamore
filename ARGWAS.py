@@ -17,6 +17,7 @@ from itertools import takewhile
 import pandas as pd
 import random
 import TPhenotypes as pt
+import TGWAS as gwas
 
 
 
@@ -35,20 +36,39 @@ trees = engine.simulate(model, contig, samples) #this runs "msprime.sim_ancestry
 
 trees = trees.keep_intervals([[0,5e6]], simplify=True)
 
+#----------------------
+# get variant positions
+#---------------------
+samp_ids = trees.samples()
+num_variants = len(list(trees.variants(samples=samp_ids)))
+variant_positions = [] * num_variants
+for v, var in enumerate(trees.variants(samples=samp_ids)):  
+    variant_positions[v] = var.site.position
+
 #-----------------------
-# phenotype parameters
+# create phenotypes
 #-----------------------
 
-sd_environmental_noise = 0.0
+sd_environmental_noise = 0.1
 prop_causal_mutations = 0.001 #this is only for variants found in sampled haplotypes
 sd_beta_causal_mutations = 1
 
 #simulate phenotypes for all inds or haplotypes? trees.num_individuals = 0, but num_samples = 500
 N = trees.num_samples
-samp_ids = trees.samples()
-num_variants = len(list(trees.variants(samples=samp_ids)))
 pheno = pt.Phenotypes(N=N, num_variants = num_variants)
-pheno.simulateUniform(trees.variants(samples=samp_ids), prop_causal_mutations, sd_environmental_noise, sd_beta_causal_mutations)
+pheno.simulateEnvNoise(sd_environmental_noise)
+pheno.simulateUniform(trees.variants(samples=samp_ids), prop_causal_mutations, sd_beta_causal_mutations)
+pheno.findCausalTrees(trees)
+
+
+#-----------------------
+# run association tests
+#-----------------------
+
+pGWAS = gwas.TpGWAS()
+
+
+
 
 # 
 # 
@@ -87,32 +107,32 @@ pheno.simulateUniform(trees.variants(samples=samp_ids), prop_causal_mutations, s
 #         #save causal position
 #         causal_positions.append(var.site.position)
         
-#find causal tree
-causal_tree_indeces = []
-p = 0 
-t = 0
-tree = trees.first()
-while p < len(causal_positions):    
-    ## Debugging:
-    ##------------
-    # print("p: " + str(p))
-    # print("tree index " + str(t))
-    # print("causal_positions[p] + " + str(causal_positions[p]))
-    # print("tree.interval.left " + str(tree.interval.left))
-    # print("tree.interval.right " + str(tree.interval.right)) 
-    # print("trees.at(var.site.position).get_index() " + str(trees.at(var.site.position).get_index()))
+# #find causal tree
+# causal_tree_indeces = []
+# p = 0 
+# t = 0
+# tree = trees.first()
+# while p < len(causal_positions):    
+#     ## Debugging:
+#     ##------------
+#     # print("p: " + str(p))
+#     # print("tree index " + str(t))
+#     # print("causal_positions[p] + " + str(causal_positions[p]))
+#     # print("tree.interval.left " + str(tree.interval.left))
+#     # print("tree.interval.right " + str(tree.interval.right)) 
+#     # print("trees.at(var.site.position).get_index() " + str(trees.at(var.site.position).get_index()))
         
-    if tree.interval.left <= causal_positions[p] <= tree.interval.right:        
-        #save causal tree
-        causal_tree_indeces.append(tree.get_index())
-        p += 1
+#     if tree.interval.left <= causal_positions[p] <= tree.interval.right:        
+#         #save causal tree
+#         causal_tree_indeces.append(tree.get_index())
+#         p += 1
         
-    elif causal_positions[p] < tree.interval.left:
-        p += 1        
+#     elif causal_positions[p] < tree.interval.left:
+#         p += 1        
     
-    elif causal_positions[p] > tree.interval.right:
-        tree.next()
-        t += 1
+#     elif causal_positions[p] > tree.interval.right:
+#         tree.next()
+#         t += 1
         
         
 #-------------------

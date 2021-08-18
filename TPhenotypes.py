@@ -7,40 +7,95 @@ Created on Mon Aug 16 17:52:46 2021
 """
 
 import numpy as np
+import statsmodels.api as sm
 
 
 class Phenotypes:
-    def __init__(self, N, num_variants):
-        self.N = N
-        self.num_variants = num_variants
-        self.y = [0] * N
-        self.betas = [0] * num_variants
+    def __init__(self, ts_object):
+        self.N = ts_object.num_samples
+        self.samp_ids = ts_object.samples()
+        self.samp_variants = ts_object.variants(samples=self.samp_ids)
+        self.num_variants = len(list(self.samp_variants))
+        self.y = np.zeros(self.N)
+        self.betas = [0] * self.num_variants
         self.causal_positions = []
-        
+        self.causal_trees = []
+        self.causal_tree_indeces = []
         self.filled = False
         
-    def simulateUniform(self, ts_object_variants, prop_causal_mutations, sd_environmental_noise, sd_beta_causal_mutations):
-        y = np.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
-
-        #add phenotypic effect to mutations that are uniformly distributed
-        causal_positions = []
-        variant_positions = []
-        for v, var in enumerate(ts_object_variants):  
-
-            variant_positions.append(var.site.position)
         
-            #causal mutation
+    def simulateEnvNoise(self, sd_environmental_noise):
+        """       
+        Parameters
+        ----------
+        sd_environmental_noise : float
+            sd of normal distribution for environmental noise.
+
+        Returns
+        -------
+        None.
+        """
+        self.y = np.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
+
+        
+    def simulateUniform(self, prop_causal_mutations, sd_beta_causal_mutations):
+        """
+        Parameters
+        ----------
+        ts_object_variants : TreeSequence.variants
+            variants iterator from tskit.
+        prop_causal_mutations : float
+            proportion of variants that should be causal.
+        sd_beta_causal_mutations : TYPE
+            sd of normal distribution for betas.
+
+        Returns
+        -------
+        None.
+
+        """
+        #add phenotypic effect to mutations that are uniformly distributed
+        for v, var in enumerate(self.ts_object_variants):          
             r = np.random.uniform(0,1)
             if(r < prop_causal_mutations):
-                
+                                
                 #define beta
                 beta = np.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)
                 self.betas[v] = beta
                 
                 #simulate phenotype
-                y[var.genotypes == 1] += beta
+                self.y[var.genotypes == 1] += beta
                 
                 #save causal position
-                causal_positions.append(var.site.position)
+                self.causal_positions.append(var.site.position)
             
         self.filled = True
+        print("simulated phenotypes based on " + str(len(self.causal_positions)) + " causal positions")
+        
+    
+    def findCausalTrees(self, ts_object):
+        p = 0 
+        t = 0
+        tree = ts_object.first()
+        while p < len(self.causal_positions):    
+            ## Debugging:
+            ##------------
+            # print("p: " + str(p))
+            # print("tree index " + str(t))
+            # print("causal_positions[p] + " + str(causal_positions[p]))
+            # print("tree.interval.left " + str(tree.interval.left))
+            # print("tree.interval.right " + str(tree.interval.right)) 
+            # print("trees.at(var.site.position).get_index() " + str(trees.at(var.site.position).get_index()))
+                
+            if tree.interval.left <= self.causal_positions[p] <= tree.interval.right:        
+                #save causal tree
+                self.causal_tree_indeces.append(tree.get_index())
+                p += 1
+                
+            elif self.causal_positions[p] < tree.interval.left:
+                p += 1        
+            
+            elif self.causal_positions[p] > tree.interval.right:
+                tree.next()
+                t += 1
+        
