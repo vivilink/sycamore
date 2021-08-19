@@ -7,14 +7,14 @@ Created on Mon Aug 16 17:52:46 2021
 """
 
 import numpy as np
-import statsmodels.api as sm
 
 
 class Phenotypes:
-    def __init__(self, ts_object):
+    def __init__(self, name, ts_object):
+        self.name = name
         self.N = ts_object.num_samples
         self.samp_ids = ts_object.samples()
-        self.samp_variants = ts_object.variants(samples=self.samp_ids)
+        self.samp_variants = list(ts_object.variants(samples=self.samp_ids))
         self.num_variants = len(list(self.samp_variants))
         self.y = np.zeros(self.N)
         self.betas = [0] * self.num_variants
@@ -22,6 +22,8 @@ class Phenotypes:
         self.causal_trees = []
         self.causal_tree_indeces = []
         self.filled = False
+        
+        print("created '" + self.name + "' phenotype object")
         
         
     def simulateEnvNoise(self, sd_environmental_noise):
@@ -36,6 +38,7 @@ class Phenotypes:
         None.
         """
         self.y = np.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
+        self.filled = True
 
         
     def simulateUniform(self, prop_causal_mutations, sd_beta_causal_mutations):
@@ -55,7 +58,7 @@ class Phenotypes:
 
         """
         #add phenotypic effect to mutations that are uniformly distributed
-        for v, var in enumerate(self.ts_object_variants):          
+        for v, var in enumerate(self.samp_variants): 
             r = np.random.uniform(0,1)
             if(r < prop_causal_mutations):
                                 
@@ -68,9 +71,9 @@ class Phenotypes:
                 
                 #save causal position
                 self.causal_positions.append(var.site.position)
-            
+        
+        print("simulated phenotypes based on " + str(len(self.causal_positions)) + " causal variants out of a total of " + str(self.num_variants) + ".")
         self.filled = True
-        print("simulated phenotypes based on " + str(len(self.causal_positions)) + " causal positions")
         
     
     def findCausalTrees(self, ts_object):

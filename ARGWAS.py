@@ -36,37 +36,42 @@ trees = engine.simulate(model, contig, samples) #this runs "msprime.sim_ancestry
 
 trees = trees.keep_intervals([[0,5e6]], simplify=True)
 
-#----------------------
-# get variant positions
-#---------------------
+#-----------------------
+# create phenotypes
+#-----------------------
+
+# phenotypes with genetic influence
+sd_environmental_noise = 0.1
+prop_causal_mutations = 0.001 #this is only for variants found in sampled haplotypes
+sd_beta_causal_mutations = 1
+pheno = pt.Phenotypes("uniform distr. of causal SNPs",trees)
+pheno.simulateEnvNoise(sd_environmental_noise)
+pheno.simulateUniform(prop_causal_mutations, sd_beta_causal_mutations)
+pheno.findCausalTrees(trees)
+
+# random phenotypes
+sd_environmental_noise = 0.1
+sd_beta_causal_mutations = 1
+pheno = pt.Phenotypes("random",trees)
+pheno.simulateEnvNoise(sd_environmental_noise)
+
+#-----------------------
+# run association tests and plot
+#-----------------------
+
 samp_ids = trees.samples()
 num_variants = len(list(trees.variants(samples=samp_ids)))
 variant_positions = [] * num_variants
 for v, var in enumerate(trees.variants(samples=samp_ids)):  
     variant_positions[v] = var.site.position
 
-#-----------------------
-# create phenotypes
-#-----------------------
+pGWAS_unif = gwas.TpGWAS(ts_object=trees, phenotypes=pheno)
+pGWAS_unif.OLS()
+pGWAS_unif.manhattan_plot(variant_positions)
 
-sd_environmental_noise = 0.1
-prop_causal_mutations = 0.001 #this is only for variants found in sampled haplotypes
-sd_beta_causal_mutations = 1
-
-#simulate phenotypes for all inds or haplotypes? trees.num_individuals = 0, but num_samples = 500
-N = trees.num_samples
-pheno = pt.Phenotypes(N=N, num_variants = num_variants)
-pheno.simulateEnvNoise(sd_environmental_noise)
-pheno.simulateUniform(trees.variants(samples=samp_ids), prop_causal_mutations, sd_beta_causal_mutations)
-pheno.findCausalTrees(trees)
-
-
-#-----------------------
-# run association tests
-#-----------------------
-
-pGWAS = gwas.TpGWAS()
-
+pGWAS_random = gwas.TpGWAS(ts_object=trees, phenotypes=pheno)
+pGWAS_random.OLS()
+pGWAS_random.manhattan_plot(variant_positions)
 
 
 
@@ -140,10 +145,10 @@ pGWAS = gwas.TpGWAS()
 #-------------------
         
 #test for associations
-diffs = ut.diff(y, N)
-p_variants = []
-for v in trees.variants(samples=samp_ids):
-  p_variants.append(sm.OLS(v.genotypes, y).fit().pvalues[0])
+# diffs = ut.diff(y, N)
+# p_variants = []
+# for v in trees.variants(samples=samp_ids):
+#   p_variants.append(sm.OLS(v.genotypes, y).fit().pvalues[0])
 
 p_trees = []
 for tree in trees.trees():
@@ -153,14 +158,14 @@ for tree in trees.trees():
     p_trees.append(ut.mantel(ut.make(tmrca), diffs))
     
 
-#--------------------
-# manhattan plot
-#--------------------
-q_variants = -np.log10(p_variants)
-plt.scatter(variant_positions, q_variants, s=0.5)
-for pos in causal_positions:
-    plt.axvline(x=pos, color="red", lw=0.5)
-plt.show()
+# #--------------------
+# # manhattan plot
+# #--------------------
+# q_variants = -np.log10(p_variants)
+# plt.scatter(variant_positions, q_variants, s=0.5)
+# for pos in causal_positions:
+#     plt.axvline(x=pos, color="red", lw=0.5)
+# plt.show()
     
     
 #---------------------
