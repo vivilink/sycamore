@@ -18,7 +18,8 @@ class Phenotypes:
         self.num_variants = len(list(self.samp_variants))
         self.y = np.zeros(self.N)
         self.betas = [0] * self.num_variants
-        self.causal_positions = []
+        self.causal_variants = []
+        self.causal_betas = []
         self.causal_trees = []
         self.causal_tree_indeces = []
         self.filled = False
@@ -28,6 +29,8 @@ class Phenotypes:
         
     def simulateEnvNoise(self, sd_environmental_noise):
         """       
+        simulate random noise around zero
+        
         Parameters
         ----------
         sd_environmental_noise : float
@@ -40,8 +43,32 @@ class Phenotypes:
         self.y = np.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
         self.filled = True
 
+    def simulateFixed(self, causal_variants, betas):
+        """
+        Simulate phenotypes based on predefined causal variant positions and effects
+
+        Parameters
+        ----------
+        causal_mutations : TYPE
+            DESCRIPTION.
+        betas : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         
-    def simulateUniform(self, prop_causal_mutations, sd_beta_causal_mutations):
+        if(len(causal_variants) != len(betas)):
+            raise ValueError("must provide equal number of causal variants and betas to simulate fixed phenotype")
+        
+        for v, var in enumerate(causal_variants):
+            self.betas[v] = betas[v]            
+            self.y[var.genotypes == 1] += betas[v]
+            self.causal_variants.append(var)
+        
+    def simulateUniform(self, prop_causal_mutations, sd_beta_causal_mutations, mean_beta_causal_mutation = 0):
         """
         Parameters
         ----------
@@ -70,9 +97,10 @@ class Phenotypes:
                 self.y[var.genotypes == 1] += beta
                 
                 #save causal position
-                self.causal_positions.append(var.site.position)
+                self.causal_variants.append(var)
+                self.causal_betas.append(beta)
         
-        print("simulated phenotypes based on " + str(len(self.causal_positions)) + " causal variants out of a total of " + str(self.num_variants) + ".")
+        print("simulated phenotypes based on " + str(len(self.causal_variants)) + " causal variants out of a total of " + str(self.num_variants) + ".")
         self.filled = True
         
     
@@ -80,25 +108,25 @@ class Phenotypes:
         p = 0 
         t = 0
         tree = ts_object.first()
-        while p < len(self.causal_positions):    
+        while p < len(self.causal_variants):    
             ## Debugging:
             ##------------
             # print("p: " + str(p))
             # print("tree index " + str(t))
-            # print("causal_positions[p] + " + str(causal_positions[p]))
+            # print("causal_variants[p] + " + str(causal_variants[p]))
             # print("tree.interval.left " + str(tree.interval.left))
             # print("tree.interval.right " + str(tree.interval.right)) 
             # print("trees.at(var.site.position).get_index() " + str(trees.at(var.site.position).get_index()))
                 
-            if tree.interval.left <= self.causal_positions[p] <= tree.interval.right:        
+            if tree.interval.left <= self.causal_variants[p].site.position <= tree.interval.right:        
                 #save causal tree
                 self.causal_tree_indeces.append(tree.get_index())
                 p += 1
                 
-            elif self.causal_positions[p] < tree.interval.left:
+            elif self.causal_variants[p].site.position < tree.interval.left:
                 p += 1        
             
-            elif self.causal_positions[p] > tree.interval.right:
+            elif self.causal_variants[p].site.position > tree.interval.right:
                 tree.next()
                 t += 1
         

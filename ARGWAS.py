@@ -8,21 +8,16 @@ Created on Mon Aug  9 16:57:18 2021
 import numpy as np
 import stdpopsim
 import utils as ut
-import statsmodels.api as sm
-import pickle
-import tqdm
-import tskit
+# import statsmodels.api as sm
+# import pickle
+# import tqdm
+# import tskit
 import matplotlib.pyplot as plt
-from itertools import takewhile
+# from itertools import takewhile
 import pandas as pd
-import random
+# import random
 import TPhenotypes as pt
 import TGWAS as gwas
-
-
-
-
-
 
 
 # simulate 500 haplotypes of chr1 of individuals from Europe, keep only 5 Mb. The species, contig, model, samples, engine and trees are all objects of stdpopsim
@@ -36,6 +31,12 @@ trees = engine.simulate(model, contig, samples) #this runs "msprime.sim_ancestry
 
 trees = trees.keep_intervals([[0,5e6]], simplify=True)
 
+samp_ids = trees.samples()
+num_variants = len(list(trees.variants(samples=samp_ids)))
+variant_positions = np.empty(num_variants)
+for v, var in enumerate(list(trees.variants(samples=samp_ids))):  
+    variant_positions[v] = var.site.position
+
 #-----------------------
 # create phenotypes
 #-----------------------
@@ -44,38 +45,76 @@ trees = trees.keep_intervals([[0,5e6]], simplify=True)
 sd_environmental_noise = 0.1
 prop_causal_mutations = 0.001 #this is only for variants found in sampled haplotypes
 sd_beta_causal_mutations = 1
-pheno = pt.Phenotypes("uniform distr. of causal SNPs",trees)
-pheno.simulateEnvNoise(sd_environmental_noise)
-pheno.simulateUniform(prop_causal_mutations, sd_beta_causal_mutations)
-pheno.findCausalTrees(trees)
+pheno_unif = pt.Phenotypes("uniform distr. of causal SNPs",trees)
+pheno_unif.simulateEnvNoise(sd_environmental_noise)
+pheno_unif.simulateUniform(prop_causal_mutations=prop_causal_mutations, sd_beta_causal_mutations=sd_beta_causal_mutations)
+pheno_unif.findCausalTrees(trees)
+
+# phenotypes with genetic influence, no noise
+sd_environmental_noise = 0.0
+prop_causal_mutations = 0.001 #this is only for variants found in sampled haplotypes
+sd_beta_causal_mutations = 1
+pheno_unif_noNoise = pt.Phenotypes("uniform distr., no noise",trees)
+pheno_unif_noNoise.simulateFixed(pheno_unif.causal_variants, pheno_unif.causal_betas)
+pheno_unif_noNoise.findCausalTrees(trees)
 
 # random phenotypes
 sd_environmental_noise = 0.1
 sd_beta_causal_mutations = 1
-pheno = pt.Phenotypes("random",trees)
-pheno.simulateEnvNoise(sd_environmental_noise)
+pheno_random = pt.Phenotypes("random",trees)
+pheno_random.simulateEnvNoise(sd_environmental_noise)
+
+# fixed causal variant
+pheno_fixed = pt.Phenotypes("fixed", trees)
+pheno_fixed.simulateFixed([list(trees.variants(samples=samp_ids))[7000]], [1000])
+
 
 #-----------------------
 # run association tests and plot
 #-----------------------
-
-samp_ids = trees.samples()
-num_variants = len(list(trees.variants(samples=samp_ids)))
-variant_positions = [] * num_variants
-for v, var in enumerate(trees.variants(samples=samp_ids)):  
-    variant_positions[v] = var.site.position
-
-pGWAS_unif = gwas.TpGWAS(ts_object=trees, phenotypes=pheno)
+pGWAS_unif = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_unif)
 pGWAS_unif.OLS()
-pGWAS_unif.manhattan_plot(variant_positions)
-
-pGWAS_random = gwas.TpGWAS(ts_object=trees, phenotypes=pheno)
+pGWAS_unif_noNoise = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_unif_noNoise)
+pGWAS_unif_noNoise.OLS()
+pGWAS_random = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_random)
 pGWAS_random.OLS()
-pGWAS_random.manhattan_plot(variant_positions)
+pGWAS_fixed = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_fixed)
+pGWAS_fixed.OLS()
+
+
+fig, ax = plt.subplots(4,figsize=(15,15))
+pGWAS_unif.manhattan_plot(variant_positions, ax[0])
+# ax[0].axhline(y=30, color="black", lw=0.5)
+
+pGWAS_unif_noNoise.manhattan_plot(variant_positions, ax[1])
+# ax[1].axhline(y=30, color="black", lw=0.5)
+
+pGWAS_random.manhattan_plot(variant_positions, ax[2])
+# ax[2].axhline(y=30, color="black", lw=0.5)
+
+pGWAS_fixed.manhattan_plot(variant_positions, ax[3])
+
+
+fig.tight_layout()
+fig.set_size_inches(10, 20)
+fig.savefig('sims_2.png', bbox_inches='tight')# 
 
 
 
-# 
+fig, ax = plt.subplots(4,figsize=(15,15))
+pGWAS_unif.p_value_dist(ax[0])
+# ax[0].axhline(y=30, color="black", lw=0.5)
+
+pGWAS_unif_noNoise.p_value_dist(ax[1])
+# ax[1].axhline(y=30, color="black", lw=0.5)
+
+pGWAS_random.p_value_dist(ax[2])
+# ax[2].axhline(y=30, color="black", lw=0.5)
+
+pGWAS_fixed.p_value_dist(ax[3])
+fig.tight_layout()
+fig.set_size_inches(10, 20)
+fig.savefig('sims_pvalues.png', bbox_inches='tight')# 
 # 
 # 
 # y = np.random.normal(scale=environmental_noise_sd, size=N)

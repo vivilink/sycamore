@@ -28,16 +28,18 @@ class TGWAS:
         if phenotypes.N != ts_object.num_samples:
             raise ValueError("Phenotype object must contain same number of samples as ts_object to create a GWAS object. Phenotype: " + str(phenotypes.N) + " and ts_object: " + str(ts_object.num_samples))
 
-    def manhattan_plot(self, variant_positions, *args):
+    def manhattan_plot(self, variant_positions, subplot, *args):
         self.q_values = -10 * np.log10(self.p_values)
         print(self.q_values)
-        plt.scatter(variant_positions, self.q_values, s=0.5, *args)
-        plt.xlabel('position')
-        plt.ylabel('q-value')
-        plt.title(self.phenotypes.name)
-        for pos in self.phenotypes.causal_positions:
-            plt.axvline(x=pos, color="red", lw=0.5)
-        plt.show()
+        subplot.scatter(variant_positions, self.q_values, s=0.5, *args)
+        subplot.set(xlabel='position', ylabel='q-value', title=self.phenotypes.name)
+        for var in self.phenotypes.causal_variants:
+            subplot.axvline(x=var.site.position, color="red", lw=0.5)
+        #plt.show()
+        
+    def p_value_dist(self, subplot):
+        subplot.hist(self.p_values, bins=500)
+        subplot.set(xlabel='p-values', ylabel='density', title=self.phenotypes.name)
 
 class TpGWAS(TGWAS):
     
