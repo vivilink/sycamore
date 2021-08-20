@@ -33,8 +33,11 @@ class TGWAS:
         print(self.q_values)
         subplot.scatter(variant_positions, self.q_values, s=0.5, *args)
         subplot.set(xlabel='position', ylabel='q-value', title=self.phenotypes.name)
-        for var in self.phenotypes.causal_variants:
-            subplot.axvline(x=var.site.position, color="red", lw=0.5)
+        for v, var in enumerate(self.phenotypes.causal_variants):
+            print("power " + str(self.phenotypes.causal_power[v]) + " pos " + str(var.site.position))
+            colscale = self.phenotypes.causal_power[v] 
+            subplot.axvline(x=var.site.position, color=str(0.3), alpha = 0.7, lw=colscale*100)
+            subplot.axvline(x=var.site.position, color="black", lw=0.5)
         #plt.show()
         
     def p_value_dist(self, subplot):

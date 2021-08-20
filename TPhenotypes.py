@@ -20,6 +20,7 @@ class Phenotypes:
         self.betas = [0] * self.num_variants
         self.causal_variants = []
         self.causal_betas = []
+        self.causal_power = []
         self.causal_trees = []
         self.causal_tree_indeces = []
         self.filled = False
@@ -90,7 +91,7 @@ class Phenotypes:
             if(r < prop_causal_mutations):
                                 
                 #define beta
-                beta = np.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)
+                beta = np.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)[0]
                 self.betas[v] = beta
                 
                 #simulate phenotype
@@ -99,6 +100,8 @@ class Phenotypes:
                 #save causal position
                 self.causal_variants.append(var)
                 self.causal_betas.append(beta)
+                allele_freq = sum(var.genotypes) / len(var.genotypes)
+                self.causal_power.append(beta**2 * allele_freq * (1-allele_freq))
         
         print("simulated phenotypes based on " + str(len(self.causal_variants)) + " causal variants out of a total of " + str(self.num_variants) + ".")
         self.filled = True

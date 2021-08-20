@@ -27,9 +27,9 @@ contig = species.get_contig("chr1")
 model = species.get_demographic_model("OutOfAfrica_3G09")
 samples = model.get_samples(0, 500, 0) # Returns a list of msprime.Sample objects, with the number of samples from each population determined by the positional arguments.
 engine = stdpopsim.get_engine("msprime") #returns an engine with a "simulate" method
-trees = engine.simulate(model, contig, samples) #this runs "msprime.sim_ancestry", default ploidy = 2. Extra arguments passed to simulate are passed to msprime.sim_ancestry
+trees_full = engine.simulate(model, contig, samples) #this runs "msprime.sim_ancestry", default ploidy = 2. Extra arguments passed to simulate are passed to msprime.sim_ancestry
 
-trees = trees.keep_intervals([[0,5e6]], simplify=True)
+trees = trees_full.keep_intervals([[0,10e6]], simplify=True)
 
 samp_ids = trees.samples()
 num_variants = len(list(trees.variants(samples=samp_ids)))
@@ -43,7 +43,7 @@ for v, var in enumerate(list(trees.variants(samples=samp_ids))):
 
 # phenotypes with genetic influence
 sd_environmental_noise = 0.1
-prop_causal_mutations = 0.001 #this is only for variants found in sampled haplotypes
+prop_causal_mutations = 0.0005 #this is only for variants found in sampled haplotypes
 sd_beta_causal_mutations = 1
 pheno_unif = pt.Phenotypes("uniform distr. of causal SNPs",trees)
 pheno_unif.simulateEnvNoise(sd_environmental_noise)
