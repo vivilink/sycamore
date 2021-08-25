@@ -68,6 +68,9 @@ class Phenotypes:
             self.betas[v] = betas[v]            
             self.y[var.genotypes == 1] += betas[v]
             self.causal_variants.append(var)
+            self.causal_betas.append(betas[v])
+            allele_freq = sum(var.genotypes) / len(var.genotypes)
+            self.causal_power.append(betas[v]**2 * allele_freq * (1-allele_freq))
         
     def simulateUniform(self, prop_causal_mutations, sd_beta_causal_mutations, mean_beta_causal_mutation = 0):
         """
