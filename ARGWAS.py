@@ -7,18 +7,16 @@ Created on Mon Aug  9 16:57:18 2021
 """
 import numpy as np
 import stdpopsim
-import utils as ut
 # import statsmodels.api as sm
 # import pickle
 # import tqdm
 # import tskit
 import matplotlib.pyplot as plt
 # from itertools import takewhile
-import pandas as pd
 # import random
 import TPhenotypes as pt
 import TGWAS as gwas
-
+import TVariants as tvar
 
 # simulate 500 haplotypes of chr1 of individuals from Europe, keep only 5 Mb. The species, contig, model, samples, engine and trees are all objects of stdpopsim
 # where do we specify ploidy?
@@ -29,16 +27,18 @@ samples = model.get_samples(500, 0, 0) # Returns a list of msprime.Sample object
 engine = stdpopsim.get_engine("msprime") #returns an engine with a "simulate" method
 trees_full = engine.simulate(model, contig, samples) #this runs "msprime.sim_ancestry", default ploidy = 2. Extra arguments passed to simulate are passed to msprime.sim_ancestry
 
-trees = trees_full.keep_intervals([[0,10e6]], simplify=True)
+trees = trees_full.keep_intervals([[0,100e6]], simplify=True)
 
 samp_ids = trees.samples()
-num_variants = len(list(trees.variants(samples=samp_ids)))
-variant_positions = np.empty(num_variants)
-allele_frequencies = np.empty(num_variants)
-for v, var in enumerate(list(trees.variants(samples=samp_ids))):  
-    variant_positions[v] = var.site.position
-    tmp = sum(var.genotypes) / len(var.genotypes)
-    allele_frequencies[v] = allele_freq = min(tmp, 1-tmp)
+N = len(samp_ids)
+variants = tvar.TVariantsSamples(trees, samp_ids, 0.01, 1)
+# num_variants = len(list(trees.variants(samples=samp_ids)))
+# variant_positions = np.empty(num_variants)
+# allele_frequencies = np.empty(num_variants)
+# for v, var in enumerate(list(trees.variants(samples=samp_ids))):  
+#     variant_positions[v] = var.site.position
+#     tmp = sum(var.genotypes) / len(var.genotypes)
+#     allele_frequencies[v] = min(tmp, 1-tmp)
     
 #-----------------------
 # create phenotypes
@@ -46,48 +46,43 @@ for v, var in enumerate(list(trees.variants(samples=samp_ids))):
 
 # phenotypes with genetic influence
 sd_environmental_noise = 1
-prop_causal_mutations = 0.0001 #this is only for variants found in sampled haplotypes
+prop_causal_mutations = 0.00005 #this is only for variants found in sampled haplotypes
 sd_beta_causal_mutations = 1
-pheno_unif = pt.Phenotypes("uniform distr. of causal SNPs",trees)
+pheno_unif = pt.Phenotypes("uniform distr. of causal SNPs", variants, N)
 pheno_unif.simulateEnvNoise(sd_environmental_noise)
-pheno_unif.simulateUniform(prop_causal_mutations=prop_causal_mutations, sd_beta_causal_mutations=sd_beta_causal_mutations)
-pheno_unif.findCausalTrees(trees)
+pheno_unif.simulateUniform(variants, prop_causal_mutations=prop_causal_mutations, sd_beta_causal_mutations=sd_beta_causal_mutations)
+# pheno_unif.findCausalTrees(trees)
 
 # phenotypes with genetic influence, no noise
 # sd_environmental_noise = 0.0
 # prop_causal_mutations = 0.001 #this is only for variants found in sampled haplotypes
 # sd_beta_causal_mutations = 1
-pheno_unif_noNoise = pt.Phenotypes("uniform distr., no noise",trees)
+pheno_unif_noNoise = pt.Phenotypes("uniform distr., no noise", variants, N)
 pheno_unif_noNoise.simulateFixed(pheno_unif.causal_variants, pheno_unif.causal_betas)
 pheno_unif_noNoise.findCausalTrees(trees)
 
-pheno_unif_noNoise_2 = pt.Phenotypes("uniform distr., no noise, #2",trees)
-pheno_unif_noNoise_2.simulateFixed(pheno_unif.causal_variants, pheno_unif.causal_betas)
-pheno_unif_noNoise_2.findCausalTrees(trees)
-
-
 # random phenotypes
 sd_environmental_noise = 1
-pheno_random = pt.Phenotypes("random",trees)
+pheno_random = pt.Phenotypes("random", variants, N)
 pheno_random.simulateEnvNoise(sd_environmental_noise)
 
 # fixed causal variant
 sd_environmental_noise = 0
 # index = np.where(allele_frequencies > 0.4)[0][1000]
-pheno_fixed = pt.Phenotypes("fixed beta 0.79, no noise", trees)
+pheno_fixed = pt.Phenotypes("fixed beta 0.79, no noise", variants, N)
 # pheno_fixed.simulateFixed([list(trees.variants(samples=samp_ids))[index]], [0.01])
 pheno_fixed.simulateFixed([pheno_unif.causal_variants[1]], [0.79])
 
 # fixed causal variant with high allele freq
 sd_environmental_noise = 0
-index = np.where(allele_frequencies > 0.4)[0][1000]
-pheno_fixed_hp = pt.Phenotypes("fixed high freq beta 0.79, no noise", trees)
+index = np.where(variants.allele_frequencies > 0.4)[0][1000]
+pheno_fixed_hp = pt.Phenotypes("fixed high freq beta 0.79, no noise", variants, N)
 pheno_fixed_hp.simulateFixed([list(trees.variants(samples=samp_ids))[index]], [0.79])
 
 # fixed causal variant with high allele freq with noise
 sd_environmental_noise = 1
-index = np.where(allele_frequencies > 0.4)[0][1000]
-pheno_fixed_hp_wn = pt.Phenotypes("fixed high freq beta 0.79, with noise", trees)
+index = np.where(variants.allele_frequencies > 0.4)[0][1000]
+pheno_fixed_hp_wn = pt.Phenotypes("fixed high freq beta 0.79, with noise", variants, N)
 pheno_fixed_hp_wn.simulateEnvNoise(sd_environmental_noise)
 pheno_fixed_hp_wn.simulateFixed([list(trees.variants(samples=samp_ids))[index]], [0.79])
 
@@ -95,43 +90,105 @@ pheno_fixed_hp_wn.simulateFixed([list(trees.variants(samples=samp_ids))[index]],
 #-----------------------
 # run association tests and plot
 #-----------------------
-pGWAS_unif = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_unif)
-pGWAS_unif.OLS()
-pGWAS_unif_noNoise = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_unif_noNoise)
-pGWAS_unif_noNoise.OLS()
-# pGWAS_unif_noNoise_2 = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_unif_noNoise_2)
-# pGWAS_unif_noNoise_2.OLS()
-pGWAS_random = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_random)
-pGWAS_random.OLS()
-pGWAS_fixed = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_fixed)
-pGWAS_fixed.OLS()
-pGWAS_fixed_hp = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_fixed_hp)
-pGWAS_fixed_hp.OLS()
-pGWAS_fixed_hp_wn = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_fixed_hp_wn)
-pGWAS_fixed_hp_wn.OLS()
+pGWAS_unif = gwas.TpGWAS(phenotypes=pheno_unif)
+pGWAS_unif.OLS(variants)
+pGWAS_unif_noNoise = gwas.TpGWAS(phenotypes=pheno_unif_noNoise)
+pGWAS_unif_noNoise.OLS(variants)
+pGWAS_random = gwas.TpGWAS(phenotypes=pheno_random)
+pGWAS_random.OLS(variants)
+pGWAS_fixed = gwas.TpGWAS(phenotypes=pheno_fixed)
+pGWAS_fixed.OLS(variants)
+pGWAS_fixed_hp = gwas.TpGWAS(phenotypes=pheno_fixed_hp)
+pGWAS_fixed_hp.OLS(variants)
+pGWAS_fixed_hp_wn = gwas.TpGWAS(phenotypes=pheno_fixed_hp_wn)
+pGWAS_fixed_hp_wn.OLS(variants)
 
 
-fig, ax = plt.subplots(6,figsize=(15,15))
-pGWAS_unif.manhattan_plot(variant_positions, ax[0])
+fig, ax = plt.subplots(6,figsize=(30,30))
+pGWAS_unif.manhattan_plot(variants.positions, ax[0])
 # ax[0].axhline(y=30, color="black", lw=0.5)
 
-pGWAS_unif_noNoise.manhattan_plot(variant_positions, ax[1])
+pGWAS_unif_noNoise.manhattan_plot(variants.positions, ax[1])
 
-# pGWAS_unif_noNoise_2.manhattan_plot(variant_positions, ax[2])
+pGWAS_random.manhattan_plot(variants.positions, ax[2])
 
-pGWAS_random.manhattan_plot(variant_positions, ax[2])
+pGWAS_fixed.manhattan_plot(variants.positions, ax[3])
 
-pGWAS_fixed.manhattan_plot(variant_positions, ax[3])
+pGWAS_fixed_hp.manhattan_plot(variants.positions, ax[4])
 
-pGWAS_fixed_hp.manhattan_plot(variant_positions, ax[4])
-
-pGWAS_fixed_hp_wn.manhattan_plot(variant_positions, ax[5])
+pGWAS_fixed_hp_wn.manhattan_plot(variants.positions, ax[5])
 
 
 fig.tight_layout()
-fig.set_size_inches(10, 20)
+fig.set_size_inches(30, 30)
 fig.show()
-fig.savefig('sims_8_africans.png', bbox_inches='tight')# 
+fig.savefig('sims_10_africans.png', bbox_inches='tight')# 
+
+
+
+#-----------------------
+# plot p-values
+#-----------------------
+
+num_bins = 20
+fig, ax = plt.subplots(4,figsize=(15,15))
+# fig, ax = plt.subplots(1,figsize=(15,15))
+
+pGWAS_unif.p_value_dist(ax[0], num_bins)
+
+pGWAS_unif_noNoise.p_value_dist(ax[1], num_bins)
+
+pGWAS_random.p_value_dist(ax[2], num_bins)
+pGWAS_random.chiSquared(num_bins)
+
+pGWAS_fixed.p_value_dist(ax[3], num_bins)
+
+fig.tight_layout()
+fig.set_size_inches(10, 20)
+fig.savefig('sims_pvalues_random_pt_2.png', bbox_inches='tight')# 
+
+
+#-----------------------
+# plot p-values for random
+#-----------------------
+num_bins = 20
+fig, ax = plt.subplots(5,figsize=(15,15))
+
+for i in range(5):
+    sd_environmental_noise = 1
+    pheno_random = pt.Phenotypes("random",trees)
+    pheno_random.simulateEnvNoise(sd_environmental_noise)
+    pGWAS_random = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_random)
+    pGWAS_random.OLS()
+    
+    x= pGWAS_random.chiSquared(num_bins)
+    pGWAS_random.p_value_dist(ax[i], num_bins)
+    ax[i].set(title=x)
+
+    
+    fig.tight_layout()
+    fig.set_size_inches(10, 20)
+fig.savefig('sims_pvalues_random_pt.png', bbox_inches='tight')#
+
+
+#cumulative p-value distribution
+c_steps = np.arange(0, 1, 0.005)
+c_probs =np.empty(len(c_steps))
+fig, ax = plt.subplots(1,figsize=(15,15))
+for s,c in enumerate(c_steps):
+    c_probs[s] = len(pGWAS_random.p_values[pGWAS_random.p_values <c]) / len(pGWAS_random.p_values)
+    # print(str(c) + ": " + str(len(pGWAS_random.p_values[pGWAS_random.p_values <c]) / len(pGWAS_random.p_values)))
+ax.scatter(c_steps, c_probs)
+ax.set(xlabel='cutoff', ylabel='P(p-value < cutoff)', title="cumulative dist. p-values")
+fig.savefig('sims_pvalues_random_cumulative.png', bbox_inches='tight')#
+
+
+fig, ax = plt.subplots(10,figsize=(15,30))
+for i,index in enumerate(range(20000,21000, 100)):
+    pGWAS_random.manhattan_plot_subset(variants.positions, ax[i], index, index+100)
+    ax[i].axhline(y=8, color="black", lw=0.5)
+fig.savefig('manhattan_zooms_random.png', bbox_inches='tight')#
+
 
 #-----------------------
 # test if more causal SNPs bring down p-values
@@ -141,12 +198,12 @@ fig.savefig('sims_8_africans.png', bbox_inches='tight')#
 num_freqs = 5
 fig, ax = plt.subplots(num_freqs,figsize=(15,15))
 
-offset = np.floor(len(allele_frequencies)/num_freqs)
-ordered_allele_freq = np.argsort(allele_frequencies)
+offset = np.floor(len(variants.allele_frequencies)/num_freqs)
+ordered_allele_freq = np.argsort(variants.allele_frequencies)
 for i in range(num_freqs):
     index = int(offset + i*offset)
     variant = list(trees.variants(samples=samp_ids))[ordered_allele_freq[index]]
-    freq = allele_frequencies[ordered_allele_freq[index]]
+    freq = variants.allele_frequencies[ordered_allele_freq[index]]
     pheno = pt.Phenotypes("allele freq=" + str(freq) + ", beta=0.79, with noise" , trees)
     pheno.simulateEnvNoise(sd_environmental_noise=1)
     pheno.simulateFixed([variant], [0.79])
@@ -154,7 +211,7 @@ for i in range(num_freqs):
     pGWAS = gwas.TpGWAS(ts_object=trees, phenotypes=pheno)
     pGWAS.OLS()
     
-    pGWAS.manhattan_plot(variant_positions, ax[i])
+    pGWAS.manhattan_plot(variants.variant_positions, ax[i])
 
 
 fig.tight_layout()
@@ -177,24 +234,6 @@ fig.savefig('sims_alleleFreq_africans_withNoise.png', bbox_inches='tight')#
 
 
 
-
-
-
-
-# fig, ax = plt.subplots(4,figsize=(15,15))
-# pGWAS_unif.p_value_dist(ax[0])
-# # ax[0].axhline(y=30, color="black", lw=0.5)
-
-# pGWAS_unif_noNoise.p_value_dist(ax[1])
-# # ax[1].axhline(y=30, color="black", lw=0.5)
-
-# pGWAS_random.p_value_dist(ax[2])
-# # ax[2].axhline(y=30, color="black", lw=0.5)
-
-# pGWAS_fixed.p_value_dist(ax[3])
-# fig.tight_layout()
-# fig.set_size_inches(10, 20)
-# fig.savefig('sims_pvalues.png', bbox_inches='tight')# 
 # # 
 # # 
 # # y = np.random.normal(scale=environmental_noise_sd, size=N)

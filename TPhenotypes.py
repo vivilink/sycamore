@@ -10,14 +10,13 @@ import numpy as np
 
 
 class Phenotypes:
-    def __init__(self, name, ts_object):
+    def __init__(self, name, variants, num_inds):
         self.name = name
-        self.N = ts_object.num_samples
-        self.samp_ids = ts_object.samples()
-        self.samp_variants = list(ts_object.variants(samples=self.samp_ids))
-        self.num_variants = len(list(self.samp_variants))
+        self.num_variants = variants.number
+        self.N = num_inds
         self.y = np.zeros(self.N)
         self.betas = [0] * self.num_variants
+        print(len(self.betas))
         self.causal_variants = []
         self.causal_betas = []
         self.causal_power = []
@@ -72,7 +71,7 @@ class Phenotypes:
             allele_freq = sum(var.genotypes) / len(var.genotypes)
             self.causal_power.append(betas[v]**2 * allele_freq * (1-allele_freq))
         
-    def simulateUniform(self, prop_causal_mutations, sd_beta_causal_mutations, mean_beta_causal_mutation = 0):
+    def simulateUniform(self, variants, prop_causal_mutations, sd_beta_causal_mutations, mean_beta_causal_mutation = 0):
         """
         Parameters
         ----------
@@ -89,7 +88,7 @@ class Phenotypes:
 
         """
         #add phenotypic effect to mutations that are uniformly distributed
-        for v, var in enumerate(self.samp_variants): 
+        for v, var in enumerate(variants.variants): 
             r = np.random.uniform(0,1)
             if(r < prop_causal_mutations):
                                 
@@ -103,7 +102,7 @@ class Phenotypes:
                 #save causal position
                 self.causal_variants.append(var)
                 self.causal_betas.append(beta)
-                allele_freq = sum(var.genotypes) / len(var.genotypes)
+                allele_freq = variants.allele_frequencies[v]
                 self.causal_power.append(beta**2 * allele_freq * (1-allele_freq))
         
         print("simulated phenotypes based on " + str(len(self.causal_variants)) + " causal variants out of a total of " + str(self.num_variants) + ".")
