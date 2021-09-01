@@ -32,13 +32,6 @@ trees = trees_full.keep_intervals([[0,100e6]], simplify=True)
 samp_ids = trees.samples()
 N = len(samp_ids)
 variants = tvar.TVariantsSamples(trees, samp_ids, 0.01, 1)
-# num_variants = len(list(trees.variants(samples=samp_ids)))
-# variant_positions = np.empty(num_variants)
-# allele_frequencies = np.empty(num_variants)
-# for v, var in enumerate(list(trees.variants(samples=samp_ids))):  
-#     variant_positions[v] = var.site.position
-#     tmp = sum(var.genotypes) / len(var.genotypes)
-#     allele_frequencies[v] = min(tmp, 1-tmp)
     
 #-----------------------
 # create phenotypes
@@ -46,7 +39,7 @@ variants = tvar.TVariantsSamples(trees, samp_ids, 0.01, 1)
 
 # phenotypes with genetic influence
 sd_environmental_noise = 1
-prop_causal_mutations = 0.00005 #this is only for variants found in sampled haplotypes
+prop_causal_mutations = 0.00002 #this is only for variants found in sampled haplotypes
 sd_beta_causal_mutations = 1
 pheno_unif = pt.Phenotypes("uniform distr. of causal SNPs", variants, N)
 pheno_unif.simulateEnvNoise(sd_environmental_noise)
@@ -58,7 +51,7 @@ pheno_unif.simulateUniform(variants, prop_causal_mutations=prop_causal_mutations
 # prop_causal_mutations = 0.001 #this is only for variants found in sampled haplotypes
 # sd_beta_causal_mutations = 1
 pheno_unif_noNoise = pt.Phenotypes("uniform distr., no noise", variants, N)
-pheno_unif_noNoise.simulateFixed(pheno_unif.causal_variants, pheno_unif.causal_betas)
+pheno_unif_noNoise.simulateFixed(pheno_unif.causal_variants, pheno_unif.causal_variant_indeces, pheno_unif.causal_betas)
 pheno_unif_noNoise.findCausalTrees(trees)
 
 # random phenotypes
@@ -69,22 +62,21 @@ pheno_random.simulateEnvNoise(sd_environmental_noise)
 # fixed causal variant
 sd_environmental_noise = 0
 # index = np.where(allele_frequencies > 0.4)[0][1000]
-pheno_fixed = pt.Phenotypes("fixed beta 0.79, no noise", variants, N)
+pheno_fixed = pt.Phenotypes("fixed beta -0.67, no noise", variants, N)
 # pheno_fixed.simulateFixed([list(trees.variants(samples=samp_ids))[index]], [0.01])
-pheno_fixed.simulateFixed([pheno_unif.causal_variants[1]], [0.79])
+pheno_fixed.simulateFixed([pheno_unif.causal_variants[0]], pheno_unif.causal_variant_indeces[0], [-0.67])
 
 # fixed causal variant with high allele freq
 sd_environmental_noise = 0
-index = np.where(variants.allele_frequencies > 0.4)[0][1000]
-pheno_fixed_hp = pt.Phenotypes("fixed high freq beta 0.79, no noise", variants, N)
-pheno_fixed_hp.simulateFixed([list(trees.variants(samples=samp_ids))[index]], [0.79])
+index = np.where(variants.allele_frequencies > 0.4)[0][int(np.floor(len(np.where(variants.allele_frequencies > 0.4)[0]) / 2))]
+pheno_fixed_hp = pt.Phenotypes("fixed high freq beta -0.67, no noise", variants, N)
+pheno_fixed_hp.simulateFixed([variants.variants[index]], index, [-0.67])
 
 # fixed causal variant with high allele freq with noise
 sd_environmental_noise = 1
-index = np.where(variants.allele_frequencies > 0.4)[0][1000]
-pheno_fixed_hp_wn = pt.Phenotypes("fixed high freq beta 0.79, with noise", variants, N)
+pheno_fixed_hp_wn = pt.Phenotypes("fixed high freq beta -0.67, with noise", variants, N)
 pheno_fixed_hp_wn.simulateEnvNoise(sd_environmental_noise)
-pheno_fixed_hp_wn.simulateFixed([list(trees.variants(samples=samp_ids))[index]], [0.79])
+pheno_fixed_hp_wn.simulateFixed([variants.variants[index]], index, [-0.67])
 
 
 #-----------------------
@@ -104,7 +96,7 @@ pGWAS_fixed_hp_wn = gwas.TpGWAS(phenotypes=pheno_fixed_hp_wn)
 pGWAS_fixed_hp_wn.OLS(variants)
 
 
-fig, ax = plt.subplots(6,figsize=(30,30))
+fig, ax = plt.subplots(7,figsize=(30,30))
 pGWAS_unif.manhattan_plot(variants.positions, ax[0])
 # ax[0].axhline(y=30, color="black", lw=0.5)
 
@@ -118,11 +110,14 @@ pGWAS_fixed_hp.manhattan_plot(variants.positions, ax[4])
 
 pGWAS_fixed_hp_wn.manhattan_plot(variants.positions, ax[5])
 
+pGWAS_fixed_hp.manhattan_plot_subset(variants.positions, ax[6], pheno_fixed_hp.causal_variant_indeces-200, pheno_fixed_hp.causal_variant_indeces+200, size=1.5)
+
+
 
 fig.tight_layout()
 fig.set_size_inches(30, 30)
 fig.show()
-fig.savefig('sims_10_africans.png', bbox_inches='tight')# 
+fig.savefig('sims/sims_10_africans.png', bbox_inches='tight')# 
 
 
 

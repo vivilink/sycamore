@@ -21,6 +21,7 @@ class Phenotypes:
         self.causal_betas = []
         self.causal_power = []
         self.causal_trees = []
+        self.causal_variant_indeces = []
         self.causal_tree_indeces = []
         self.filled = False
         
@@ -43,7 +44,7 @@ class Phenotypes:
         self.y = np.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
         self.filled = True
 
-    def simulateFixed(self, causal_variants, betas):
+    def simulateFixed(self, causal_variants, causal_variant_indeces, betas):
         """
         Simulate phenotypes based on predefined causal variant positions and effects
 
@@ -70,6 +71,7 @@ class Phenotypes:
             self.causal_betas.append(betas[v])
             allele_freq = sum(var.genotypes) / len(var.genotypes)
             self.causal_power.append(betas[v]**2 * allele_freq * (1-allele_freq))
+            self.causal_variant_indeces = causal_variant_indeces
         
     def simulateUniform(self, variants, prop_causal_mutations, sd_beta_causal_mutations, mean_beta_causal_mutation = 0):
         """
@@ -104,6 +106,7 @@ class Phenotypes:
                 self.causal_betas.append(beta)
                 allele_freq = variants.allele_frequencies[v]
                 self.causal_power.append(beta**2 * allele_freq * (1-allele_freq))
+                self.causal_variant_indeces.append(v)
         
         print("simulated phenotypes based on " + str(len(self.causal_variants)) + " causal variants out of a total of " + str(self.num_variants) + ".")
         self.filled = True
