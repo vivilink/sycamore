@@ -32,9 +32,9 @@ class TVariantsSamples(TVariants):
             af = min(tmp, 1-tmp)
             
             if af >= min_allele_freq and af <= max_allele_freq:
+                self.variants.append(var)
                 self.allele_frequencies.append(af)
                 self.positions.append(var.site.position)
-                self.variants.append(var)
 
         self.number = len(self.variants)    
         self.allele_frequencies = np.array(self.allele_frequencies)

@@ -69,9 +69,9 @@ class TpGWAS(TGWAS):
             colscale = self.phenotypes.causal_power[v] 
             subplot.axvline(x=var.site.position, color=str(0.3), alpha = 0.5, lw=colscale*100)
             subplot.axvline(x=var.site.position, color="black", lw=0.5)
-            
-        # sm.nonparametric.lowess(pGWAS_random.p_values, range(len(pGWAS_random.p_values)))
-        #plt.show()
+        
+        low = sm.nonparametric.lowess(endog=self.q_values[index_min:index_max], exog=variant_positions[index_min:index_max], frac=0.001, return_sorted=False)
+        subplot.plot(variant_positions[index_min:index_max], low, color="red")
         
     def manhattan_plot(self, variant_positions, subplot, *args):
         self.manhattan_plot_subset(variant_positions, subplot, 0, len(self.p_values), *args)
