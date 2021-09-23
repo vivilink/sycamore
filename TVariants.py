@@ -38,3 +38,10 @@ class TVariantsSamples(TVariants):
 
         self.number = len(self.variants)    
         self.allele_frequencies = np.array(self.allele_frequencies)
+        
+    
+    def printGenotypes(self, index):        
+        file = "genotypes_variant" + str(index) + ".txt"
+        self.variants[index].genotypes.tofile(file=file)
+        
+        

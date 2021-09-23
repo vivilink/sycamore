@@ -100,7 +100,8 @@ class Phenotypes:
                 
                 #simulate phenotype
                 self.y[var.genotypes == 1] += beta
-                
+                self.y[var.genotypes == 2] += 2 * beta
+
                 #save causal position
                 self.causal_variants.append(var)
                 self.causal_betas.append(beta)

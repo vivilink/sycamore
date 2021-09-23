@@ -6,12 +6,11 @@ Created on Tue Sep  7 17:43:29 2021
 @author: linkv
 """
 import numpy as np
-import tskit as ts
 
-# class TTrees:
-#     def __init__(self, ts_object):
-#         self.trees = ts_object.trees()
-#         self.number = ts_object.num_trees
+class TTrees:
+    def __init__(self, ts_object):
+        self.trees = ts_object.trees()
+        self.number = ts_object.num_trees
         
 #     # def make(X):
 #     #     X_ = (X+X.T)/2
@@ -38,6 +37,16 @@ class TTree:
     def __init__(self, tree_iterator, N):
         self.tree = tree_iterator
         self.N = N
+        self.tree_starts = -1
+        self.index = tree_iterator.index
+        self.height = -1
+        
+    def testPSD(self, A, tol=1e-8):
+        E = np.linalg.eigvalsh(A)
+        if np.all(E > -tol) == False:
+            raise ValueError("Covariance matrix has negative eigenvalues")
+        return np.all(E > -tol)
+        
         
     def TMRCA(self, N):
         """
@@ -67,22 +76,31 @@ class TTree:
     
         """
         tmrca = np.zeros([N, N])
-        height = 0
+        self.height = 0
         for c in self.tree.nodes():
             descendants = list(self.tree.samples(c))
             n = len(descendants)
-            if(n == 0 or n == N): 
+            if(n == 0 or n == N or self.tree.time(c) == 0): #The branch length for a node that has no parent (e.g., a root) is defined as zero.
                 continue
             t = self.tree.time(self.tree.parent(c)) - self.tree.time(c)
             tmrca[np.ix_(descendants, descendants)] -= t
-            height = max(height, self.tree.time(self.tree.parent(c))) #time returns the time of a node
-        tmrca += height
+            self.height = max(self.height, self.tree.time(self.tree.parent(c))) #time returns the time of a node
+        tmrca += self.height
         return tmrca
+    
+    def print_something(self, something):
+        raise ValueError("printing", something)
+
         
     def solving_function(self, array):   
-        X = self.TMRCA(self.N)
-        covariance = (X+X.T)/2
+        covariance = self.TMRCA(self.N)
+        # covariance = (X+X.T)/2
         np.fill_diagonal(covariance, 0)
+        covariance = -covariance + self.height
+        # print(np.diagonal(covariance))
+        # print(np.shape(covariance))
+        # print(covariance)
+        self.testPSD(covariance)
         inv = np.linalg.inv(covariance)
         tmp = np.dot(inv, array)
         # print("shape of my dot product",np.shape(tmp))

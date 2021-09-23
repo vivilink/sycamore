@@ -17,6 +17,15 @@ import matplotlib.pyplot as plt
 import TPhenotypes as pt
 import TGWAS as gwas
 import TVariants as tvar
+import TTree as tt
+import scipy as sp
+from limix_lmm.lmm_core import LMMCore
+
+
+# import msprime
+
+from numpy.random import RandomState
+random = RandomState(1)
 
 # simulate 500 haplotypes of chr1 of individuals from Europe, keep only 5 Mb. The species, contig, model, samples, engine and trees are all objects of stdpopsim
 # where do we specify ploidy?
@@ -27,11 +36,28 @@ samples = model.get_samples(500, 0, 0) # Returns a list of msprime.Sample object
 engine = stdpopsim.get_engine("msprime") #returns an engine with a "simulate" method
 trees_full = engine.simulate(model, contig, samples) #this runs "msprime.sim_ancestry", default ploidy = 2. Extra arguments passed to simulate are passed to msprime.sim_ancestry
 
-trees = trees_full.keep_intervals([[0,100e6]], simplify=True)
+trees = trees_full.keep_intervals([[0,10e6]], simplify=True) 
+#if you check end of last tree you still get 249,250,621, the length of chr1 in hg19....
+# trees.aslist()[trees.num_trees - 1].interval.right
+#A site defines a particular location along the genome in which we are interested in observing the allelic state. So I guess that means sites are only defined where there are mutations
+# print(trees.tables.sites) #the position of the last site is very close to the end of the interval we kept above
 
 samp_ids = trees.samples()
 N = len(samp_ids)
 variants = tvar.TVariantsSamples(trees, samp_ids, 0.01, 1)
+
+
+
+# trees_msprime = msprime.sim_ancestry(samples=250, ploidy=2, sequence_length=100000, recombination_rate=0.5)
+# trees_msprime_mut = msprime.sim_mutations(trees_msprime, rate=0.01)
+# samp_ids = trees_msprime_mut.samples()
+# N = len(samp_ids)
+# variants = tvar.TVariantsSamples(trees_msprime_mut, samp_ids, 0.01, 1)
+
+# trees = trees_msprime_mut
+
+
+
     
 #-----------------------
 # create phenotypes
@@ -79,17 +105,74 @@ pheno_fixed_hp_wn.simulateEnvNoise(sd_environmental_noise)
 pheno_fixed_hp_wn.simulateFixed([variants.variants[index]], index, [-0.67])
 
 
+# #-----------------------
+# # limix
+# #-----------------------
+
+# trees_obj = tt.TTrees(trees)
+
+# def solving_function(array):   
+#     covariance = trees_obj.TMRCA(trees_obj.trees[0], N)
+#     inv = np.linalg.inv(covariance)
+#     tmp = np.dot(inv, array)
+#     # print("shape of my dot product",np.shape(tmp))
+#     return(tmp)
+
+# y = pheno_random.y
+# k = 1
+# m = 2
+# E = random.randn(N,k)
+# N = 500
+# # F = sp.concatenate([sp.ones((N,1)), random.randn(N,1)], 1)
+# F = sp.zeros(N)
+
+
+# lmm = LMMCore(y.reshape(N,1), F.reshape(N,1), solving_function)
+
+# S = trees_obj.trees[0].interval.right - trees_obj.trees[0].interval.left #this produces a float, but we want number of sites. there is a sites iterator, but dont know how to use it to find number of sites. why are genomic positions floats?
+# G = 0.*(random.rand(N,1)<0.2)
+# Inter = random.randn(N, m)
+
+# lmm.process(G, Inter) #this needs step param to produce only one p-value per tree. for this i need the number of sites per tree, or just use 1?
+# pv = lmm.getPv()
+# beta = lmm.getBetaSNP()
+# beta_ste = lmm.getBetaSNPste()
+# lrt = lmm.getLRT() #likelihood ratio
+
+
+
+
+
+
+# fig, ax = plt.subplots(2,figsize=(30,30))
+# pGWAS_random.manhattan_plot(variants.positions, ax[0])
+# tGWAS_random.manhattan_plot(range(trees.num_trees), ax[1])
+
+# fig.tight_layout()
+# fig.set_size_inches(30, 30)
+# fig.show()
+# fig.savefig('sims/sims_13_randomSeq.png', bbox_inches='tight')# 
+
 #-----------------------
 # run association tests and plot
 #-----------------------
+F = np.zeros(N)
+
 pGWAS_unif = gwas.TpGWAS(phenotypes=pheno_unif)
 pGWAS_unif.OLS(variants)
 pGWAS_unif_noNoise = gwas.TpGWAS(phenotypes=pheno_unif_noNoise)
 pGWAS_unif_noNoise.OLS(variants)
+
 pGWAS_random = gwas.TpGWAS(phenotypes=pheno_random)
 pGWAS_random.OLS(variants)
+tGWAS_random = gwas.TtGWAS(trees, pheno_random)
+tGWAS_random.runLimix(trees, N, pheno_random.y.reshape(N,1), F.reshape(N,1), random)
+
 pGWAS_fixed = gwas.TpGWAS(phenotypes=pheno_fixed)
 pGWAS_fixed.OLS(variants)
+tGWAS_fixed = gwas.TtGWAS(trees, pGWAS_fixed)
+tGWAS_fixed.runLimix(trees, N, pheno_fixed.y.reshape(N,1), F.reshape(N,1), random)
+
 pGWAS_fixed_hp = gwas.TpGWAS(phenotypes=pheno_fixed_hp)
 pGWAS_fixed_hp.OLS(variants)
 pGWAS_fixed_hp_wn = gwas.TpGWAS(phenotypes=pheno_fixed_hp_wn)
@@ -117,7 +200,7 @@ pGWAS_fixed_hp.manhattan_plot_subset(variants.positions, ax[6], pheno_fixed_hp.c
 fig.tight_layout()
 fig.set_size_inches(30, 30)
 fig.show()
-fig.savefig('sims/sims_10_africans.png', bbox_inches='tight')# 
+fig.savefig('sims/sims_12_africans.png', bbox_inches='tight')# 
 
 
 
