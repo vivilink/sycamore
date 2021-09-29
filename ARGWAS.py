@@ -36,7 +36,7 @@ samples = model.get_samples(500, 0, 0) # Returns a list of msprime.Sample object
 engine = stdpopsim.get_engine("msprime") #returns an engine with a "simulate" method
 trees_full = engine.simulate(model, contig, samples) #this runs "msprime.sim_ancestry", default ploidy = 2. Extra arguments passed to simulate are passed to msprime.sim_ancestry
 
-trees = trees_full.keep_intervals([[0,10e6]], simplify=True) 
+trees = trees_full.keep_intervals([[0,1e6]], simplify=True) 
 #if you check end of last tree you still get 249,250,621, the length of chr1 in hg19....
 # trees.aslist()[trees.num_trees - 1].interval.right
 #A site defines a particular location along the genome in which we are interested in observing the allelic state. So I guess that means sites are only defined where there are mutations
@@ -65,7 +65,7 @@ variants = tvar.TVariantsSamples(trees, samp_ids, 0.01, 1)
 
 # phenotypes with genetic influence
 sd_environmental_noise = 1
-prop_causal_mutations = 0.00002 #this is only for variants found in sampled haplotypes
+prop_causal_mutations = 0.001 #this is only for variants found in sampled haplotypes
 sd_beta_causal_mutations = 1
 pheno_unif = pt.Phenotypes("uniform distr. of causal SNPs", variants, N)
 pheno_unif.simulateEnvNoise(sd_environmental_noise)
@@ -140,18 +140,21 @@ pheno_fixed_hp_wn.simulateFixed([variants.variants[index]], index, [-0.67])
 # lrt = lmm.getLRT() #likelihood ratio
 
 
+#-----------------------
+# Mantel
+#-----------------------
+pheno_unif.findCausalTrees(trees)
+tGWAS_unif = gwas.TtGWAS(trees, pheno_unif)
+tGWAS_unif.runMantel(trees, pheno_unif, N)
 
+fig, ax = plt.subplots(2,figsize=(30,30))
+pGWAS_random.manhattan_plot(variants.positions, ax[0])
+tGWAS_random.manhattan_plot(range(trees.num_trees), ax[1])
 
-
-
-# fig, ax = plt.subplots(2,figsize=(30,30))
-# pGWAS_random.manhattan_plot(variants.positions, ax[0])
-# tGWAS_random.manhattan_plot(range(trees.num_trees), ax[1])
-
-# fig.tight_layout()
-# fig.set_size_inches(30, 30)
-# fig.show()
-# fig.savefig('sims/sims_13_randomSeq.png', bbox_inches='tight')# 
+fig.tight_layout()
+fig.set_size_inches(30, 30)
+fig.show()
+fig.savefig('sims/sims_13_randomSeq.png', bbox_inches='tight')# 
 
 #-----------------------
 # run association tests and plot
@@ -165,8 +168,6 @@ pGWAS_unif_noNoise.OLS(variants)
 
 pGWAS_random = gwas.TpGWAS(phenotypes=pheno_random)
 pGWAS_random.OLS(variants)
-tGWAS_random = gwas.TtGWAS(trees, pheno_random)
-tGWAS_random.runLimix(trees, N, pheno_random.y.reshape(N,1), F.reshape(N,1), random)
 
 pGWAS_fixed = gwas.TpGWAS(phenotypes=pheno_fixed)
 pGWAS_fixed.OLS(variants)
@@ -194,8 +195,6 @@ pGWAS_fixed_hp.manhattan_plot(variants.positions, ax[4])
 pGWAS_fixed_hp_wn.manhattan_plot(variants.positions, ax[5])
 
 pGWAS_fixed_hp.manhattan_plot_subset(variants.positions, ax[6], pheno_fixed_hp.causal_variant_indeces-200, pheno_fixed_hp.causal_variant_indeces+200, size=1.5)
-
-
 
 fig.tight_layout()
 fig.set_size_inches(30, 30)
@@ -348,32 +347,7 @@ fig.savefig('sims_alleleFreq_africans_withNoise.png', bbox_inches='tight')#
 # #         #save causal position
 # #         causal_positions.append(var.site.position)
         
-# # #find causal tree
-# # causal_tree_indeces = []
-# # p = 0 
-# # t = 0
-# # tree = trees.first()
-# # while p < len(causal_positions):    
-# #     ## Debugging:
-# #     ##------------
-# #     # print("p: " + str(p))
-# #     # print("tree index " + str(t))
-# #     # print("causal_positions[p] + " + str(causal_positions[p]))
-# #     # print("tree.interval.left " + str(tree.interval.left))
-# #     # print("tree.interval.right " + str(tree.interval.right)) 
-# #     # print("trees.at(var.site.position).get_index() " + str(trees.at(var.site.position).get_index()))
-        
-# #     if tree.interval.left <= causal_positions[p] <= tree.interval.right:        
-# #         #save causal tree
-# #         causal_tree_indeces.append(tree.get_index())
-# #         p += 1
-        
-# #     elif causal_positions[p] < tree.interval.left:
-# #         p += 1        
-    
-# #     elif causal_positions[p] > tree.interval.right:
-# #         tree.next()
-# #         t += 1
+
         
         
 # #-------------------

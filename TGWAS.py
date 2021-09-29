@@ -10,6 +10,7 @@ import statsmodels.api as sm
 import scipy
 import TTree as tt
 from limix_lmm.lmm_core import LMMCore
+import utils as ut
 
 
 
@@ -123,7 +124,7 @@ class TtGWAS(TGWAS):
         self.p_values = np.empty(self.num_associations)
         self.q_values = np.empty(self.num_associations)
         self.lrt = np.empty(self.num_associations)
-
+        
     # def mantel(self):
     #     diffs = ut.diff(self.phenotypes.y, self.phenotypes.N)
     #     for t,tree in enumerate(self.ts_object.trees()):
@@ -133,6 +134,18 @@ class TtGWAS(TGWAS):
     #         self.p_values[t] = ut.mantel(ut.make(tmrca), diffs)
     
 
+    def runMantel(self, ts_object, phenotypes, N):
+        #test for associations
+        diffs = phenotypes.diffs()
+        for tree in ts_object.trees():
+            if tree.total_branch_length == 0: 
+                continue
+            tree_obj = tt.TTree(tree, N)
+            tmrca = tree_obj.TMRCA(N)
+            self.p_values[tree.index] = ut.mantel(tmrca, diffs)
+            if(self.p_values[tree.index] < 0):
+                print(tmrca)
+                raise ValueError("p-value is negative")
             
     def runLimix(self, ts_object, N, y, F, random):   
         G = np.zeros(N).reshape(N,1) 

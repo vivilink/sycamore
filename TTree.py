@@ -86,6 +86,8 @@ class TTree:
             tmrca[np.ix_(descendants, descendants)] -= t
             self.height = max(self.height, self.tree.time(self.tree.parent(c))) #time returns the time of a node
         tmrca += self.height
+        np.fill_diagonal(tmrca, 0)
+        tmrca = (tmrca + tmrca.T) / 2
         return tmrca
     
     def print_something(self, something):
@@ -95,7 +97,7 @@ class TTree:
     def solving_function(self, array):   
         covariance = self.TMRCA(self.N)
         # covariance = (X+X.T)/2
-        np.fill_diagonal(covariance, 0)
+        # np.fill_diagonal(covariance, 0)
         covariance = -covariance + self.height
         # print(np.diagonal(covariance))
         # print(np.shape(covariance))

@@ -118,14 +118,14 @@ class Phenotypes:
         t = 0
         tree = ts_object.first()
         while p < len(self.causal_variants):    
-            ## Debugging:
-            ##------------
+            # # Debugging:
+            # #------------
             # print("p: " + str(p))
             # print("tree index " + str(t))
-            # print("causal_variants[p] + " + str(causal_variants[p]))
+            # print("causal_variants[p] + " + str(self.causal_variants[p]))
             # print("tree.interval.left " + str(tree.interval.left))
             # print("tree.interval.right " + str(tree.interval.right)) 
-            # print("trees.at(var.site.position).get_index() " + str(trees.at(var.site.position).get_index()))
+            # print("trees.at(var.site.position).get_index() " + str(ts_object.at(self.causal_variants[p].site.position).get_index()))
                 
             if tree.interval.left <= self.causal_variants[p].site.position <= tree.interval.right:        
                 #save causal tree
@@ -138,4 +138,10 @@ class Phenotypes:
             elif self.causal_variants[p].site.position > tree.interval.right:
                 tree.next()
                 t += 1
+
         
+    def diffs(self):
+        cols = np.tile(self.y, (self.N, 1))
+        rows = cols.T
+        buffer = cols - rows
+        return np.abs(buffer)
