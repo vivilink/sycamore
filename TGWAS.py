@@ -11,6 +11,8 @@ import scipy
 import TTree as tt
 from limix_lmm.lmm_core import LMMCore
 import utils as ut
+import time
+import pandas as pd
 
 
 
@@ -94,7 +96,7 @@ class TpGWAS(TGWAS):
             raise ValueError("data subset index cannot be larger than number of p-values")            
         
         subplot.scatter(variant_positions[index_min:index_max], self.q_values[index_min:index_max], s=size, *args)
-        subplot.set(xlabel='position', ylabel='q-value', title=self.phenotypes.name)
+        subplot.set(xlabel='variant position', ylabel='q-value', title=self.phenotypes.name)
         for v, var in enumerate(self.phenotypes.causal_variants):
             # print("power " + str(self.phenotypes.causal_power[v]) + " pos " + str(var.site.position))
             colscale = self.phenotypes.causal_power[v] 
@@ -137,11 +139,17 @@ class TtGWAS(TGWAS):
     def runMantel(self, ts_object, phenotypes, N):
         #test for associations
         diffs = phenotypes.diffs()
+        start = time.time()
         for tree in ts_object.trees():
+            if tree.index % 100 == 0:
+                end = time.time()
+                print("Ran Mantel for", tree.index, "trees in ", round(end-start), "s")
             if tree.total_branch_length == 0: 
+                print("tree's total branch length is zero")
                 continue
             tree_obj = tt.TTree(tree, N)
             tmrca = tree_obj.TMRCA(N)
+            # print("tmrca",tmrca)
             self.p_values[tree.index] = ut.mantel(tmrca, diffs)
             if(self.p_values[tree.index] < 0):
                 print(tmrca)
@@ -167,6 +175,26 @@ class TtGWAS(TGWAS):
             # beta = lmm.getBetaSNP()
             # beta_ste = lmm.getBetaSNPste()
             # self.lrt[tree.index] = lmm.getLRT() #likelihood ratio
+            
+    def runCGTA_HE(self, ts_object, N):
+        #mimic example phenotype file from gcta (first column=family, second=ind id, third=pheno value)
+        tmp_pheno = pd.DataFrame()
+        tmp_pheno['1'] = np.arange(1,N+1)
+        tmp_pheno['2'] = (10 * tmp_pheno['1'] + 1 )
+        tmp_pheno['3'] = self.phenotypes.y
+        
+        tmp_pheno.to_csv("phenotypes.phen", sep=' ', index=False, header=False)
+        for tree in ts_object.trees():
+            tree_obj = tt.TTree(tree, N)
+            covariance = tree_obj.covariance(N)
+            print("covariance is symmetric",(covariance == covariance.T).all())
+            print(covariance[1,10])
+            print(covariance[10,1])
+
+            with open('GRM_covariance.txt', 'w') as f:
+                np.savetxt(f, covariance)
+            raise ValueError("stop after writing file")
+            
             
           #-----------------   
 # example_tree = trees.aslist()[10995]
@@ -235,6 +263,7 @@ class TtGWAS(TGWAS):
         None.
 
         """
+        
         if index_min < 0 or index_max < 0:
             raise ValueError("data subset indeces for manhattan plotting must be positive")
         if index_max > len(self.p_values) or index_min > len(self.p_values):
@@ -242,12 +271,12 @@ class TtGWAS(TGWAS):
         self.q_values = -np.log10(self.p_values)
         
         subplot.scatter(variant_positions[index_min:index_max], self.q_values[index_min:index_max], s=size, *args)
-        subplot.set(xlabel='position', ylabel='q-value', title=self.phenotypes.name)
-        for v, var in enumerate(self.phenotypes.causal_variants):
+        subplot.set(xlabel='tree index', ylabel='q-value', title=self.phenotypes.name)
+        for t in self.phenotypes.causal_tree_indeces:
             # print("power " + str(self.phenotypes.causal_power[v]) + " pos " + str(var.site.position))
-            colscale = self.phenotypes.causal_power[v] 
-            subplot.axvline(x=var.site.position, color=str(0.3), alpha = 0.5, lw=colscale*100)
-            subplot.axvline(x=var.site.position, color="black", lw=0.5)
+            # colscale = self.phenotypes.causal_power[v] 
+            # subplot.axvline(x=t, color=str(0.3), alpha = 0.5, lw=colscale*100)
+            subplot.axvline(x=t, color="black", lw=0.5)
         
         if n_snps_lowess > 0:
             fraction = min(n_snps_lowess/len(self.q_values[index_min:index_max]), 1)

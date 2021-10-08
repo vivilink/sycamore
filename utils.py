@@ -12,7 +12,8 @@ import numpy as np
 
 def mantel(X, Y, perms = 1000):
   p = Mantel.test(X, Y, perms = perms)[1]
-  if p > 3/perms: 
+  # print("p", p)
+  if p > 3/perms or p <= 0.0001: 
     return p
   else: 
     return mantel(X, Y, perms = perms * 10)

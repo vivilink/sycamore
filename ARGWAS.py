@@ -65,7 +65,7 @@ variants = tvar.TVariantsSamples(trees, samp_ids, 0.01, 1)
 
 # phenotypes with genetic influence
 sd_environmental_noise = 1
-prop_causal_mutations = 0.001 #this is only for variants found in sampled haplotypes
+prop_causal_mutations = 0.002 #this is only for variants found in sampled haplotypes
 sd_beta_causal_mutations = 1
 pheno_unif = pt.Phenotypes("uniform distr. of causal SNPs", variants, N)
 pheno_unif.simulateEnvNoise(sd_environmental_noise)
@@ -90,7 +90,7 @@ sd_environmental_noise = 0
 # index = np.where(allele_frequencies > 0.4)[0][1000]
 pheno_fixed = pt.Phenotypes("fixed beta -0.67, no noise", variants, N)
 # pheno_fixed.simulateFixed([list(trees.variants(samples=samp_ids))[index]], [0.01])
-pheno_fixed.simulateFixed([pheno_unif.causal_variants[0]], pheno_unif.causal_variant_indeces[0], [-0.67])
+pheno_fixed.simulateFixed([pheno_unif.causal_variants[2]], pheno_unif.causal_variant_indeces[2], [-0.67])
 
 # fixed causal variant with high allele freq
 sd_environmental_noise = 0
@@ -140,21 +140,6 @@ pheno_fixed_hp_wn.simulateFixed([variants.variants[index]], index, [-0.67])
 # lrt = lmm.getLRT() #likelihood ratio
 
 
-#-----------------------
-# Mantel
-#-----------------------
-pheno_unif.findCausalTrees(trees)
-tGWAS_unif = gwas.TtGWAS(trees, pheno_unif)
-tGWAS_unif.runMantel(trees, pheno_unif, N)
-
-fig, ax = plt.subplots(2,figsize=(30,30))
-pGWAS_random.manhattan_plot(variants.positions, ax[0])
-tGWAS_random.manhattan_plot(range(trees.num_trees), ax[1])
-
-fig.tight_layout()
-fig.set_size_inches(30, 30)
-fig.show()
-fig.savefig('sims/sims_13_randomSeq.png', bbox_inches='tight')# 
 
 #-----------------------
 # run association tests and plot
@@ -199,8 +184,31 @@ pGWAS_fixed_hp.manhattan_plot_subset(variants.positions, ax[6], pheno_fixed_hp.c
 fig.tight_layout()
 fig.set_size_inches(30, 30)
 fig.show()
-fig.savefig('sims/sims_12_africans.png', bbox_inches='tight')# 
+fig.savefig('sims/sims_13_africans.png', bbox_inches='tight')# 
 
+#-----------------------
+# Mantel
+#-----------------------
+pheno_fixed_hp.findCausalTrees(trees)
+tGWAS_fixed_hp = gwas.TtGWAS(trees, pheno_fixed_hp)
+tGWAS_fixed_hp.runMantel(trees, pheno_fixed, N)
+
+fig, ax = plt.subplots(2,figsize=(30,30))
+pGWAS_fixed_hp.manhattan_plot(variants.positions, ax[0])
+tGWAS_fixed_hp.manhattan_plot(range(trees.num_trees), ax[1])
+
+fig.tight_layout()
+fig.set_size_inches(30, 30)
+fig.show()
+fig.savefig('sims/sims_13_randomSeq.png', bbox_inches='tight')# 
+
+#-----------------------
+# GCTA HE
+#-----------------------
+
+pheno_fixed_hp.findCausalTrees(trees)
+tGWAS_fixed_hp = gwas.TtGWAS(trees, pheno_fixed_hp)
+tGWAS_fixed_hp.runCGTA_HE(trees, N)
 
 
 #-----------------------

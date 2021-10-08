@@ -90,15 +90,19 @@ class TTree:
         tmrca = (tmrca + tmrca.T) / 2
         return tmrca
     
+    def covariance(self, N):
+        covariance = self.TMRCA(self.N)
+        covariance = -covariance + self.height
+        return(covariance)
+    
     def print_something(self, something):
         raise ValueError("printing", something)
 
         
     def solving_function(self, array):   
-        covariance = self.TMRCA(self.N)
+        covariance = self.covariance(self.N)
         # covariance = (X+X.T)/2
         # np.fill_diagonal(covariance, 0)
-        covariance = -covariance + self.height
         # print(np.diagonal(covariance))
         # print(np.shape(covariance))
         # print(covariance)
