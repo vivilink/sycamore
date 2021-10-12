@@ -210,6 +210,17 @@ pheno_fixed_hp.findCausalTrees(trees)
 tGWAS_fixed_hp = gwas.TtGWAS(trees, pheno_fixed_hp)
 tGWAS_fixed_hp.runCGTA_HE(trees, N)
 
+fig, ax = plt.subplots(5,figsize=(30,30))
+pGWAS_fixed_hp.manhattan_plot(variants.positions, ax[0])
+tGWAS_fixed_hp.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS_fixed_hp.p_values_HECP_Jackknife, ax[1])
+tGWAS_fixed_hp.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS_fixed_hp.p_values_HECP_OLS, ax[2])
+tGWAS_fixed_hp.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS_fixed_hp.p_values_HESD_Jackknife, ax[3])
+tGWAS_fixed_hp.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS_fixed_hp.p_values_HESD_OLS, ax[4])
+
+fig.tight_layout()
+fig.set_size_inches(30, 30)
+fig.show()
+fig.savefig('sims/sims_14_HE.png', bbox_inches='tight')# 
 
 #-----------------------
 # plot p-values

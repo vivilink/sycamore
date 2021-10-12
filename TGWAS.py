@@ -13,6 +13,7 @@ from limix_lmm.lmm_core import LMMCore
 import utils as ut
 import time
 import pandas as pd
+import subprocess
 
 
 
@@ -24,6 +25,7 @@ class TGWAS:
         self.phenotypes = phenotypes
         self.num_associations = -1
         self.p_values = np.empty(0)
+        self.q_values = np.empty(0)
         self.num_variants = phenotypes.num_variants
         # self.p_values_init = False
         
@@ -125,16 +127,13 @@ class TtGWAS(TGWAS):
         # self._check_compatibility(ts_object, phenotypes)
         self.p_values = np.empty(self.num_associations)
         self.q_values = np.empty(self.num_associations)
-        self.lrt = np.empty(self.num_associations)
         
-    # def mantel(self):
-    #     diffs = ut.diff(self.phenotypes.y, self.phenotypes.N)
-    #     for t,tree in enumerate(self.ts_object.trees()):
-    #         if tree.total_branch_length == 0: 
-    #             continue
-    #         tmrca = ut.TMRCA(tree, self.phenotypes.N)
-    #         self.p_values[t] = ut.mantel(ut.make(tmrca), diffs)
-    
+        self.p_values_HECP_OLS = np.empty(self.num_associations)
+        self.p_values_HECP_Jackknife = np.empty(self.num_associations)
+        self.p_values_HESD_OLS = np.empty(self.num_associations)
+        self.p_values_HESD_Jackknife = np.empty(self.num_associations)
+        
+        self.lrt = np.empty(self.num_associations)
 
     def runMantel(self, ts_object, phenotypes, N):
         #test for associations
@@ -177,23 +176,46 @@ class TtGWAS(TGWAS):
             # self.lrt[tree.index] = lmm.getLRT() #likelihood ratio
             
     def runCGTA_HE(self, ts_object, N):
-        #mimic example phenotype file from gcta (first column=family, second=ind id, third=pheno value)
+        
+        # mimic example phenotype file from gcta (first column=family, second=ind id, third=pheno value)
         tmp_pheno = pd.DataFrame()
         tmp_pheno['1'] = np.arange(1,N+1)
-        tmp_pheno['2'] = (10 * tmp_pheno['1'] + 1 )
-        tmp_pheno['3'] = self.phenotypes.y
-        
+        tmp_pheno['2'] = tmp_pheno['1']
+        tmp_pheno['3'] = self.phenotypes.y        
         tmp_pheno.to_csv("phenotypes.phen", sep=' ', index=False, header=False)
+        
+        # test each tree with gcta
+        start = time.time()
         for tree in ts_object.trees():
+            if tree.index % 100 == 0:
+                end = time.time()
+                print("Ran HE for", tree.index, "trees in ", round(end-start), "s")
             tree_obj = tt.TTree(tree, N)
             covariance = tree_obj.covariance(N)
-            print("covariance is symmetric",(covariance == covariance.T).all())
-            print(covariance[1,10])
-            print(covariance[10,1])
+            # print("covariance is symmetric",(covariance == covariance.T).all())
+            # print(covariance[1,10])
+            # print(covariance[10,1])
 
             with open('GRM_covariance.txt', 'w') as f:
                 np.savetxt(f, covariance)
-            raise ValueError("stop after writing file")
+            f.close()
+            
+            # run gcta and parse output
+            # TODO: locations of gcta and run_gcta_HE scripts only exist for me
+            exit_code = subprocess.call('/data/ARGWAS/argwas/run_gcta_HE.sh')
+            
+            # read results
+            HE_CP = pd.read_table("HE-CP_result.txt")
+            HE_SD = pd.read_table("HE-SD_result.txt")
+
+            self.p_values_HECP_OLS[tree.index] = HE_CP["P_OLS"][1]
+            self.p_values_HECP_Jackknife[tree.index] = HE_CP["P_Jackknife"][1]
+            self.p_values_HESD_OLS[tree.index] = HE_SD["P_OLS"][1]
+            self.p_values_HESD_Jackknife[tree.index] = HE_SD["P_Jackknife"][1]
+
+            
+            # raise ValueError("stop after writing file")
+            # subprocess.run(["/data/ARGWAS/gcta_1.93.2beta/gcta64 --HEreg --grm GRM_covariance --pheno phenotypes.phen --out GRM_covariance_tests"])
             
             
           #-----------------   
@@ -232,9 +254,13 @@ class TtGWAS(TGWAS):
 # lmm.getPv()
 
     def manhattan_plot(self, variant_positions, subplot, *args):
-        self.manhattan_plot_subset(variant_positions, subplot, 0, len(self.p_values), *args)    
+        self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = self.p_values)    
 
-    def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, size=1, n_snps_lowess = 0, *args):
+    def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, *args):
+        print("num associations",self.num_associations)
+        self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = p_values)    
+        
+    def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, p_values, size=1, n_snps_lowess = 0, *args):
         """
         Parameters
         ----------
@@ -266,11 +292,11 @@ class TtGWAS(TGWAS):
         
         if index_min < 0 or index_max < 0:
             raise ValueError("data subset indeces for manhattan plotting must be positive")
-        if index_max > len(self.p_values) or index_min > len(self.p_values):
+        if index_max > self.num_associations or index_min > self.num_associations:
             raise ValueError("data subset index cannot be larger than number of p-values")       
-        self.q_values = -np.log10(self.p_values)
+        q_values = -np.log10(p_values)
         
-        subplot.scatter(variant_positions[index_min:index_max], self.q_values[index_min:index_max], s=size, *args)
+        subplot.scatter(variant_positions[index_min:index_max], q_values[index_min:index_max], s=size, *args)
         subplot.set(xlabel='tree index', ylabel='q-value', title=self.phenotypes.name)
         for t in self.phenotypes.causal_tree_indeces:
             # print("power " + str(self.phenotypes.causal_power[v]) + " pos " + str(var.site.position))
@@ -279,6 +305,6 @@ class TtGWAS(TGWAS):
             subplot.axvline(x=t, color="black", lw=0.5)
         
         if n_snps_lowess > 0:
-            fraction = min(n_snps_lowess/len(self.q_values[index_min:index_max]), 1)
-            low = sm.nonparametric.lowess(endog=self.q_values[index_min:index_max], exog=variant_positions[index_min:index_max], frac=fraction, return_sorted=False)
+            fraction = min(n_snps_lowess/len(q_values[index_min:index_max]), 1)
+            low = sm.nonparametric.lowess(endog=q_values[index_min:index_max], exog=variant_positions[index_min:index_max], frac=fraction, return_sorted=False)
             subplot.plot(variant_positions[index_min:index_max], low, color="red")
