@@ -6,6 +6,7 @@ Created on Mon Aug  9 16:57:18 2021
 @author: linkv
 """
 import numpy as np
+import tskit
 import matplotlib.pyplot as plt
 import random
 import TPhenotypes as pt
@@ -14,6 +15,7 @@ import TVariants as tvar
 import TIndividuals as tind
 import TSimulator as tsim
 import datetime
+import argparse
 # import statsmodels.api as sm
 # import pickle
 # import tqdm
@@ -23,59 +25,102 @@ import datetime
 # import time
 # import sys
 
+
+#-----------------------------
+# initialize arguments
+#-----------------------------
+
+parser = argparse.ArgumentParser(description='Running GWAS on variants and trees.')
+parser.add_argument('--task', dest="task", 
+                    help = 'The task to be executed (simulate or associate)')
+parser.add_argument('--out', dest="out", 
+                    help = 'Prefix of all output files')
+parser.add_argument('--seed', dest="seed", default = datetime.datetime.now().hour*10000+datetime.datetime.now().minute*100+datetime.datetime.now().second, 
+                    help='Set seed of random generator. Default is time stamp.')
+parser.add_argument('--tree_file', dest = "tree_file", 
+                    help = "File of simulated trees in tskit format")
+
+#simulating trees
+parser.add_argument('--sim.tree_simulator', dest = "sim.tree_simulator")
+
+
+#simulating phenotypes
+parser.add_argument('--pt.sd_envNoise', dest = "pt.sd_envNoise", default = 0, 
+                    help = "Std. dev. for environmental noise. If set to 0, no noise will be simulated.")
+parser.add_argument('--pt.sim_method', dest = "pt.sim_method", help = "Phenotype simulations method ('uniform', 'fixed_variants')")
+parser.add_argument_group('--pt.prop_causal_mutations', dest = "pt.prop_causal_mutations", default = 0, 
+                          help = "Proportion of causal mutations to simulate at uniformly distributed positions if pt.sim_method is set to 'uniform'. If set to 0, there will be no causal mutations simulated randomly")
+parser.add_argument('--pt.sd_beta_causal_mutations', dest = "pt.sd_beta_causal_mutations", help = "Std. dev. for betas of causal mutations if pt.sim_method is set to 'uniform'.")
+
+
+args = parser.parse_args()
+
+#-----------------------------
+# initialize random generator
+#-----------------------------
+    
 from numpy.random import RandomState
 class randomGenerator:
     def __init__(self, seed):
         self.seed = seed
         self.random = RandomState(seed)
 
-
-tim = datetime.datetime.now()
-seed = tim.hour*10000+tim.minute*100+tim.second
-random.seed(seed)# seed = None
-r = randomGenerator(seed)
+r = random.seed(args.seed)# seed = None
 r.random.get_state()[1][0]
 
-
-#if you check end of last tree you still get 249,250,621, the length of chr1 in hg19....
-# trees.aslist()[trees.num_trees - 1].interval.right
-#A site defines a particular location along the genome in which we are interested in observing the allelic state. So I guess that means sites are only defined where there are mutations
-# print(trees.tables.sites) #the position of the last site is very close to the end of the interval we kept above
 
 #-----------------------
 # Simulate
 #-----------------------
 
-simulator = tsim.TSimulator()
-trees = simulator.run_simulation(r)
+if args.task == "simulate":
+    if args.sim.tree_simulator == "stdPopsim":
+        simulator = tsim.TSimulatorStdPopsim()
+        trees = simulator.run_simulation(args.out, r)
+        samp_ids = trees.samples()
+        N = len(samp_ids)
+        inds = tind.Individuals(2, N)
+        variants = tvar.TVariantsSamples(trees, samp_ids, min_allele_freq = 0.01, max_allele_freq = 1)
+        variants.writeAlleleFreq(args.out)
+        
+    else:
+        raise ValueError("use of any simulator besides stdPopSim not tested")
+
 
 #-----------------------
-# Sample specs
+# Read simulation
 #-----------------------
 
-samp_ids = trees.samples()
-N = len(samp_ids)
+if args.task == "associate":
+    trees = tskit.load(args.tree_file)
+    samp_ids = trees.samples()
+    N = len(samp_ids)
 
-#-----------------------
-# create diploids and variants
-#-----------------------
-
-inds = tind.Individuals(2, N)
-variants = tvar.TVariantsSamples(trees, samp_ids, 0.01, 1)
-variants.fill_diploidGenotypes(samp_ids)
+    #-----------------------
+    # create diploids and variants
+    #-----------------------
+    
+    inds = tind.Individuals(2, N)
+    variants = tvar.TVariantsSamples(trees, samp_ids, 0.01, 1)
+    # variants.fill_diploidGenotypes(samp_ids)
 
   
-#-----------------------
-# create phenotypes
-#-----------------------
+    #-----------------------
+    # create phenotypes
+    #-----------------------
+    
+    pheno = pt.Phenotypes("uniform distr. of causal SNPs", variants, N)
+    pheno.simulateEnvNoise(args.pt.sd_envNoise, r)
+    if args.pt.sim_method == 'uniform':
+        pheno.simulateUniform(variants, prop_causal_mutations=args.pt.prop_causal_mutations, sd_beta_causal_mutations=args.pt.sd_beta_causal_mutations, random=r)
+
+
+
 
 # phenotypes with genetic influence
-sd_environmental_noise = 1
 prop_causal_mutations = 0.002 #this is only for variants found in sampled haplotypes
 sd_beta_causal_mutations = 1
 pheno_unif = pt.Phenotypes("uniform distr. of causal SNPs", variants, N)
-pheno_unif.simulateEnvNoise(sd_environmental_noise, r)
-pheno_unif.simulateUniform(variants, prop_causal_mutations=prop_causal_mutations, sd_beta_causal_mutations=sd_beta_causal_mutations, random=r)
 
 # phenotypes with genetic influence, no noise
 pheno_unif_noNoise = pt.Phenotypes("uniform distr., no noise", variants, N)
@@ -104,40 +149,6 @@ pheno_fixed_hp_wn = pt.Phenotypes("fixed high freq beta -0.67, with noise", vari
 pheno_fixed_hp_wn.simulateEnvNoise(sd_environmental_noise, r)
 pheno_fixed_hp_wn.simulateFixed([variants.variants[index]], index, [-0.67])
 
-
-# #-----------------------
-# # limix
-# #-----------------------
-
-# trees_obj = tt.TTrees(trees)
-
-# def solving_function(array):   
-#     covariance = trees_obj.TMRCA(trees_obj.trees[0], N)
-#     inv = np.linalg.inv(covariance)
-#     tmp = np.dot(inv, array)
-#     # print("shape of my dot product",np.shape(tmp))
-#     return(tmp)
-
-# y = pheno_random.y
-# k = 1
-# m = 2
-# E = random.randn(N,k)
-# N = 500
-# # F = sp.concatenate([sp.ones((N,1)), random.randn(N,1)], 1)
-# F = sp.zeros(N)
-
-
-# lmm = LMMCore(y.reshape(N,1), F.reshape(N,1), solving_function)
-
-# S = trees_obj.trees[0].interval.right - trees_obj.trees[0].interval.left #this produces a float, but we want number of sites. there is a sites iterator, but dont know how to use it to find number of sites. why are genomic positions floats?
-# G = 0.*(random.rand(N,1)<0.2)
-# Inter = random.randn(N, m)
-
-# lmm.process(G, Inter) #this needs step param to produce only one p-value per tree. for this i need the number of sites per tree, or just use 1?
-# pv = lmm.getPv()
-# beta = lmm.getBetaSNP()
-# beta_ste = lmm.getBetaSNPste()
-# lrt = lmm.getLRT() #likelihood ratio
 
 
 #-----------------------

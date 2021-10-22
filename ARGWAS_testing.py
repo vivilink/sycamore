@@ -62,7 +62,7 @@ N = len(samp_ids)
 
 inds = tind.Individuals(2, N)
 variants = tvar.TVariantsSamples(trees, samp_ids, 0.01, 1)
-variants.fill_diploidGenotypes(samp_ids)
+# variants.fill_diploidGenotypes(samp_ids)
 
   
 #-----------------------
@@ -111,7 +111,6 @@ pheno_fixed_hp_wn.simulateFixed([variants.variants[index]], index, [-0.67])
 #-----------------------
 # run association tests and plot
 #-----------------------
-F = np.zeros(N)
 
 pGWAS_unif = gwas.TpGWAS(phenotypes=pheno_unif)
 pGWAS_unif.OLS(variants)
@@ -123,8 +122,6 @@ pGWAS_random.OLS(variants)
 
 pGWAS_fixed = gwas.TpGWAS(phenotypes=pheno_fixed)
 pGWAS_fixed.OLS(variants)
-tGWAS_fixed = gwas.TtGWAS(trees, pGWAS_fixed)
-tGWAS_fixed.runLimix(trees, N, pheno_fixed.y.reshape(N,1), F.reshape(N,1), random)
 
 pGWAS_fixed_hp = gwas.TpGWAS(phenotypes=pheno_fixed_hp)
 pGWAS_fixed_hp.OLS(variants)
@@ -264,6 +261,11 @@ fig.savefig('sims/sims_15_HE.png', bbox_inches='tight')#
 # beta = lmm.getBetaSNP()
 # beta_ste = lmm.getBetaSNPste()
 # lrt = lmm.getLRT() #likelihood ratio
+
+# tGWAS_fixed = gwas.TtGWAS(trees, pGWAS_fixed)
+# F = np.zeros(N)
+# tGWAS_fixed.runLimix(trees, N, pheno_fixed.y.reshape(N,1), F.reshape(N,1), random)
+
 
 #-----------------------
 # plot p-values

@@ -6,6 +6,7 @@ Created on Mon Aug 30 17:44:45 2021
 @author: linkv
 """
 import numpy as np
+import pandas as pd
 
 
 class TVariants:
@@ -50,5 +51,11 @@ class TVariantsSamples(TVariants):
             
             # for h in individuals.ind_assignment['haplotypes']:
             
+    def writeAlleleFreq(self, name):
+        table = pd.DataFrame
+        table['position'] = self.positions
+        table['allele_freq'] = self.allele_frequencies
+        
+        table.write_csv(name + "_alleleFreq.csv", header=True, index=False)
         
         
