@@ -40,8 +40,15 @@ class TVariantsSamples(TVariants):
         self.allele_frequencies = np.array(self.allele_frequencies)
         
     
-    def printGenotypes(self, index):        
+    def print_genotypes(self, index):        
         file = "genotypes_variant" + str(index) + ".txt"
         self.variants[index].genotypes.tofile(file=file)
+        
+    def fill_diploidGenotypes(self, individuals):
+        for v in self.variants:
+            v.site.metadata = []
+            
+            # for h in individuals.ind_assignment['haplotypes']:
+            
         
         

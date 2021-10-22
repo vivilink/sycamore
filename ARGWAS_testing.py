@@ -46,8 +46,8 @@ r.random.get_state()[1][0]
 # Simulate
 #-----------------------
 
-simulator = tsim.TSimulator()
-trees = simulator.run_simulation(r)
+simulator = tsim.TSimulatorStdPopsim()
+trees = simulator.run_simulation("default", r)
 
 #-----------------------
 # Sample specs
@@ -105,39 +105,7 @@ pheno_fixed_hp_wn.simulateEnvNoise(sd_environmental_noise, r)
 pheno_fixed_hp_wn.simulateFixed([variants.variants[index]], index, [-0.67])
 
 
-# #-----------------------
-# # limix
-# #-----------------------
 
-# trees_obj = tt.TTrees(trees)
-
-# def solving_function(array):   
-#     covariance = trees_obj.TMRCA(trees_obj.trees[0], N)
-#     inv = np.linalg.inv(covariance)
-#     tmp = np.dot(inv, array)
-#     # print("shape of my dot product",np.shape(tmp))
-#     return(tmp)
-
-# y = pheno_random.y
-# k = 1
-# m = 2
-# E = random.randn(N,k)
-# N = 500
-# # F = sp.concatenate([sp.ones((N,1)), random.randn(N,1)], 1)
-# F = sp.zeros(N)
-
-
-# lmm = LMMCore(y.reshape(N,1), F.reshape(N,1), solving_function)
-
-# S = trees_obj.trees[0].interval.right - trees_obj.trees[0].interval.left #this produces a float, but we want number of sites. there is a sites iterator, but dont know how to use it to find number of sites. why are genomic positions floats?
-# G = 0.*(random.rand(N,1)<0.2)
-# Inter = random.randn(N, m)
-
-# lmm.process(G, Inter) #this needs step param to produce only one p-value per tree. for this i need the number of sites per tree, or just use 1?
-# pv = lmm.getPv()
-# beta = lmm.getBetaSNP()
-# beta_ste = lmm.getBetaSNPste()
-# lrt = lmm.getLRT() #likelihood ratio
 
 
 #-----------------------
@@ -261,98 +229,134 @@ fig.show()
 fig.savefig('sims/sims_15_HE.png', bbox_inches='tight')# 
 
 
+
+
+# #-----------------------
+# # limix
+# #-----------------------
+
+# trees_obj = tt.TTrees(trees)
+
+# def solving_function(array):   
+#     covariance = trees_obj.TMRCA(trees_obj.trees[0], N)
+#     inv = np.linalg.inv(covariance)
+#     tmp = np.dot(inv, array)
+#     # print("shape of my dot product",np.shape(tmp))
+#     return(tmp)
+
+# y = pheno_random.y
+# k = 1
+# m = 2
+# E = random.randn(N,k)
+# N = 500
+# # F = sp.concatenate([sp.ones((N,1)), random.randn(N,1)], 1)
+# F = sp.zeros(N)
+
+
+# lmm = LMMCore(y.reshape(N,1), F.reshape(N,1), solving_function)
+
+# S = trees_obj.trees[0].interval.right - trees_obj.trees[0].interval.left #this produces a float, but we want number of sites. there is a sites iterator, but dont know how to use it to find number of sites. why are genomic positions floats?
+# G = 0.*(random.rand(N,1)<0.2)
+# Inter = random.randn(N, m)
+
+# lmm.process(G, Inter) #this needs step param to produce only one p-value per tree. for this i need the number of sites per tree, or just use 1?
+# pv = lmm.getPv()
+# beta = lmm.getBetaSNP()
+# beta_ste = lmm.getBetaSNPste()
+# lrt = lmm.getLRT() #likelihood ratio
+
 #-----------------------
 # plot p-values
 #-----------------------
 
-num_bins = 20
-fig, ax = plt.subplots(4,figsize=(15,15))
-# fig, ax = plt.subplots(1,figsize=(15,15))
+# num_bins = 20
+# fig, ax = plt.subplots(4,figsize=(15,15))
+# # fig, ax = plt.subplots(1,figsize=(15,15))
 
-pGWAS_unif.p_value_dist(ax[0], num_bins)
+# pGWAS_unif.p_value_dist(ax[0], num_bins)
 
-pGWAS_unif_noNoise.p_value_dist(ax[1], num_bins)
+# pGWAS_unif_noNoise.p_value_dist(ax[1], num_bins)
 
-pGWAS_random.p_value_dist(ax[2], num_bins)
-pGWAS_random.chiSquared(num_bins)
+# pGWAS_random.p_value_dist(ax[2], num_bins)
+# pGWAS_random.chiSquared(num_bins)
 
-pGWAS_fixed.p_value_dist(ax[3], num_bins)
+# pGWAS_fixed.p_value_dist(ax[3], num_bins)
 
-fig.tight_layout()
-fig.set_size_inches(10, 20)
-fig.savefig('sims_pvalues_random_pt_2.png', bbox_inches='tight')# 
+# fig.tight_layout()
+# fig.set_size_inches(10, 20)
+# fig.savefig('sims_pvalues_random_pt_2.png', bbox_inches='tight')# 
 
 
 #-----------------------
 # plot p-values for random
 #-----------------------
-num_bins = 20
-fig, ax = plt.subplots(5,figsize=(15,15))
+# num_bins = 20
+# fig, ax = plt.subplots(5,figsize=(15,15))
 
-for i in range(5):
-    sd_environmental_noise = 1
-    pheno_random = pt.Phenotypes("random",trees)
-    pheno_random.simulateEnvNoise(sd_environmental_noise)
-    pGWAS_random = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_random)
-    pGWAS_random.OLS()
+# for i in range(5):
+#     sd_environmental_noise = 1
+#     pheno_random = pt.Phenotypes("random",trees)
+#     pheno_random.simulateEnvNoise(sd_environmental_noise)
+#     pGWAS_random = gwas.TpGWAS(ts_object=trees, phenotypes=pheno_random)
+#     pGWAS_random.OLS()
     
-    x= pGWAS_random.chiSquared(num_bins)
-    pGWAS_random.p_value_dist(ax[i], num_bins)
-    ax[i].set(title=x)
+#     x= pGWAS_random.chiSquared(num_bins)
+#     pGWAS_random.p_value_dist(ax[i], num_bins)
+#     ax[i].set(title=x)
 
     
-    fig.tight_layout()
-    fig.set_size_inches(10, 20)
-fig.savefig('sims_pvalues_random_pt.png', bbox_inches='tight')#
+#     fig.tight_layout()
+#     fig.set_size_inches(10, 20)
+# fig.savefig('sims_pvalues_random_pt.png', bbox_inches='tight')#
 
 
-#cumulative p-value distribution
-c_steps = np.arange(0, 1, 0.005)
-c_probs =np.empty(len(c_steps))
-fig, ax = plt.subplots(1,figsize=(15,15))
-for s,c in enumerate(c_steps):
-    c_probs[s] = len(pGWAS_random.p_values[pGWAS_random.p_values <c]) / len(pGWAS_random.p_values)
-    # print(str(c) + ": " + str(len(pGWAS_random.p_values[pGWAS_random.p_values <c]) / len(pGWAS_random.p_values)))
-ax.scatter(c_steps, c_probs)
-ax.set(xlabel='cutoff', ylabel='P(p-value < cutoff)', title="cumulative dist. p-values")
-fig.savefig('sims_pvalues_random_cumulative.png', bbox_inches='tight')#
+# #cumulative p-value distribution
+# c_steps = np.arange(0, 1, 0.005)
+# c_probs =np.empty(len(c_steps))
+# fig, ax = plt.subplots(1,figsize=(15,15))
+# for s,c in enumerate(c_steps):
+#     c_probs[s] = len(pGWAS_random.p_values[pGWAS_random.p_values <c]) / len(pGWAS_random.p_values)
+#     # print(str(c) + ": " + str(len(pGWAS_random.p_values[pGWAS_random.p_values <c]) / len(pGWAS_random.p_values)))
+# ax.scatter(c_steps, c_probs)
+# ax.set(xlabel='cutoff', ylabel='P(p-value < cutoff)', title="cumulative dist. p-values")
+# fig.savefig('sims_pvalues_random_cumulative.png', bbox_inches='tight')#
 
 
-fig, ax = plt.subplots(10,figsize=(15,30))
-for i,index in enumerate(range(20000,21000, 100)):
-    pGWAS_random.manhattan_plot_subset(variants.positions, ax[i], index, index+100)
-    ax[i].axhline(y=8, color="black", lw=0.5)
-fig.savefig('manhattan_zooms_random.png', bbox_inches='tight')#
+# fig, ax = plt.subplots(10,figsize=(15,30))
+# for i,index in enumerate(range(20000,21000, 100)):
+#     pGWAS_random.manhattan_plot_subset(variants.positions, ax[i], index, index+100)
+#     ax[i].axhline(y=8, color="black", lw=0.5)
+# fig.savefig('manhattan_zooms_random.png', bbox_inches='tight')#
 
 
 #-----------------------
 # test if more causal SNPs bring down p-values
 #-----------------------
 
-# allele_freq = [0.005,0.01, 0.02, 0.05, 0.1, 0.2,0.5]
-num_freqs = 5
-fig, ax = plt.subplots(num_freqs,figsize=(15,15))
+# # allele_freq = [0.005,0.01, 0.02, 0.05, 0.1, 0.2,0.5]
+# num_freqs = 5
+# fig, ax = plt.subplots(num_freqs,figsize=(15,15))
 
-offset = np.floor(len(variants.allele_frequencies)/num_freqs)
-ordered_allele_freq = np.argsort(variants.allele_frequencies)
-for i in range(num_freqs):
-    index = int(offset + i*offset)
-    variant = list(trees.variants(samples=samp_ids))[ordered_allele_freq[index]]
-    freq = variants.allele_frequencies[ordered_allele_freq[index]]
-    pheno = pt.Phenotypes("allele freq=" + str(freq) + ", beta=0.79, with noise" , trees)
-    pheno.simulateEnvNoise(sd_environmental_noise=1)
-    pheno.simulateFixed([variant], [0.79])
+# offset = np.floor(len(variants.allele_frequencies)/num_freqs)
+# ordered_allele_freq = np.argsort(variants.allele_frequencies)
+# for i in range(num_freqs):
+#     index = int(offset + i*offset)
+#     variant = list(trees.variants(samples=samp_ids))[ordered_allele_freq[index]]
+#     freq = variants.allele_frequencies[ordered_allele_freq[index]]
+#     pheno = pt.Phenotypes("allele freq=" + str(freq) + ", beta=0.79, with noise" , trees)
+#     pheno.simulateEnvNoise(sd_environmental_noise=1)
+#     pheno.simulateFixed([variant], [0.79])
 
-    pGWAS = gwas.TpGWAS(ts_object=trees, phenotypes=pheno)
-    pGWAS.OLS()
+#     pGWAS = gwas.TpGWAS(ts_object=trees, phenotypes=pheno)
+#     pGWAS.OLS()
     
-    pGWAS.manhattan_plot(variants.variant_positions, ax[i])
+#     pGWAS.manhattan_plot(variants.variant_positions, ax[i])
 
 
-fig.tight_layout()
-fig.set_size_inches(10, 20)
-fig.show()
-fig.savefig('sims_alleleFreq_africans_withNoise.png', bbox_inches='tight')# 
+# fig.tight_layout()
+# fig.set_size_inches(10, 20)
+# fig.show()
+# fig.savefig('sims_alleleFreq_africans_withNoise.png', bbox_inches='tight')# 
 
 
 

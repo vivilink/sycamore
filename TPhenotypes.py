@@ -7,6 +7,7 @@ Created on Mon Aug 16 17:52:46 2021
 """
 
 import numpy as np
+import pandas as pd
 
 
 class Phenotypes:
@@ -16,7 +17,6 @@ class Phenotypes:
         self.N = num_inds
         self.y = np.zeros(self.N)
         self.betas = [0] * self.num_variants
-        print(len(self.betas))
         self.causal_variants = []
         self.causal_betas = []
         self.causal_power = []
@@ -27,8 +27,12 @@ class Phenotypes:
         
         print("created '" + self.name + "' phenotype object")
         
+    def returnRandomState(self, random):
+        print(random.random.get_state()[1][0])
+        print(random.random.uniform(0,1,1))
+       
         
-    def simulateEnvNoise(self, sd_environmental_noise):
+    def simulateEnvNoise(self, sd_environmental_noise, random):
         """       
         simulate random noise around zero
         
@@ -41,7 +45,7 @@ class Phenotypes:
         -------
         None.
         """
-        self.y = np.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
+        self.y = random.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
         self.filled = True
 
     def simulateFixed(self, causal_variants, causal_variant_indeces, betas):
@@ -73,7 +77,7 @@ class Phenotypes:
             self.causal_power.append(betas[v]**2 * allele_freq * (1-allele_freq))
             self.causal_variant_indeces = causal_variant_indeces
         
-    def simulateUniform(self, variants, prop_causal_mutations, sd_beta_causal_mutations, mean_beta_causal_mutation = 0):
+    def simulateUniform(self, variants, prop_causal_mutations, sd_beta_causal_mutations, random, mean_beta_causal_mutation = 0):
         """
         Parameters
         ----------
@@ -89,13 +93,16 @@ class Phenotypes:
         None.
 
         """
+        
+
         #add phenotypic effect to mutations that are uniformly distributed
         for v, var in enumerate(variants.variants): 
-            r = np.random.uniform(0,1)
+            r = random.random.uniform(0,1,1)
+
             if(r < prop_causal_mutations):
                                 
                 #define beta
-                beta = np.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)[0]
+                beta = random.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)[0]
                 self.betas[v] = beta
                 
                 #simulate phenotype
@@ -114,30 +121,34 @@ class Phenotypes:
         
     
     def findCausalTrees(self, ts_object):
-        p = 0 
-        t = 0
-        tree = ts_object.first()
-        while p < len(self.causal_variants):    
-            # # Debugging:
-            # #------------
-            # print("p: " + str(p))
-            # print("tree index " + str(t))
-            # print("causal_variants[p] + " + str(self.causal_variants[p]))
-            # print("tree.interval.left " + str(tree.interval.left))
-            # print("tree.interval.right " + str(tree.interval.right)) 
-            # print("trees.at(var.site.position).get_index() " + str(ts_object.at(self.causal_variants[p].site.position).get_index()))
+        for v in self.causal_variants:
+            causal_tree = ts_object.at(v.site.position)
+            self.causal_tree_indeces.append(causal_tree.get_index())
+        
+        # p = 0 
+        # t = 0
+        # tree = ts_object.first()
+        # while p < len(self.causal_variants):    
+        #     # # Debugging:
+        #     # #------------
+        #     # print("p: " + str(p))
+        #     # print("tree index " + str(t))
+        #     # print("causal_variants[p] + " + str(self.causal_variants[p]))
+        #     # print("tree.interval.left " + str(tree.interval.left))
+        #     # print("tree.interval.right " + str(tree.interval.right)) 
+        #     # print("trees.at(var.site.position).get_index() " + str(ts_object.at(self.causal_variants[p].site.position).get_index()))
                 
-            if tree.interval.left <= self.causal_variants[p].site.position <= tree.interval.right:        
-                #save causal tree
-                self.causal_tree_indeces.append(tree.get_index())
-                p += 1
+        #     if tree.interval.left <= self.causal_variants[p].site.position <= tree.interval.right:        
+        #         #save causal tree
+        #         self.causal_tree_indeces.append(tree.get_index())
+        #         p += 1
                 
-            elif self.causal_variants[p].site.position < tree.interval.left:
-                p += 1        
+        #     elif self.causal_variants[p].site.position < tree.interval.left:
+        #         p += 1        
             
-            elif self.causal_variants[p].site.position > tree.interval.right:
-                tree.next()
-                t += 1
+        #     elif self.causal_variants[p].site.position > tree.interval.right:
+        #         tree.next()
+        #         t += 1
 
         
     def diffs(self):
@@ -145,3 +156,19 @@ class Phenotypes:
         rows = cols.T
         buffer = cols - rows
         return np.abs(buffer)
+    
+    def write_to_file_gcta(self):
+        """
+        write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value)
+
+        Returns
+        -------
+        None.
+
+        """
+    
+        tmp_pheno = pd.DataFrame()
+        tmp_pheno['1'] = np.arange(1,self.N+1)
+        tmp_pheno['2'] = tmp_pheno['1']
+        tmp_pheno['3'] = self.y        
+        tmp_pheno.to_csv("phenotypes.phen", sep=' ', index=False, header=False)
