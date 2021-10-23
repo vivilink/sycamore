@@ -48,7 +48,7 @@ class Phenotypes:
         self.y = random.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
         self.filled = True
 
-    def simulateFixed(self, causal_variants, causal_variant_indeces, betas):
+    def simulateFixed(self, variants, causal_variant_indeces, betas):
         """
         Simulate phenotypes based on predefined causal variant positions and effects
 
@@ -64,7 +64,7 @@ class Phenotypes:
         None.
 
         """
-        
+        causal_variants = variants[causal_variant_indeces]
         if(len(causal_variants) != len(betas)):
             raise ValueError("must provide equal number of causal variants and betas to simulate fixed phenotype")
         

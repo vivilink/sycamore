@@ -53,6 +53,7 @@ class TVariantsSamples(TVariants):
             
     def writeAlleleFreq(self, name):
         table = pd.DataFrame
+        table['variant_index'] = range(0, self.number)
         table['position'] = self.positions
         table['allele_freq'] = self.allele_frequencies
         
