@@ -52,11 +52,11 @@ class TVariantsSamples(TVariants):
             # for h in individuals.ind_assignment['haplotypes']:
             
     def writeAlleleFreq(self, name):
-        table = pd.DataFrame
-        table['variant_index'] = range(0, self.number)
+        table = pd.DataFrame()
+        table['variant_index'] = np.arange(self.number)
         table['position'] = self.positions
         table['allele_freq'] = self.allele_frequencies
         
-        table.write_csv(name + "_alleleFreq.csv", header=True, index=False)
+        table.to_csv(name + "_alleleFreq.csv", header=True, index=False)
         
         

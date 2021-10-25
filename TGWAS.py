@@ -14,7 +14,7 @@ import utils as ut
 import time
 import subprocess
 import pandas as pd
-
+import os
 
 
 class TGWAS:
@@ -55,12 +55,12 @@ class TpGWAS(TGWAS):
         self.p_values = np.empty(self.num_associations)
         # self.q_values = np.empty(self.num_associations)
         
-    def OLS(self, variants):
+    def OLS(self, variants, logfile):
         for v, variant in enumerate(variants.variants):
             self.p_values[v] = sm.OLS(self.phenotypes.y, sm.tools.add_constant(variant.genotypes)).fit().pvalues[1]
-        print("ran OLS for all variants of " + self.name)
+        logfile.info("Ran OLS for all variants of " + self.name)
         
-    def writeToFile(self, variants, name):
+    def writeToFile(self, variants, name, logfile):
         table = pd.DataFrame()
         table['start'] = variants.positions
         table['end'] = variants.positions
@@ -71,8 +71,11 @@ class TpGWAS(TGWAS):
         
         table.to_csv(name + "_variants.csv", index = False, header = True)
         
+        logfile.info("Wrote results from OLS to '" + name + "_variants.csv'")
+
+        
             
-    def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, size=1, n_snps_lowess = 0, *args):
+    def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, logfile, size=1, n_snps_lowess = 0, *args):
         """
         Parameters
         ----------
@@ -107,7 +110,7 @@ class TpGWAS(TGWAS):
             raise ValueError("data subset index cannot be larger than number of p-values")      
             
         q_values = -np.log10(self.p_values)
-        
+
         subplot.scatter(variant_positions[index_min:index_max], q_values[index_min:index_max], s=size, *args)
         subplot.set(xlabel='variant position', ylabel='q-value', title=self.phenotypes.name)
         for v, var in enumerate(self.phenotypes.causal_variants):
@@ -198,7 +201,7 @@ class TtGWAS(TGWAS):
         f.close()
         
         # create gcta input files, run gcta and parse output
-        exit_code = subprocess.call('/data/ARGWAS/argwas/run_gcta_REML.sh')
+        exit_code = subprocess.call(os.getcwd() + "/run_gcta_REML.sh")
         # TODO: locations of gcta and run_gcta_HE scripts only exist for me
 
         # read results
@@ -222,26 +225,26 @@ class TtGWAS(TGWAS):
             raise ValueError("tree index", tree.index, "produced negative p-value for SD Jackknife")
 
                 
-    def runCGTA_HE_one_tree(self, tree, N, start):        
+    def runCGTA_HE_one_tree(self, tree, N, start, out, logfile):        
         #log progress
         if tree.index % 100 == 0:
             end = time.time()
-            print("Ran HE for", tree.index, "trees in ", round(end-start), "s")
+            logfile.info("Ran HE for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
             
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, N)
         covariance = tree_obj.covariance(N)
-        with open('GRM_covariance.txt', 'w') as f:
+        with open('GRM_covariance_' + out + '.txt', 'w') as f:
             np.savetxt(f, covariance)
         f.close()
         
         # create gcta input files, run gcta and parse output
-        exit_code = subprocess.call('/data/ARGWAS/argwas/run_gcta_HE.sh')
+        exit_code = subprocess.call([os.getcwd() + "/run_gcta_HE.sh", out])
         # TODO: locations of gcta and run_gcta_HE scripts only exist for me
 
         # read results
-        HE_CP = pd.read_table("HE-CP_result.txt")
-        HE_SD = pd.read_table("HE-SD_result.txt")
+        HE_CP = pd.read_table("HE-CP_" + out + "_result.txt")
+        HE_SD = pd.read_table("HE-SD_" + out + "_result.txt")
         
         self.p_values_HECP_OLS[tree.index] = HE_CP["P_OLS"][1]
         if(HE_CP["P_OLS"][1] < 0):
@@ -266,16 +269,16 @@ class TtGWAS(TGWAS):
         for tree in ts_object.trees():
             self.runGCTA_REML_one_tree(tree, N, start)              
 
-    def runCGTA_HE(self, ts_object, N):        
-        self.phenotypes.write_to_file_gcta()        
+    def runCGTA_HE(self, ts_object, N, out, logfile):        
+        self.phenotypes.write_to_file_gcta(out)        
         
         start = time.time()
         for tree in ts_object.trees():
-            self.runCGTA_HE_one_tree(tree, N, start)            
+            self.runCGTA_HE_one_tree(tree, N, start, out, logfile)            
             
-    def writeToFile(self, ts_object, name):
+    def writeToFile(self, ts_object, name, logfile):
         table = pd.DataFrame()
-        table['start'] = ts_object.breakpoints(as_array=True)
+        table['start'] = ts_object.breakpoints(as_array=True)[0:self.num_associations] #otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
         table['end'] = table['start']
         table['p_values_HECP_OLS'] = self.p_values_HECP_OLS
         table['p_values_HECP_Jackknife'] = self.p_values_HECP_Jackknife
@@ -285,17 +288,19 @@ class TtGWAS(TGWAS):
         table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
         
         table.to_csv(name + "_trees.csv", index = False, header = True)
+        
+        logfile.info("Wrote results from HE to '" + name + "_trees.csv'")
 
             
 
-    def manhattan_plot(self, variant_positions, subplot, *args):
-        self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = self.p_values)    
+    def manhattan_plot(self, variant_positions, subplot, logfile, *args):
+        self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = self.p_values, logfile = logfile)    
 
     def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, title_supplement = "", *args):
         print("num associations",self.num_associations)
         self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = p_values, title_supplement = title_supplement)    
         
-    def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, p_values, title_supplement = "", size=1, n_snps_lowess = 0, *args):
+    def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, p_values, logfile, title_supplement = "", size=1, n_snps_lowess = 0, *args):
         """
         Parameters
         ----------

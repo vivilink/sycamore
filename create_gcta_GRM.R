@@ -1,6 +1,8 @@
 library("plinkFile")
-grm <- read.table("/data/ARGWAS/argwas/GRM_covariance.txt", header=F)
-saveGRM(pfx="GRM_covariance", grm, vcm = NULL, fid = ".")
+args = commandArgs(trailingOnly=TRUE)
+
+grm <- read.table(paste("/data/ARGWAS/argwas/GRM_covariance_", args[1], ".txt", sep=''), header=F)
+saveGRM(pfx=paste("GRM_covariance_", args[1], sep=''), grm, vcm = NULL, fid = ".")
 
 # m <-matrix(ncol=500, nrow=500)
 # for(v in 1:length(grm)){

@@ -11,7 +11,7 @@ import pandas as pd
 
 
 class Phenotypes:
-    def __init__(self, name, variants, num_inds):
+    def __init__(self, name, variants, num_inds, logfile):
         self.name = name
         self.num_variants = variants.number
         self.N = num_inds
@@ -25,7 +25,7 @@ class Phenotypes:
         self.causal_tree_indeces = []
         self.filled = False
         
-        print("created '" + self.name + "' phenotype object")
+        logfile.info("created '" + self.name + "' phenotype object")
         
     def returnRandomState(self, random):
         print(random.random.get_state()[1][0])
@@ -48,7 +48,7 @@ class Phenotypes:
         self.y = random.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
         self.filled = True
 
-    def simulateFixed(self, variants, causal_variant_indeces, betas):
+    def simulateFixed(self, variants, causal_variant_indeces, betas, logfile):
         """
         Simulate phenotypes based on predefined causal variant positions and effects
 
@@ -64,18 +64,22 @@ class Phenotypes:
         None.
 
         """
-        causal_variants = variants[causal_variant_indeces]
+        causal_variants = [variants.variants[i] for i in causal_variant_indeces]
         if(len(causal_variants) != len(betas)):
             raise ValueError("must provide equal number of causal variants and betas to simulate fixed phenotype")
-        
+            
+        print(variants.allele_frequencies[0:10])
+                
         for v, var in enumerate(causal_variants):
             self.betas[v] = betas[v]            
             self.y[var.genotypes == 1] += betas[v]
             self.causal_variants.append(var)
             self.causal_betas.append(betas[v])
             allele_freq = sum(var.genotypes) / len(var.genotypes)
-            self.causal_power.append(betas[v]**2 * allele_freq * (1-allele_freq))
-            self.causal_variant_indeces = causal_variant_indeces
+            self.causal_power.append(betas[v]**2 * allele_freq * (1-allele_freq))            
+            self.causal_variant_indeces.append(causal_variant_indeces[v])
+            
+            logfile.info("Simulated causal variant at index " + str(causal_variant_indeces[v]) + " with beta " + str(betas[v]) + " and allele freq " + str(allele_freq) + " resulting in a power of " + str(betas[v]**2 * allele_freq * (1-allele_freq)))
         
     def simulateUniform(self, variants, prop_causal_mutations, sd_beta_causal_mutations, random, mean_beta_causal_mutation = 0):
         """
@@ -157,7 +161,7 @@ class Phenotypes:
         buffer = cols - rows
         return np.abs(buffer)
     
-    def write_to_file_gcta(self):
+    def write_to_file_gcta(self, out):
         """
         write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value)
 
@@ -171,4 +175,4 @@ class Phenotypes:
         tmp_pheno['1'] = np.arange(1,self.N+1)
         tmp_pheno['2'] = tmp_pheno['1']
         tmp_pheno['3'] = self.y        
-        tmp_pheno.to_csv("phenotypes.phen", sep=' ', index=False, header=False)
+        tmp_pheno.to_csv("phenotypes_" + out + ".phen", sep=' ', index=False, header=False)
