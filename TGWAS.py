@@ -300,8 +300,8 @@ class TtGWAS(TGWAS):
     def manhattan_plot(self, variant_positions, subplot, logfile, *args):
         self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = self.p_values, logfile = logfile)    
 
-    def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, title_supplement = "", *args):
-        print("num associations",self.num_associations)
+    def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, logfile, title_supplement = "", *args):
+        logfile.info("Plotting " + str(self.num_associations) + " associations")
         self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = p_values, title_supplement = title_supplement)    
         
     def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, p_values, logfile, title_supplement = "", size=1, n_snps_lowess = 0, *args):

@@ -41,10 +41,10 @@ parser.add_argument('--out', dest="out", required=True,
                     help = 'Prefix of all output files')
 parser.add_argument('--seed', dest="seed", default = datetime.datetime.now().hour*10000+datetime.datetime.now().minute*100+datetime.datetime.now().second, 
                     help='Set seed of random generator. Default is time stamp.')
+# parser.add_argument('--verbose', dest="verbose", 
+#                     help="Write output to screen")
 parser.add_argument('--tree_file', dest = "tree_file", 
                     help = "File of simulated trees in tskit format")
-
-
 
 #simulating trees
 parser.add_argument('--sim_tree_simulator', dest = "sim_tree_simulator", default = "stdPopsim", choices=["stdPopsim"],
@@ -92,7 +92,6 @@ print(args)
 #-----------------------------
 # initialize logfile
 #-----------------------------
-
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -148,6 +147,8 @@ if args.task == "simulate":
 #-----------------------
 
 if args.task == "associate":
+    
+    logger.info("Reading simulations from " + args.tree_file)
     trees = tskit.load(args.tree_file)
     samp_ids = trees.samples()
     N = len(samp_ids)
@@ -177,6 +178,11 @@ if args.task == "associate":
     # run association tests and plot
     #--------------------------------
     
+    if args.ass_method == "both":
+        logger.info("Running both GWAS and ARGWAS for associating")
+    else:
+        logger.info("Running " + args.ass_method + " for associating")
+    
     if args.ass_method == "GWAS" or args.ass_method == "both":
         pGWAS = gwas.TpGWAS(phenotypes=pheno)
         pGWAS.OLS(variants, logger)
@@ -189,15 +195,18 @@ if args.task == "associate":
         fig.savefig(args.out + '_OLS_GWAS.png', bbox_inches='tight')# 
 
     if args.ass_method == "ARGWAS" or args.ass_method == "both":
+        
+        pheno.findCausalTrees(trees)
+        
         tGWAS = gwas.TtGWAS(trees, pheno)
         tGWAS.runCGTA_HE(trees, N, args.out, logger)
         tGWAS.writeToFile(trees, args.out, logger)
 
         fig, ax = plt.subplots(5,figsize=(30,30))
-        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_Jackknife, logger, ax[1], title_supplement = "HECP_Jackknife")
-        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_OLS, ax[2], logger, title_supplement = "HECP_OLS")
-        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_Jackknife, logger, ax[3], title_supplement = "HESD_Jackknife")
-        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_OLS, logger, ax[4], title_supplement = "HESD_OLS")
+        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_Jackknife, subplot=ax[1], logfile=logger, title_supplement = "HECP_Jackknife")
+        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_OLS, subplot=ax[2],  logfile=logger, title_supplement = "HECP_OLS")
+        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_Jackknife, subplot=ax[3], logfile=logger, title_supplement = "HESD_Jackknife")
+        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_OLS, ax[4], logfile=logger, title_supplement = "HESD_OLS")
         
         fig.tight_layout()
         fig.set_size_inches(30, 30)
