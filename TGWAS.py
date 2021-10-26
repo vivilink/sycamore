@@ -15,7 +15,7 @@ import time
 import subprocess
 import pandas as pd
 import os
-
+import sys
 
 class TGWAS:
     
@@ -109,7 +109,9 @@ class TpGWAS(TGWAS):
         if index_max > len(self.p_values) or index_min > len(self.p_values):
             raise ValueError("data subset index cannot be larger than number of p-values")      
             
-        q_values = -np.log10(self.p_values)
+        p_values = self.p_values
+        p_values[(np.where(p_values == 0.0))] = np.nextafter(0,1)
+        q_values = -np.log10(p_values)
 
         subplot.scatter(variant_positions[index_min:index_max], q_values[index_min:index_max], s=size, *args)
         subplot.set(xlabel='variant position', ylabel='q-value', title=self.phenotypes.name)
@@ -188,7 +190,7 @@ class TtGWAS(TGWAS):
             # beta_ste = lmm.getBetaSNPste()
             # self.lrt[tree.index] = lmm.getLRT() #likelihood ratio
     
-    def runGCTA_REML_one_tree(self, tree, N, start):  
+    def runGCTA_REML_one_tree(self, tree, N, start, out, logfile):  
         if tree.index % 100 == 0:
             end = time.time()
             print("Ran REML for", tree.index, "trees in ", round(end-start), "s")
@@ -199,14 +201,15 @@ class TtGWAS(TGWAS):
         with open('GRM_covariance.txt', 'w') as f:
             np.savetxt(f, covariance)
         f.close()
-        
+                
         # create gcta input files, run gcta and parse output
-        exit_code = subprocess.call(os.getcwd() + "/run_gcta_REML.sh")
+        exit_code = subprocess.call("run_gcta_REML.sh")
+        # exit_code = subprocess.call(os.getcwd() + "/run_gcta_REML.sh")
         # TODO: locations of gcta and run_gcta_HE scripts only exist for me
 
         # read results
-        HE_CP = pd.read_table("HE-CP_result.txt")
-        HE_SD = pd.read_table("HE-SD_result.txt")
+        HE_CP = pd.read_table(out + "_HE-CP_result.txt")
+        HE_SD = pd.read_table(out + "_HE-SD_result.txt")
         
         self.p_values_HECP_OLS[tree.index] = HE_CP["P_OLS"][1]
         if(HE_CP["P_OLS"][1] < 0):
@@ -234,17 +237,18 @@ class TtGWAS(TGWAS):
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, N)
         covariance = tree_obj.covariance(N)
-        with open('GRM_covariance_' + out + '.txt', 'w') as f:
+        with open(out + "_GRM_covariance.txt", 'w') as f:
             np.savetxt(f, covariance)
         f.close()
         
         # create gcta input files, run gcta and parse output
-        exit_code = subprocess.call([os.getcwd() + "/run_gcta_HE.sh", out])
+        exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_HE.sh", out])
+        # exit_code = subprocess.call([os.getcwd() + "/run_gcta_HE.sh", out])
         # TODO: locations of gcta and run_gcta_HE scripts only exist for me
 
         # read results
-        HE_CP = pd.read_table("HE-CP_" + out + "_result.txt")
-        HE_SD = pd.read_table("HE-SD_" + out + "_result.txt")
+        HE_CP = pd.read_table(out + "_HE-CP_result.txt")
+        HE_SD = pd.read_table(out + "_HE-SD_result.txt")
         
         self.p_values_HECP_OLS[tree.index] = HE_CP["P_OLS"][1]
         if(HE_CP["P_OLS"][1] < 0):
@@ -262,12 +266,12 @@ class TtGWAS(TGWAS):
         if(HE_SD["P_Jackknife"][1] < 0):
             raise ValueError("tree index", tree.index, "produced negative p-value for SD Jackknife")
 
-    def runGCTA_REML(self, ts_object, N):        
-        self.phenotypes.write_to_file_gcta()        
+    def runGCTA_REML(self, ts_object, N, out, logfile):        
+        self.phenotypes.write_to_file_gcta(out)        
         
         start = time.time()
         for tree in ts_object.trees():
-            self.runGCTA_REML_one_tree(tree, N, start)              
+            self.runGCTA_REML_one_tree(tree, N, start, out, logfile)              
 
     def runCGTA_HE(self, ts_object, N, out, logfile):        
         self.phenotypes.write_to_file_gcta(out)        

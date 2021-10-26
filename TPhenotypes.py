@@ -175,4 +175,4 @@ class Phenotypes:
         tmp_pheno['1'] = np.arange(1,self.N+1)
         tmp_pheno['2'] = tmp_pheno['1']
         tmp_pheno['3'] = self.y        
-        tmp_pheno.to_csv("phenotypes_" + out + ".phen", sep=' ', index=False, header=False)
+        tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)

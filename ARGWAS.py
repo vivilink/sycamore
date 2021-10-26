@@ -17,6 +17,8 @@ import TSimulator as tsim
 import datetime
 import argparse
 import logging
+import os
+import sys
 # import statsmodels.api as sm
 # import pickle
 # import tqdm
@@ -26,7 +28,7 @@ import logging
 # import time
 # import sys
 
-
+os.chdir(os.path.dirname(sys.argv[0]))
 
 #-----------------------------
 # initialize arguments
@@ -178,7 +180,7 @@ if args.task == "associate":
     if args.ass_method == "GWAS" or args.ass_method == "both":
         pGWAS = gwas.TpGWAS(phenotypes=pheno)
         pGWAS.OLS(variants, logger)
-        pGWAS.writeToFile(variants, args.out)
+        pGWAS.writeToFile(variants, args.out, logger)
         
         fig, ax = plt.subplots(1,figsize=(10,10))
         pGWAS.manhattan_plot(variants.positions, ax, logger)
@@ -192,7 +194,6 @@ if args.task == "associate":
         tGWAS.writeToFile(trees, args.out, logger)
 
         fig, ax = plt.subplots(5,figsize=(30,30))
-        tGWAS.manhattan_plot(variants.positions, ax, logger)
         tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_Jackknife, logger, ax[1], title_supplement = "HECP_Jackknife")
         tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_OLS, ax[2], logger, title_supplement = "HECP_OLS")
         tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_Jackknife, logger, ax[3], title_supplement = "HESD_Jackknife")
@@ -201,6 +202,6 @@ if args.task == "associate":
         fig.tight_layout()
         fig.set_size_inches(30, 30)
         fig.show()
-        fig.savefig('sims/sims_16_HE.png', bbox_inches='tight')# 
+        fig.savefig(args.out + '_HE_ARGWAS.png', bbox_inches='tight')# 
  
 
