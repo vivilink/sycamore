@@ -57,13 +57,13 @@ pty = parser.add_argument_group('phenotypes')
 #     parser.error("--prox requires --lport and --rport.")
 parser.add_argument('--name', dest = "name", 
                     help = "Name of phenotype and GWAS object, will be used for headers in plots")
-pty.add_argument('--pty_sd_envNoise', dest = "pty_sd_envNoise", default = 0, 
+pty.add_argument('--pty_sd_envNoise', type=float, dest = "pty_sd_envNoise", default = 0, 
                     help = "Std. dev. for environmental noise. If set to 0, no noise will be simulated.")
 pty.add_argument('--pty_sim_method', dest = "pty_sim_method", choices=['uniform', 'fixed'],
                     help = "Phenotype simulations method")
-pty.add_argument('--pty_prop_causal_mutations', dest = "pty_prop_causal_mutations", default = 0, 
+pty.add_argument('--pty_prop_causal_mutations', type=float, dest = "pty_prop_causal_mutations", default = 0, 
                     help = "Proportion of causal mutations to simulate at uniformly distributed positions if pt.sim_method is set to 'uniform'. If set to 0, there will be no causal mutations simulated randomly")
-pty.add_argument('--pty_sd_beta_causal_mutations', dest = "pty_sd_beta_causal_mutations", 
+pty.add_argument('--pty_sd_beta_causal_mutations', type=float, dest = "pty_sd_beta_causal_mutations", 
                     help = "Std. dev. for betas of causal mutations if pty_sim_method is set to 'uniform'.")
 # pty.add_argument('--pty_fixed_betas', dest = "pty_fixed_betas", 
 #                     help = "Fixed betas of causal mutations if pt.sim_method is set to 'fixed_variants'.")
@@ -80,9 +80,9 @@ assoc.add_argument('--ass_method', dest = "ass_method", choices = ["GWAS", "ARGW
                    help = "Either run only GWAS, ARGWAS or both")
 
 
-#limit data
-parser.add_argument('--tree_interval', nargs='+',
-                    help = "Indeces of variants that should be simulated as causal if pty_sim_method is set to 'fixed'.")
+# #limit data
+# parser.add_argument('--tree_interval', nargs='+',
+#                     help = "Indeces of variants that should be simulated as causal if pty_sim_method is set to 'fixed'.")
 
 
 args = parser.parse_args()
