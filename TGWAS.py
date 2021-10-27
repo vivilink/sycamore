@@ -291,11 +291,22 @@ class TtGWAS(TGWAS):
         table['causal'] = np.repeat("FALSE", self.num_associations)
         table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
         
-        table.to_csv(name + "_trees.csv", index = False, header = True)
+        table.to_csv(name + "_trees_results.csv", index = False, header = True)        
+        logfile.info("Wrote results from HE to '" + name + "_trees_results.csv'")
         
-        logfile.info("Wrote results from HE to '" + name + "_trees.csv'")
-
-            
+        stats = pd.DataFrame()
+        stats['min_p_value_HECP_OLS'] = min(self.p_values_HECP_OLS)
+        stats['min_p_value_HECP_Jackknife'] = min(self.p_values_HECP_Jackknife)
+        stats['min_p_value_HESD_OLS'] = min(self.p_values_HESD_OLS)
+        stats['min_p_value_HESD_Jackknife'] = min(self.p_values_HESD_Jackknife)
+        
+        stats['max_p_value_HECP_OLS'] = max(self.p_values_HECP_OLS)
+        stats['max_p_value_HECP_Jackknife'] = max(self.p_values_HECP_Jackknife)
+        stats['max_p_value_HESD_OLS'] = max(self.p_values_HESD_OLS)
+        stats['max_p_value_HESD_Jackknife'] = max(self.p_values_HESD_Jackknife)
+ 
+        table.to_csv(name + "_trees_stats.csv", index = False, header = True)        
+        logfile.info("Wrote stats from HE to '" + name + "_trees_stats.csv'")           
 
     def manhattan_plot(self, variant_positions, subplot, logfile, *args):
         self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = self.p_values, logfile = logfile)    
