@@ -39,7 +39,7 @@ parser.add_argument('--task', dest="task", required=True,
                     help = 'The task to be executed (simulate or associate)')
 parser.add_argument('--out', dest="out", required=True,
                     help = 'Prefix of all output files')
-parser.add_argument('--seed', dest="seed", default = datetime.datetime.now().hour*10000+datetime.datetime.now().minute*100+datetime.datetime.now().second, 
+parser.add_argument('--seed', dest="seed", type=int, default = datetime.datetime.now().hour*10000+datetime.datetime.now().minute*100+datetime.datetime.now().second, 
                     help='Set seed of random generator. Default is time stamp.')
 # parser.add_argument('--verbose', dest="verbose", 
 #                     help="Write output to screen")
