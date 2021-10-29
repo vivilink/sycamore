@@ -307,7 +307,7 @@ class TtGWAS(TGWAS):
         stats['max_p_value_HESD_OLS'] = max(self.p_values_HESD_OLS)
         stats['max_p_value_HESD_Jackknife'] = max(self.p_values_HESD_Jackknife)
  
-        table.to_csv(name + "_trees_stats.csv", index = False, header = True)        
+        stats.to_csv(name + "_trees_stats.csv", index = False, header = True)        
         logfile.info("Wrote stats from HE to '" + name + "_trees_stats.csv'")           
 
     def manhattan_plot(self, variant_positions, subplot, logfile, *args):
