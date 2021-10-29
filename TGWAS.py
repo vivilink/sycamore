@@ -9,7 +9,7 @@ import numpy as np
 import statsmodels.api as sm
 import scipy
 import TTree as tt
-from limix_lmm.lmm_core import LMMCore
+# from limix_lmm.lmm_core import LMMCore
 import utils as ut
 import time
 import subprocess
@@ -170,25 +170,27 @@ class TtGWAS(TGWAS):
                 raise ValueError("p-value is negative")
             
     def runLimix(self, ts_object, N, y, F, random):   
-        G = np.zeros(N).reshape(N,1) 
-        # G = np.random.binomial(1, 0.5, N).reshape(N,1)
-        # Inter = np.zeros(N).reshape(N,1)
-        Inter = None
+        raise ValueError("Limix not currently implemented")
+        
+    #     G = np.zeros(N).reshape(N,1) 
+    #     # G = np.random.binomial(1, 0.5, N).reshape(N,1)
+    #     # Inter = np.zeros(N).reshape(N,1)
+    #     Inter = None
 
-        for tree in ts_object.trees():
-            # if tree.index == ts_object.num_trees-1:
-            #     continue
-            # if tree.index % 1000 == 0:
-            print("tree index: ",tree.index)
-            tree_obj = tt.TTree(tree, N)
-            lmm = LMMCore(y, F, tree_obj.solving_function)    
-            lmm.process(G, Inter) #this needs step param to produce only one p-value per tree. for this i need the number of sites per tree, or just use 1?
-            self.p_values[tree.index] = lmm.getPv()
-            print("p-value", self.p_values[tree.index])
-            # raise ValueError("printing covariance")
-            # beta = lmm.getBetaSNP()
-            # beta_ste = lmm.getBetaSNPste()
-            # self.lrt[tree.index] = lmm.getLRT() #likelihood ratio
+    #     for tree in ts_object.trees():
+    #         # if tree.index == ts_object.num_trees-1:
+    #         #     continue
+    #         # if tree.index % 1000 == 0:
+    #         print("tree index: ",tree.index)
+    #         tree_obj = tt.TTree(tree, N)
+    #         lmm = LMMCore(y, F, tree_obj.solving_function)    
+    #         lmm.process(G, Inter) #this needs step param to produce only one p-value per tree. for this i need the number of sites per tree, or just use 1?
+    #         self.p_values[tree.index] = lmm.getPv()
+    #         print("p-value", self.p_values[tree.index])
+    #         # raise ValueError("printing covariance")
+    #         # beta = lmm.getBetaSNP()
+    #         # beta_ste = lmm.getBetaSNPste()
+    #         # self.lrt[tree.index] = lmm.getLRT() #likelihood ratio
     
     def runGCTA_REML_one_tree(self, tree, N, start, out, logfile):  
         if tree.index % 100 == 0:
@@ -313,7 +315,7 @@ class TtGWAS(TGWAS):
 
     def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, logfile, title_supplement = "", *args):
         logfile.info("Plotting " + str(self.num_associations) + " associations")
-        self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = p_values, title_supplement = title_supplement)    
+        self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = p_values, logfile = logfile, title_supplement = title_supplement)    
         
     def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, p_values, logfile, title_supplement = "", size=1, n_snps_lowess = 0, *args):
         """

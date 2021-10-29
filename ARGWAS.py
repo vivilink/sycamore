@@ -8,7 +8,6 @@ Created on Mon Aug  9 16:57:18 2021
 # import numpy as np
 import tskit
 import matplotlib.pyplot as plt
-import random
 import TPhenotypes as pt
 import TGWAS as gwas
 import TVariants as tvar
@@ -87,7 +86,6 @@ assoc.add_argument('--ass_method', dest = "ass_method", choices = ["GWAS", "ARGW
 
 args = parser.parse_args()
 
-print(args)
 
 #-----------------------------
 # initialize logfile
@@ -107,6 +105,9 @@ logger.info("writing output files with prefix '" + args.out + "'")
 file_handler = logging.FileHandler(args.out + ".log")
 logger.addHandler(logging.StreamHandler())
 logger.addHandler(file_handler)
+
+logger.info(str(args))
+
 
 #-----------------------------
 # initialize random generator
@@ -166,12 +167,15 @@ if args.task == "associate":
     # create phenotypes
     #--------------------------------
     
-    
     pheno = pt.Phenotypes(args.name, variants, N, logger)
     pheno.simulateEnvNoise(args.pty_sd_envNoise, r)
+    logger.info("Simulating environmental noise with sd " + str(args.pty_sd_envNoise))
     if args.pty_sim_method == 'uniform':
+        logger.info("Simulating phenotypes based on uniformly chosen variants with prop_causal_mutations: " + str(args.pty_prop_causal_mutations) + " and sd_beta_causal_mutations: " + str(args.pty_sd_beta_causal_mutations)) 
         pheno.simulateUniform(variants, prop_causal_mutations=args.pty_prop_causal_mutations, sd_beta_causal_mutations=args.pty_sd_beta_causal_mutations, random=r)
+ 
     elif args.pty_sim_method == 'fixed':
+        logger.info("Simulating phenotypes based on the following indeces: " + str(args.pty_fixed_variant_indeces) + " and the following betas: " + str(args.pty_fixed_betas)) 
         pheno.simulateFixed(variants, args.pty_fixed_variant_indeces, args.pty_fixed_betas, logger)
 
     #--------------------------------
