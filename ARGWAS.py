@@ -58,20 +58,18 @@ parser.add_argument('--name', dest = "name",
                     help = "Name of phenotype and GWAS object, will be used for headers in plots")
 pty.add_argument('--pty_sd_envNoise', type=float, dest = "pty_sd_envNoise", default = 0, 
                     help = "Std. dev. for environmental noise. If set to 0, no noise will be simulated.")
-pty.add_argument('--pty_sim_method', dest = "pty_sim_method", choices=['uniform', 'fixed'],
+pty.add_argument('--pty_sim_method', dest = "pty_sim_method", choices=['uniform', 'fixed', 'singleTyped', 'singleUntyped'],
                     help = "Phenotype simulations method")
 pty.add_argument('--pty_prop_causal_mutations', type=float, dest = "pty_prop_causal_mutations", default = 0, 
                     help = "Proportion of causal mutations to simulate at uniformly distributed positions if pt.sim_method is set to 'uniform'. If set to 0, there will be no causal mutations simulated randomly")
 pty.add_argument('--pty_sd_beta_causal_mutations', type=float, dest = "pty_sd_beta_causal_mutations", 
                     help = "Std. dev. for betas of causal mutations if pty_sim_method is set to 'uniform'.")
-# pty.add_argument('--pty_fixed_betas', dest = "pty_fixed_betas", 
-#                     help = "Fixed betas of causal mutations if pt.sim_method is set to 'fixed_variants'.")
-# pty.add_argument('--pty_fixed_variant_indeces', dest = "pty_fixed_variant_indeces", 
-#                     help = "Indeces of variants that should be simulated as causal if pty_sim_method is set to 'fixed'.")
 parser.add_argument('--pty_fixed_betas', nargs='+', type=float, 
                     help = "Fixed betas of causal mutations if pt.sim_method is set to 'fixed_variants'.")
 parser.add_argument('--pty_fixed_variant_indeces', nargs='+', type=int,
                     help = "Indeces of variants that should be simulated as causal if pty_sim_method is set to 'fixed'.")
+parser.add_argument('--single_variant_af', type=float,
+                    help = "Simulate a single, central causal variant that is typed. If there is no such variant in the given range, will search for one with an allele frequency that is close.")
 
 #run associations
 assoc = parser.add_argument_group('associations')
@@ -79,7 +77,13 @@ assoc.add_argument('--ass_method', dest = "ass_method", choices = ["GWAS", "ARGW
                    help = "Either run only GWAS, ARGWAS or both")
 
 
-# #limit data
+#limit data
+parser.add_argument('--min_allele_freq', type=float, default=0.01, 
+                    help = "Minimum frequency an allele needs to have to be typed")
+parser.add_argument('--max_allele_freq', type=float, default=1, 
+                    help = "Maximum frequency an allele needs to have to be typed")
+parser.add_argument('--prop_typed_variants', type=float, default = 1, 
+                    help = "Proportion of variants that are typed (out of the ones that pass the frequency filter).")
 # parser.add_argument('--tree_interval', nargs='+',
 #                     help = "Indeces of variants that should be simulated as causal if pty_sim_method is set to 'fixed'.")
 
@@ -135,8 +139,8 @@ if args.task == "simulate":
         samp_ids = trees.samples()
         N = len(samp_ids)
         inds = tind.Individuals(2, N)
-        variants = tvar.TVariantsSamples(trees, samp_ids, min_allele_freq = 0.01, max_allele_freq = 1)
-        variants.writeAlleleFreq(args.out)
+        variants = tvar.TVariants(trees, samp_ids)
+        variants.writeVariantInfo(trees, samp_ids, args.out)
         
     else:
         logger.error("use of any simulator besides stdPopSim not tested")
@@ -159,7 +163,8 @@ if args.task == "associate":
     #--------------------------------
     
     inds = tind.Individuals(2, N)
-    variants = tvar.TVariantsSamples(trees, samp_ids, 0.01, 1)
+    variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq, args.prop_typed_variants, r)
+    variants.writeVariantInfo(args.out)
     # variants.fill_diploidGenotypes(samp_ids)
 
   
@@ -175,8 +180,29 @@ if args.task == "associate":
         pheno.simulateUniform(variants, prop_causal_mutations=args.pty_prop_causal_mutations, sd_beta_causal_mutations=args.pty_sd_beta_causal_mutations, random=r)
  
     elif args.pty_sim_method == 'fixed':
-        logger.info("Simulating phenotypes based on the following indeces: " + str(args.pty_fixed_variant_indeces) + " and the following betas: " + str(args.pty_fixed_betas)) 
+        if args.pty_fixed_betas == None:
+            raise ValueError("No beta values provided for phenotype 'singleUntyped'")
+
+        logger.info("- Simulating phenotypes based on the following indeces: " + str(args.pty_fixed_variant_indeces) + " and the following betas: " + str(args.pty_fixed_betas)) 
         pheno.simulateFixed(variants, args.pty_fixed_variant_indeces, args.pty_fixed_betas, logger)
+        
+    elif args.pty_sim_method == 'singleTyped':
+        if args.pty_fixed_betas == None:
+            raise ValueError("No beta values provided for phenotype 'singleUntyped'")
+            
+        var_index = variants.findVariant(typed=True, freq = args.single_variant_af, interval = [49461796, 49602827] , logfile=logger)
+        logger.info("- Simulating a phenotypes based on the following typed variant index: " + str(var_index) + " at position " +  str(variants.info['position'][var_index]) + " with allele freq " + str(variants.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
+        pheno.simulateFixed(variants, [var_index], args.pty_fixed_betas, logger)
+
+        
+    elif args.pty_sim_method == 'singleUntyped':
+        if args.pty_fixed_betas == None:
+            raise ValueError("No beta values provided for phenotype 'singleUntyped'")
+            
+        var_index = variants.findVariant(typed=False, freq = args.single_variant_af, interval = [49461796, 49602827], logfile=logger)   
+        logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants.info['position'][var_index]) + " with allele freq " + str(variants.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
+        pheno.simulateFixed(variants, [var_index], args.pty_fixed_betas, logger)
+
 
     #--------------------------------
     # run association tests and plot
@@ -193,7 +219,7 @@ if args.task == "associate":
         pGWAS.writeToFile(variants, args.out, logger)
         
         fig, ax = plt.subplots(1,figsize=(10,10))
-        pGWAS.manhattan_plot(variants.positions, ax, logger)
+        pGWAS.manhattan_plot(variants.info['position'], ax, logger)
         fig.tight_layout()
         fig.set_size_inches(30, 30)
         fig.savefig(args.out + '_OLS_GWAS.png', bbox_inches='tight')# 

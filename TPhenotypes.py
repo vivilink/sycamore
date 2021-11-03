@@ -64,12 +64,11 @@ class Phenotypes:
         None.
 
         """
-        causal_variants = [variants.variants[i] for i in causal_variant_indeces]
+        causal_variants = [variants.info['variant'][i] for i in causal_variant_indeces]
         if(len(causal_variants) != len(betas)):
             raise ValueError("must provide equal number of causal variants and betas to simulate fixed phenotype")
             
-        print(variants.allele_frequencies[0:10])
-                
+              
         for v, var in enumerate(causal_variants):
             self.betas[v] = betas[v]            
             self.y[var.genotypes == 1] += betas[v]
@@ -100,7 +99,7 @@ class Phenotypes:
         
 
         #add phenotypic effect to mutations that are uniformly distributed
-        for v, var in enumerate(variants.variants): 
+        for v, var in enumerate(variants.info['variant']): 
             r = random.random.uniform(0,1,1)
 
             if(r < prop_causal_mutations):
@@ -116,7 +115,7 @@ class Phenotypes:
                 #save causal position
                 self.causal_variants.append(var)
                 self.causal_betas.append(beta)
-                allele_freq = variants.allele_frequencies[v]
+                allele_freq = variants.info['allele_freq'][v]
                 self.causal_power.append(beta**2 * allele_freq * (1-allele_freq))
                 self.causal_variant_indeces.append(v)
         
