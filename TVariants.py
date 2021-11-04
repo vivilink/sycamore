@@ -74,16 +74,16 @@ class TVariantsFiltered(TVariants):
     
     def print_genotypes(self, index):        
         file = "genotypes_variant" + str(index) + ".txt"
-        self.info['variants'][index].genotypes.tofile(file=file)
+        self.info['variant'][index].genotypes.tofile(file=file)
         
     def fill_diploidGenotypes(self, individuals):
-        for v in self.info['variants']:
+        for v in self.info['variant']:
             v.site.metadata = []
             
             # for h in individuals.ind_assignment['haplotypes']:
             
     def writeVariantInfo(self, name):    
-        self.info.to_csv(name + "_filtered_sample_variants.csv", header=True, index=False)
+        self.info.drop(columns='variant').to_csv(name + "_filtered_sample_variants.csv", header=True, index=False)
         
     def findVariant(self, typed, freq, interval, logfile):
         """

@@ -25,7 +25,7 @@ class Phenotypes:
         self.causal_tree_indeces = []
         self.filled = False
         
-        logfile.info("created '" + self.name + "' phenotype object")
+        logfile.info("- Created '" + self.name + "' phenotype object")
         
     def returnRandomState(self, random):
         print(random.random.get_state()[1][0])
@@ -78,7 +78,7 @@ class Phenotypes:
             self.causal_power.append(betas[v]**2 * allele_freq * (1-allele_freq))            
             self.causal_variant_indeces.append(causal_variant_indeces[v])
             
-            logfile.info("Simulated causal variant at index " + str(causal_variant_indeces[v]) + " with beta " + str(betas[v]) + " and allele freq " + str(allele_freq) + " resulting in a power of " + str(betas[v]**2 * allele_freq * (1-allele_freq)))
+            logfile.info("- Simulated causal variant at index " + str(causal_variant_indeces[v]) + " with beta " + str(betas[v]) + " and allele freq " + str(allele_freq) + " resulting in a power of " + str(betas[v]**2 * allele_freq * (1-allele_freq)))
         
     def simulateUniform(self, variants, prop_causal_mutations, sd_beta_causal_mutations, random, mean_beta_causal_mutation = 0):
         """

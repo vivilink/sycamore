@@ -74,14 +74,14 @@ class TpGWAS(TGWAS):
         table.loc[self.phenotypes.causal_variant_indeces, 'causal'] = "TRUE"
         table['betas'] = self.phenotypes.betas        
         table.to_csv(name + "_variants_results.csv", index = False, header = True)        
-        logfile.info("Wrote results from OLS to '" + name + "_variants_results.csv'")
+        logfile.info("- Wrote results from OLS to '" + name + "_variants_results.csv'")
         
         #summary statistics
         stats = pd.DataFrame()
         stats['min_p_value'] = min(self.p_values)
         stats['max_p_value'] = max(self.p_values) 
         stats.to_csv(name + "_variants_stats.csv", index = False, header = True)        
-        logfile.info("Wrote stats from OLS to '" + name + "_variants_stats.csv'")           
+        logfile.info("- Wrote stats from OLS to '" + name + "_variants_stats.csv'")           
 
 
         
@@ -245,7 +245,7 @@ class TtGWAS(TGWAS):
         #log progress
         if tree.index % 100 == 0:
             end = time.time()
-            logfile.info("Ran HE for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
+            logfile.info("- Ran HE for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
             
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, N)
@@ -305,7 +305,7 @@ class TtGWAS(TGWAS):
         table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
         
         table.to_csv(name + "_trees_results.csv", index = False, header = True)        
-        logfile.info("Wrote results from HE to '" + name + "_trees_results.csv'")
+        logfile.info("- Wrote results from HE to '" + name + "_trees_results.csv'")
         
         stats = pd.DataFrame()
         stats['min_p_value_HECP_OLS'] = min(self.p_values_HECP_OLS)
@@ -319,7 +319,7 @@ class TtGWAS(TGWAS):
         stats['max_p_value_HESD_Jackknife'] = max(self.p_values_HESD_Jackknife)
  
         stats.to_csv(name + "_trees_stats.csv", index = False, header = True)        
-        logfile.info("Wrote stats from HE to '" + name + "_trees_stats.csv'")           
+        logfile.info("- Wrote stats from HE to '" + name + "_trees_stats.csv'")           
 
     def manhattan_plot(self, variant_positions, subplot, logfile, *args):
         self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = self.p_values, logfile = logfile)    
