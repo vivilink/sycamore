@@ -33,7 +33,7 @@ class TVariants:
         
 class TVariantsFiltered(TVariants):
     
-    def __init__(self, ts_object, samp_ids, min_allele_freq, max_allele_freq, prop_typed_variants, random):
+    def __init__(self, ts_object, samp_ids, min_allele_freq, max_allele_freq, prop_typed_variants, pos_int, random):
         if min_allele_freq < 0 or max_allele_freq < 0 or min_allele_freq > 1 or max_allele_freq > 1 or min_allele_freq > max_allele_freq:
             raise ValueError("allele frequency filters are nonsensical")
         
@@ -47,6 +47,7 @@ class TVariantsFiltered(TVariants):
         
         
         #fill by filtering, can't directly fill into info table because number of variants is unknown
+        # TODO: maybe there is an efficient way to loop over variants in tskit, same as for tree. if yes, it should be used here
         for v, var in enumerate(list(ts_object.variants(samples=samp_ids))):  
             tmp = sum(var.genotypes) / len(var.genotypes)
             af = min(tmp, 1-tmp)
@@ -54,7 +55,15 @@ class TVariantsFiltered(TVariants):
             if af >= min_allele_freq and af <= max_allele_freq:
                 variants = np.append(variants, var)
                 allele_frequencies = np.append(allele_frequencies, af)
-                positions = np.append(positions, var.site.position)
+                
+                # add position
+                if pos_int == True:
+                    pos = round(var.site.position)
+                    if v > 0 and pos == positions[len(positions)-1]:
+                        pos += 1
+                    positions = np.append(positions, pos)
+                else:
+                    positions = np.append(positions, var.site.position)
                 
                 if prop_typed_variants == 1:
                     typed = np.append(typed, True)
@@ -84,6 +93,36 @@ class TVariantsFiltered(TVariants):
             
     def writeVariantInfo(self, name):    
         self.info.drop(columns='variant').to_csv(name + "_filtered_sample_variants.csv", header=True, index=False)
+        
+    def writeShapeit2(self, name, N):
+        """
+        Write files in SHAPEIT2 format, to be used as input by RELATE (https://myersgroup.github.io/relate/input_data.html)
+
+        Parameters
+        ----------
+        name : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        haps = pd.DataFrame(index=range(self.number),columns=range(5 + N))  
+                
+        haps.iloc[:,0] = np.repeat(1, self.number)
+        haps.iloc[:,1] = '.'
+        #TODO: is it ok to have rounded position?
+        haps.iloc[:, 2] = round(self.info['position']).astype(int)
+        haps.iloc[:, 3] = 'A'
+        haps.iloc[:, 4] = 'T'
+        
+        for v, var in enumerate(self.info['variant']):
+            haps.iloc[v,5:] = var.genotypes
+        
+        
+        haps.to_csv(name + "_variants.haps", sep=' ', header=False, index=False)
+        
         
     def findVariant(self, typed, freq, interval, logfile):
         """

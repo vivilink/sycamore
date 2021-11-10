@@ -36,7 +36,7 @@ class TSimulatorStdPopsim(TSimulator):
         model = species.get_demographic_model("OutOfAfrica_3G09")
         samples = model.get_samples(500, 0, 0) # Returns a list of msprime.Sample objects, with the number of samples from each population determined by the positional arguments.
         engine = stdpopsim.get_engine("msprime") #returns an engine with a "simulate" method
-        trees_full = engine.simulate(model, contig, samples, seed = randomGenerator.seed) #this runs "msprime.sim_ancestry", default ploidy = 2. Extra arguments passed to simulate are passed to msprime.sim_ancestry
+        trees_full = engine.simulate(model, contig, samples, seed = randomGenerator.seed, discrete_genome=True) #this runs "msprime.sim_ancestry", default ploidy = 2. Extra arguments passed to simulate are passed to msprime.sim_ancestry
         trees_full.dump(out + "_full.trees")
         logfile.info("Wrote trees of full chromosome to " + out + "_full.trees")
 

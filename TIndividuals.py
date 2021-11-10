@@ -13,7 +13,7 @@ import numpy as np
 class Individuals:
     def __init__(self, ploidy, N):
         self.ploidy = ploidy
-        self.num_inds = N / ploidy
+        self.num_inds = int(N / ploidy)
         self.ind_assignment = pd.DataFrame()
         self.ind_assignment['haplotypes'] = range(0,N)
         self.ind_assignment['individual'] = np.repeat(-1, N)
@@ -27,3 +27,11 @@ class Individuals:
         if haplotype > max(self.ind_assignment['haplotypes']) or haplotype < min(self.ind_assignment['haplotypes']):
             raise ValueError("Haplotype out of bounds")
         return(self.ind_assignment['individual'][haplotype])
+    
+    def writeShapeit2(self, out):
+        haps = pd.DataFrame()  
+        haps['ID_1'] = range(self.num_inds)
+        haps['ID_2'] = "NA"
+        haps['missing'] = np.repeat(0, self.num_inds)
+                
+        haps.to_csv(out + "_inds.sample", sep=' ', header=True, index=False)

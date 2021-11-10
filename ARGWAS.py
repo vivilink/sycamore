@@ -48,6 +48,8 @@ parser.add_argument('--tree_file', dest = "tree_file",
 #simulating trees
 parser.add_argument('--sim_tree_simulator', dest = "sim_tree_simulator", default = "stdPopsim", choices=["stdPopsim"],
                     help = "Method used for simulating. stdPopsim is real human chromosome")
+parser.add_argument('--pos_int', type=float, default = True,
+                    help = "Should the positions of the variants be transformed into integers. Msprime simulates a continuous genome, so if pos_int is true, the simulated positions are rounded and if one position overlaps the previous, it is moved to the next position in the genome.")
 
 
 #simulating phenotypes
@@ -162,10 +164,14 @@ if args.task == "associate":
     # create diploids and variants
     #--------------------------------
     
-    inds = tind.Individuals(2, N)
-    variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq, args.prop_typed_variants, r)
+    inds = tind.Individuals(1, N)
+    inds.writeShapeit2(args.out)
+    variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq, args.prop_typed_variants, args.pos_int, r)
+    # variants = tvar.TVariantsFiltered(trees, samp_ids, 0.01, 1, 0.5, r)
     variants.writeVariantInfo(args.out)
+    variants.writeShapeit2(args.out, N)
     # variants.fill_diploidGenotypes(samp_ids)
+    
 
   
     #--------------------------------
