@@ -125,24 +125,32 @@ class TVariantsFiltered(TVariants):
 
         """
         haps = pd.DataFrame(index=range(self.number_typed),columns=range(5 + N)) 
-        info_typed = self.info.iloc[self.info['typed'] == True]
-        print("info_typed")
-        print(info_typed.iloc[9:13])
+        info_typed = self.info.loc[self.info['typed'] == True]
+        info_typed['index'] = range(self.number_typed)
+        info_typed.set_index(info_typed['index'], drop=True, inplace=True)
+
         
-        print("info_typed position")
-        print(info_typed.loc[9:13, 'position'])
+        # print("printing info")
+        # print((info_typed['position'][9:13]))
+        # print((self.info['position'][9:13]))
+        
+        # print("info_typed")
+        # print(info_typed.iloc[9:13])
+        
+        # print("info_typed position")
+        # print(info_typed.loc[9:13, 'position'])
         
         # print("type", info_typed['position']).dtype()
         # print(info_typed[info_typed['position'].isnull() == True])
                 
         haps.iloc[:, 0] = np.repeat(1, self.number_typed)
         haps.iloc[:, 1] = '.'
-        haps.iloc[:, 2] = self.info.loc[self.info['typed'] == True, 'position'] #info_typed['position']
+        haps.iloc[0:self.number_typed, 2] = info_typed['position']
         haps.iloc[:, 3] = 'A'
         haps.iloc[:, 4] = 'T'
         
-        print("haps before adding haplotype")
-        print(haps.iloc[9:13])
+        # print("haps before adding haplotype")
+        # print(haps.iloc[9:13])
         
         logfile.info("- Building haplotypes for typed variants")
         
@@ -157,8 +165,8 @@ class TVariantsFiltered(TVariants):
                     print("v", v, "positions\n", self.info.iloc[v])
                 index += 1
         
-        print("haps after adding haplotype")
-        print(haps.iloc[9:13])
+        # print("haps after adding haplotype")
+        # print(haps.iloc[9:13])
 
         logfile.info("- Writing haplotypes in Shapeit2 format to file '" + name + "_variants.haps'")
         haps.to_csv(name + "_variants.haps", sep=' ', header=False, index=False)
