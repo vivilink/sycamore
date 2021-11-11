@@ -7,7 +7,7 @@ Created on Mon Aug 30 17:44:45 2021
 """
 import numpy as np
 import pandas as pd
-
+import datatable as dt
 
 class TVariants:
     def __init__(self, ts_object, samp_ids):
@@ -33,53 +33,70 @@ class TVariants:
         
 class TVariantsFiltered(TVariants):
     
-    def __init__(self, ts_object, samp_ids, min_allele_freq, max_allele_freq, prop_typed_variants, pos_int, random):
-        if min_allele_freq < 0 or max_allele_freq < 0 or min_allele_freq > 1 or max_allele_freq > 1 or min_allele_freq > max_allele_freq:
-            raise ValueError("allele frequency filters are nonsensical")
+    def __init__(self, ts_object, samp_ids, min_allele_freq, max_allele_freq, prop_typed_variants, pos_int, random, logfile, filtered_variants_file = None):
+
+        # TODO: I don't understand if I should use the variants as a list or not. I don't know how to save them if not as a list (self.variants = trees.variants() or trees.variants does not work)
+        self.variants = list(ts_object.variants(samples=samp_ids))
+        self.number = len(list(ts_object.variants(samples=samp_ids)))
+        self.number_typed = -1
         
-        #initialize
-        # self.number_tot = len(list(ts_object.variants(samples=samp_ids)))
-        self.number = -1
-        positions = np.empty(0)
-        variants = np.empty(0)
-        allele_frequencies = np.empty(0)
-        typed = np.empty(0)
-        
-        
-        #fill by filtering, can't directly fill into info table because number of variants is unknown
-        # TODO: maybe there is an efficient way to loop over variants in tskit, same as for tree. if yes, it should be used here
-        for v, var in enumerate(list(ts_object.variants(samples=samp_ids))):  
-            tmp = sum(var.genotypes) / len(var.genotypes)
-            af = min(tmp, 1-tmp)
+        #build variant object from tree file -> filter!
+        if filtered_variants_file is None:
+
+            logfile.info("- Building variant information from scratch based on simulated trees")
+
+            if min_allele_freq < 0 or max_allele_freq < 0 or min_allele_freq > 1 or max_allele_freq > 1 or min_allele_freq > max_allele_freq:
+                raise ValueError("allele frequency filters are nonsensical")
             
-            if af >= min_allele_freq and af <= max_allele_freq:
-                variants = np.append(variants, var)
-                allele_frequencies = np.append(allele_frequencies, af)
+            #initialize
+            self.info = pd.DataFrame(index=range(self.number),columns=['index', 'position', 'allele_freq', 'typed'])  
+           
+            #fill by filtering, can't directly fill into info table because number of variants is unknown
+            for v, var in enumerate(ts_object.variants(samples=samp_ids)):
+                tmp = sum(var.genotypes) / len(var.genotypes)
+                af = min(tmp, 1-tmp)
                 
                 # add position
+                pos = -1
                 if pos_int == True:
                     pos = round(var.site.position)
-                    if v > 0 and pos == positions[len(positions)-1]:
+                    if v > 0 and pos == self.info['position'][v-1]:
+                        # print("am in special case for v", v)
                         pos += 1
-                    positions = np.append(positions, pos)
                 else:
-                    positions = np.append(positions, var.site.position)
-                
-                if prop_typed_variants == 1:
-                    typed = np.append(typed, True)
-                else:
-                    r = random.random.uniform(0,1,1)
-                    if r < prop_typed_variants:
-                        typed = np.append(typed, True)
-                    else: 
-                        typed = np.append(typed, False)
+                    pos = var.site.position
                     
-        
-        self.number = len(variants)    
-        
-        # fill info into info table
-        self.info = pd.DataFrame({'index': np.arange(0, self.number), 'position': positions, 'variant': variants, 'allele_freq': allele_frequencies, 'typed': typed})
+                if v in [9,10, 11, 12]:
+                    print([v, pos])
                 
+                #is variant typed?
+                if af >= min_allele_freq and af <= max_allele_freq:
+                    if prop_typed_variants == 1:
+                        typed = True                        
+                    else:
+                        r = random.random.uniform(0,1,1)
+                        if r < prop_typed_variants:
+                            typed = True
+                        else: 
+                            typed = False
+                else:
+                    typed = False
+                    
+                #add to table
+                self.info.iloc[v] = [v, pos, af, typed]
+
+            
+        
+        #variants are already filtered -> read from file!
+        else:
+            logfile.info("- Reading variant information from " + filtered_variants_file)
+            self.info = dt.fread("filtered_variants_file").to_pandas()
+            if len(self.info['index']) != self.number:
+                raise ValueError("Variant file " + filtered_variants_file + " contains " + str(len(self.info['index'])) + " variants, expected " + self.number)
+          
+        #set number typed
+        self.number_typed = self.info['typed'].value_counts()[True]
+
     
     def print_genotypes(self, index):        
         file = "genotypes_variant" + str(index) + ".txt"
@@ -88,13 +105,12 @@ class TVariantsFiltered(TVariants):
     def fill_diploidGenotypes(self, individuals):
         for v in self.info['variant']:
             v.site.metadata = []
-            
-            # for h in individuals.ind_assignment['haplotypes']:
-            
-    def writeVariantInfo(self, name):    
-        self.info.drop(columns='variant').to_csv(name + "_filtered_sample_variants.csv", header=True, index=False)
+                        
+    def writeVariantInfo(self, name, logfile):    
+        logfile.info("- Writing variant info to file '" + name + "_filtered_sample_variants.csv'")
+        self.info.to_csv(name + "_filtered_sample_variants.csv", header=True, index=False)
         
-    def writeShapeit2(self, name, N):
+    def writeShapeit2(self, name, N, logfile):
         """
         Write files in SHAPEIT2 format, to be used as input by RELATE (https://myersgroup.github.io/relate/input_data.html)
 
@@ -108,19 +124,43 @@ class TVariantsFiltered(TVariants):
         None.
 
         """
-        haps = pd.DataFrame(index=range(self.number),columns=range(5 + N))  
+        haps = pd.DataFrame(index=range(self.number_typed),columns=range(5 + N)) 
+        info_typed = self.info.iloc[self.info['typed'] == True]
+        print("info_typed")
+        print(info_typed.iloc[9:13])
+        
+        print("info_typed position")
+        print(info_typed.loc[9:13, 'position'])
+        
+        # print("type", info_typed['position']).dtype()
+        # print(info_typed[info_typed['position'].isnull() == True])
                 
-        haps.iloc[:,0] = np.repeat(1, self.number)
-        haps.iloc[:,1] = '.'
-        #TODO: is it ok to have rounded position?
-        haps.iloc[:, 2] = round(self.info['position']).astype(int)
+        haps.iloc[:, 0] = np.repeat(1, self.number_typed)
+        haps.iloc[:, 1] = '.'
+        haps.iloc[:, 2] = self.info.loc[self.info['typed'] == True, 'position'] #info_typed['position']
         haps.iloc[:, 3] = 'A'
         haps.iloc[:, 4] = 'T'
         
-        for v, var in enumerate(self.info['variant']):
-            haps.iloc[v,5:] = var.genotypes
+        print("haps before adding haplotype")
+        print(haps.iloc[9:13])
         
+        logfile.info("- Building haplotypes for typed variants")
         
+        index = 0
+        for v, var in enumerate(self.variants[0:13]):
+            # print(v, self.info.iloc[v]['typed'])
+            if self.info.iloc[v]['typed'] == True:
+                # if self.info.iloc[v]['position'] == None :
+                #     print(self.info.iloc[v])
+                haps.iloc[index,5:] = var.genotypes #can't use v for index because it loops over all variants, not only typed ones
+                if index in [9,10, 11, 12]:
+                    print("v", v, "positions\n", self.info.iloc[v])
+                index += 1
+        
+        print("haps after adding haplotype")
+        print(haps.iloc[9:13])
+
+        logfile.info("- Writing haplotypes in Shapeit2 format to file '" + name + "_variants.haps'")
         haps.to_csv(name + "_variants.haps", sep=' ', header=False, index=False)
         
         

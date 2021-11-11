@@ -34,7 +34,9 @@ os.chdir(os.path.dirname(sys.argv[0]))
 #-----------------------------
 
 parser = argparse.ArgumentParser(description='Running GWAS on variants and trees.')
-parser.add_argument('--task', dest="task", required=True,
+
+# general arguments
+parser.add_argument('--task', dest="task", required=True, choices=['simulate', 'associate', 'downsampleVariants'],
                     help = 'The task to be executed (simulate or associate)')
 parser.add_argument('--out', dest="out", required=True,
                     help = 'Prefix of all output files')
@@ -54,8 +56,6 @@ parser.add_argument('--pos_int', type=float, default = True,
 
 #simulating phenotypes
 pty = parser.add_argument_group('phenotypes')
-# if args.prox and (args.lport is None or args.rport is None):
-#     parser.error("--prox requires --lport and --rport.")
 parser.add_argument('--name', dest = "name", 
                     help = "Name of phenotype and GWAS object, will be used for headers in plots")
 pty.add_argument('--pty_sd_envNoise', type=float, dest = "pty_sd_envNoise", default = 0, 
@@ -66,11 +66,11 @@ pty.add_argument('--pty_prop_causal_mutations', type=float, dest = "pty_prop_cau
                     help = "Proportion of causal mutations to simulate at uniformly distributed positions if pt.sim_method is set to 'uniform'. If set to 0, there will be no causal mutations simulated randomly")
 pty.add_argument('--pty_sd_beta_causal_mutations', type=float, dest = "pty_sd_beta_causal_mutations", 
                     help = "Std. dev. for betas of causal mutations if pty_sim_method is set to 'uniform'.")
-parser.add_argument('--pty_fixed_betas', nargs='+', type=float, 
+pty.add_argument('--pty_fixed_betas', nargs='+', type=float, 
                     help = "Fixed betas of causal mutations if pt.sim_method is set to 'fixed_variants'.")
-parser.add_argument('--pty_fixed_variant_indeces', nargs='+', type=int,
+pty.add_argument('--pty_fixed_variant_indeces', nargs='+', type=int,
                     help = "Indeces of variants that should be simulated as causal if pty_sim_method is set to 'fixed'.")
-parser.add_argument('--single_variant_af', type=float,
+pty.add_argument('--single_variant_af', type=float,
                     help = "Simulate a single, central causal variant that is typed. If there is no such variant in the given range, will search for one with an allele frequency that is close.")
 
 #run associations
@@ -148,14 +148,12 @@ if args.task == "simulate":
         logger.error("use of any simulator besides stdPopSim not tested")
         raise ValueError("use of any simulator besides stdPopSim not tested")
 
-
 #-----------------------
-# Read simulation
+# Downsample variants
 #-----------------------
-
-if args.task == "associate":
-    
-    logger.info("Reading simulations from " + args.tree_file)
+if args.task == "downsampleVariants":
+    logger.info("- TASK: Downsampling variants")
+    logger.info("- Reading tree simulations from " + args.tree_file)
     trees = tskit.load(args.tree_file)
     samp_ids = trees.samples()
     N = len(samp_ids)
@@ -165,14 +163,33 @@ if args.task == "associate":
     #--------------------------------
     
     inds = tind.Individuals(1, N)
-    inds.writeShapeit2(args.out)
-    variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq, args.prop_typed_variants, args.pos_int, r)
+    inds.writeShapeit2(args.out, logger)
+    variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq, args.prop_typed_variants, args.pos_int, r, logger)
     # variants = tvar.TVariantsFiltered(trees, samp_ids, 0.01, 1, 0.5, r)
-    variants.writeVariantInfo(args.out)
-    variants.writeShapeit2(args.out, N)
-    # variants.fill_diploidGenotypes(samp_ids)
-    
+    variants.writeVariantInfo(args.out, logger)
+    variants.writeShapeit2(args.out, N, logger)
 
+
+
+#-----------------------
+# Read simulation
+#-----------------------
+
+if args.task == "associate":
+    
+    logger.info("- TASK: Associate")
+    
+    logger.info("- Reading tree simulations from " + args.tree_file)
+    trees = tskit.load(args.tree_file)
+    samp_ids = trees.samples()
+    N = len(samp_ids)
+
+    #--------------------------------
+    # create diploids and variants
+    #--------------------------------
+    
+    inds = tind.Individuals(1, N)
+    variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq, args.prop_typed_variants, args.pos_int, r, logger)
   
     #--------------------------------
     # create phenotypes

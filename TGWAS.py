@@ -56,7 +56,7 @@ class TpGWAS(TGWAS):
         # self.q_values = np.empty(self.num_associations)
         
     def OLS(self, variants, logfile):
-        for v, variant in enumerate(variants.info['variant']):
+        for v, variant in variants.variants:
             if variants.info.iloc[v]['typed'] == True:
                 self.p_values[v] = sm.OLS(self.phenotypes.y, sm.tools.add_constant(variant.genotypes)).fit().pvalues[1]
             else:
@@ -72,16 +72,16 @@ class TpGWAS(TGWAS):
         table['p_value'] = self.p_values
         table['causal'] = np.repeat("FALSE", self.num_associations)
         table.loc[self.phenotypes.causal_variant_indeces, 'causal'] = "TRUE"
-        table['betas'] = self.phenotypes.betas        
+        table['betas'] = self.phenotypes.betas 
+        logfile.info("- Writing results from OLS to '" + name + "_variants_results.csv'")
         table.to_csv(name + "_variants_results.csv", index = False, header = True)        
-        logfile.info("- Wrote results from OLS to '" + name + "_variants_results.csv'")
         
         #summary statistics
         stats = pd.DataFrame()
         stats['min_p_value'] = min(self.p_values)
         stats['max_p_value'] = max(self.p_values) 
+        logfile.info("- Writing stats from OLS to '" + name + "_variants_stats.csv'")           
         stats.to_csv(name + "_variants_stats.csv", index = False, header = True)        
-        logfile.info("- Wrote stats from OLS to '" + name + "_variants_stats.csv'")           
 
 
         

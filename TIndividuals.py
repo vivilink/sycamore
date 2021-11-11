@@ -28,10 +28,14 @@ class Individuals:
             raise ValueError("Haplotype out of bounds")
         return(self.ind_assignment['individual'][haplotype])
     
-    def writeShapeit2(self, out):
+    def writeShapeit2(self, out, logfile):
+        
+        logfile.info("- Writing individuals in Shapeit2 format to file '" + out + "_inds.sample'")
+        
         haps = pd.DataFrame()  
         haps['ID_1'] = range(self.num_inds)
         haps['ID_2'] = "NA"
         haps['missing'] = np.repeat(0, self.num_inds)
+        # haps.iloc[0] = [0, 'F','Piyu']
                 
         haps.to_csv(out + "_inds.sample", sep=' ', header=True, index=False)
