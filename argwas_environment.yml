@@ -1,0 +1,8 @@
+name: caoqi_env
+dependencies:
+    - numpy
+    - stdpopsim
+    - statsmodels.api as sm
+    - random
+    - pickle
+    - tqdm
