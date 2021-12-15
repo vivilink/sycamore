@@ -15,3 +15,6 @@ conda env create -f argwas_environment.yml
 
 Install statsmodel package from within environment:
 conda install -c conda-forge statsmodels
+
+Install tskit package from within environment:
+conda install -c conda-forge tskit
