@@ -1,11 +1,17 @@
 # argwas
 
 
-Need to install tskit:
+Install tskit:
 conda install -c conda-forge tskit
 
-Need to install limix_lmm:
+Install limix_lmm:
 conda install -c conda-forge limix
 
-Need to download and unpack gcta:
+Download and unpack gcta:
 https://cnsgenomics.com/software/gcta/#Download
+
+Build environment with:
+conda env create -f argwas_environment.yml
+
+Install statsmodel package from within environment:
+conda install -c conda-forge statsmodels
