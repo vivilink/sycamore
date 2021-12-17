@@ -223,7 +223,9 @@ if args.task == "associate":
             raise ValueError("No beta values provided for phenotype 'singleTyped'")
             
         var_index = variants_orig.findVariant(typed=True, freq = args.single_variant_af, interval = [49461796, 49602827] , logfile=logger)
-        logger.info("- Simulating a phenotypes based on the following typed variant index: " + str(var_index) + " at position " +  str(variants.info['position'][var_index]) + " with allele freq " + str(variants.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
+        print("got here!!!!")
+        logger.info("- Simulating a phenotypes based on the following typed variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
+        print("got here 2!!!!")
         pheno.simulateFixed(variants_orig, [var_index], args.pty_fixed_betas, logger)
         pheno.write_to_file(variants_orig, args.out, logger)
 
@@ -233,7 +235,7 @@ if args.task == "associate":
             raise ValueError("No beta values provided for phenotype 'singleUntyped'")
             
         var_index = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = [49461796, 49602827], logfile=logger)   
-        logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants.info['position'][var_index]) + " with allele freq " + str(variants.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
+        logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
         #to know which variants are untyped you need variants from simulated tree, not estimated tree
         if args.variants_file is None:
             raise ValueError("Must provide file with untyped variants to simulate phenotype with 'singleUntyped' model")

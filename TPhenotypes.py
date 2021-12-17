@@ -181,8 +181,8 @@ class Phenotypes:
         tmp_pheno['2'] = tmp_pheno['1']
         tmp_pheno['3'] = self.y        
         
-        logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
+        logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
 
     def write_to_file(self, variants, out, logfile):
         """
@@ -209,4 +209,4 @@ class Phenotypes:
         table['betas'] = self.betas 
       
         logfile.info("- Writing phenotype data '" + out + "_pheno_causal_vars.csv'")
-        table.to_csv(out + "_variants_results.csv", index = False, header = True)       
+        table.to_csv(out + "_pheno_causal_vars.csv", index = False, header = True)       

@@ -56,18 +56,26 @@ class TpGWAS(TGWAS):
         # self.q_values = np.empty(self.num_associations)
         
     def OLS(self, variants, logfile):
+        print("len(variants.variants)", variants.number_typed)
+        print("len(self.p_values)", len(self.p_values))
+        i = 0
         for v, variant in enumerate(variants.variants):
             if variants.info.iloc[v]['typed'] == True:
-                self.p_values[v] = sm.OLS(self.phenotypes.y, sm.tools.add_constant(variant.genotypes)).fit().pvalues[1]
-            else:
-                self.p_values[v] = np.nan
+                self.p_values[i] = sm.OLS(self.phenotypes.y, sm.tools.add_constant(variant.genotypes)).fit().pvalues[1]
+                i += 1
+            # else:
+            #     self.p_values[v] = np.nan
         logfile.info("- Ran OLS for all " + str(variants.number_typed) + " variants of " + self.name)
         
     def writeToFile(self, variants, name, logfile):        
         #results for each variant
+        info_typed = variants.info.loc[variants.info['typed'] == True]
+        info_typed['index'] = range(variants.number_typed)
+        info_typed.set_index(info_typed['index'], drop=True, inplace=True)
+        
         table = pd.DataFrame()
-        table['start'] = variants.info['position']
-        table['end'] = variants.info['position']
+        table['end'] = info_typed['position']
+        table['end'] = info_typed['position']
         # table['typed'] = variants.info['typed']
         table['p_value'] = self.p_values
         # table['causal'] = np.repeat("FALSE", self.num_associations)

@@ -211,4 +211,3 @@ class TVariantsFiltered(TVariants):
                 
         logfile.info("- Found variant with freq " + str(freq) + " within the following interval: " + str(interval))
         return info.iloc[0]['index']
-        
