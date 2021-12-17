@@ -67,11 +67,17 @@ class Phenotypes:
         None.
 
         """
+        print("causal_variant_indeces", causal_variant_indeces)
+        print("len(variants.variants) in simulate Fixed",len(variants.variants))
+        print("number of variants in simulate Fixed",variants.number)
+        print("length self.betas", len(self.betas))
+
         causal_variants = [variants.variants[i] for i in causal_variant_indeces]
         if(len(causal_variants) != len(betas)):
             raise ValueError("must provide equal number of causal variants and betas to simulate fixed phenotype")
             
-              
+        print("betas length", len(self.betas))
+        
         for v, var in enumerate(causal_variants):
             self.betas[v] = betas[v]            
             self.y[var.genotypes == 1] += betas[v]

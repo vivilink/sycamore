@@ -45,9 +45,11 @@ parser.add_argument('--seed', type=int, default = datetime.datetime.now().hour*1
 # parser.add_argument('--verbose', dest="verbose", 
 #                     help="Write output to screen")
 parser.add_argument('--tree_file',  
-                    help = "File of simulated trees in tskit format")
+                    help = "File of trees to be used for association tests in tskit format")
 parser.add_argument('--variants_file', dest = "variants_file",
                     help = "File of variant info. Useful if they have been downsampled and you want to use the same typed variants")
+parser.add_argument('--tree_file_simulated',
+                    help = "File of simulated trees to be used for phenotype simulation in tskit format")
 
 #simulating trees
 parser.add_argument('--sim_tree_simulator', dest = "sim_tree_simulator", default = "stdPopsim", choices=["stdPopsim"],
@@ -184,7 +186,9 @@ if args.task == "associate":
     
     logger.info("- TASK: Associate")
     
-    logger.info("- Reading tree simulations from " + args.tree_file)
+    logger.info("- Reading tree from " + args.tree_file)
+    trees_orig = tskit.load(args.tree_file_simulated)
+    logger.info("- Reading simulated tree from " + args.tree_file_simulated)
     trees = tskit.load(args.tree_file)
     samp_ids = trees.samples()
     N = len(samp_ids)
@@ -201,7 +205,8 @@ if args.task == "associate":
     #--------------------------------
     # create phenotypes
     #--------------------------------
-    variants_orig = tvar.TVariantsFiltered(trees, samp_ids, 0, 1, 1, args.pos_int, r, logger, args.variants_file)
+    variants_orig = tvar.TVariantsFiltered(trees_orig, samp_ids, 0, 1, 1, args.pos_int, r, logger, args.variants_file)
+    print("len(variants_orig.variants) after reading variants_orig",len(variants_orig.variants))
     pheno = pt.Phenotypes(args.name, variants_orig, N, logger)
     pheno.simulateEnvNoise(args.pty_sd_envNoise, r)
     logger.info("- Simulating environmental noise with sd " + str(args.pty_sd_envNoise))
@@ -223,9 +228,7 @@ if args.task == "associate":
             raise ValueError("No beta values provided for phenotype 'singleTyped'")
             
         var_index = variants_orig.findVariant(typed=True, freq = args.single_variant_af, interval = [49461796, 49602827] , logfile=logger)
-        print("got here!!!!")
         logger.info("- Simulating a phenotypes based on the following typed variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
-        print("got here 2!!!!")
         pheno.simulateFixed(variants_orig, [var_index], args.pty_fixed_betas, logger)
         pheno.write_to_file(variants_orig, args.out, logger)
 
@@ -235,6 +238,7 @@ if args.task == "associate":
             raise ValueError("No beta values provided for phenotype 'singleUntyped'")
             
         var_index = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = [49461796, 49602827], logfile=logger)   
+        print("number of orig variatns", variants_orig.number)
         logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
         #to know which variants are untyped you need variants from simulated tree, not estimated tree
         if args.variants_file is None:

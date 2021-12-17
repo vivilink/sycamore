@@ -89,12 +89,13 @@ class TVariantsFiltered(TVariants):
         else:
             logfile.info("- Reading variant information from " + filtered_variants_file)
             self.info = dt.fread(filtered_variants_file).to_pandas()
-            # if len(self.info['index']) != self.number:
-            #     raise ValueError("Variant file " + filtered_variants_file + " contains " + str(len(self.info['index'])) + " variants, expected " + str(self.number))
           
         #set number typed
         self.number = len(self.info['typed'])
         self.number_typed = self.info['typed'].value_counts()[True]
+        if len(self.info['index']) != self.number != len(self.variants):
+            raise ValueError("Variant file " + filtered_variants_file + " contains " + str(len(self.info['index'])) + " variants, expected " + str(self.number))
+ 
 
     
     def print_genotypes(self, index):        
