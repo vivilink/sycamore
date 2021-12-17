@@ -56,23 +56,23 @@ class TpGWAS(TGWAS):
         # self.q_values = np.empty(self.num_associations)
         
     def OLS(self, variants, logfile):
-        for v, variant in variants.variants:
+        for v, variant in enumerate(variants.variants):
             if variants.info.iloc[v]['typed'] == True:
                 self.p_values[v] = sm.OLS(self.phenotypes.y, sm.tools.add_constant(variant.genotypes)).fit().pvalues[1]
             else:
                 self.p_values[v] = np.nan
-        logfile.info("Ran OLS for all variants of " + self.name)
+        logfile.info("- Ran OLS for all " + str(variants.number_typed) + " variants of " + self.name)
         
     def writeToFile(self, variants, name, logfile):        
         #results for each variant
         table = pd.DataFrame()
         table['start'] = variants.info['position']
         table['end'] = variants.info['position']
-        table['typed'] = variants.info['typed']
+        # table['typed'] = variants.info['typed']
         table['p_value'] = self.p_values
-        table['causal'] = np.repeat("FALSE", self.num_associations)
-        table.loc[self.phenotypes.causal_variant_indeces, 'causal'] = "TRUE"
-        table['betas'] = self.phenotypes.betas 
+        # table['causal'] = np.repeat("FALSE", self.num_associations)
+        # table.loc[self.phenotypes.causal_variant_indeces, 'causal'] = "TRUE"
+        # table['betas'] = self.phenotypes.betas 
         logfile.info("- Writing results from OLS to '" + name + "_variants_results.csv'")
         table.to_csv(name + "_variants_results.csv", index = False, header = True)        
         

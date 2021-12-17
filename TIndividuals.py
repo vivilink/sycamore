@@ -36,6 +36,10 @@ class Individuals:
         haps['ID_1'] = range(self.num_inds)
         haps['ID_2'] = "NA"
         haps['missing'] = np.repeat(0, self.num_inds)
-        # haps.iloc[0] = [0, 'F','Piyu']
+        
+        #add top row of zeros, otherwise there will be one ind missing (https://myersgroup.github.io/relate/input_data.html)
+        top_row = pd.DataFrame({'ID_1':[0],'ID_2':[0],'missing':[0]})
+        haps = pd.concat([top_row, haps]).reset_index(drop = True)
                 
+        #write to file
         haps.to_csv(out + "_inds.sample", sep=' ', header=True, index=False)

@@ -37,7 +37,7 @@ class TVariantsFiltered(TVariants):
 
         # TODO: I don't understand if I should use the variants as a list or not. I don't know how to save them if not as a list (self.variants = trees.variants() or trees.variants does not work)
         self.variants = list(ts_object.variants(samples=samp_ids))
-        self.number = len(list(ts_object.variants(samples=samp_ids)))
+        self.number = -1
         self.number_typed = -1
         
         #build variant object from tree file -> filter!
@@ -49,6 +49,7 @@ class TVariantsFiltered(TVariants):
                 raise ValueError("allele frequency filters are nonsensical")
             
             #initialize
+            self.number = len(list(ts_object.variants(samples=samp_ids)))
             self.info = pd.DataFrame(index=range(self.number),columns=['index', 'position', 'allele_freq', 'typed'])  
            
             #fill by filtering, can't directly fill into info table because number of variants is unknown
@@ -65,9 +66,6 @@ class TVariantsFiltered(TVariants):
                         pos += 1
                 else:
                     pos = var.site.position
-                    
-                if v in [9,10, 11, 12]:
-                    print([v, pos])
                 
                 #is variant typed?
                 if af >= min_allele_freq and af <= max_allele_freq:
@@ -90,11 +88,12 @@ class TVariantsFiltered(TVariants):
         #variants are already filtered -> read from file!
         else:
             logfile.info("- Reading variant information from " + filtered_variants_file)
-            self.info = dt.fread("filtered_variants_file").to_pandas()
-            if len(self.info['index']) != self.number:
-                raise ValueError("Variant file " + filtered_variants_file + " contains " + str(len(self.info['index'])) + " variants, expected " + self.number)
+            self.info = dt.fread(filtered_variants_file).to_pandas()
+            # if len(self.info['index']) != self.number:
+            #     raise ValueError("Variant file " + filtered_variants_file + " contains " + str(len(self.info['index'])) + " variants, expected " + str(self.number))
           
         #set number typed
+        self.number = len(self.info['typed'])
         self.number_typed = self.info['typed'].value_counts()[True]
 
     
@@ -155,14 +154,14 @@ class TVariantsFiltered(TVariants):
         logfile.info("- Building haplotypes for typed variants")
         
         index = 0
-        for v, var in enumerate(self.variants[0:13]):
+        for v, var in enumerate(self.variants):
             # print(v, self.info.iloc[v]['typed'])
             if self.info.iloc[v]['typed'] == True:
                 # if self.info.iloc[v]['position'] == None :
                 #     print(self.info.iloc[v])
                 haps.iloc[index,5:] = var.genotypes #can't use v for index because it loops over all variants, not only typed ones
-                if index in [9,10, 11, 12]:
-                    print("v", v, "positions\n", self.info.iloc[v])
+                # if index in [9,10, 11, 12]:
+                #     print("v", v, "positions\n", self.info.iloc[v])
                 index += 1
         
         # print("haps after adding haplotype")

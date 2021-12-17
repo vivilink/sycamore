@@ -5,36 +5,32 @@ Created on Mon Aug  9 16:57:18 2021
 
 @author: linkv
 """
-import numpy as np
+import tskit
 import matplotlib.pyplot as plt
-import random
 import TPhenotypes as pt
 import TGWAS as gwas
 import TVariants as tvar
 import TIndividuals as tind
 import TSimulator as tsim
 import datetime
-# import statsmodels.api as sm
-# import pickle
-# import tqdm
-# import TTree as tt
-# import scipy as sp
-# from limix_lmm.lmm_core import LMMCore
-# import time
-# import sys
+import argparse
+import logging
+import os
+import sys
 
 from numpy.random import RandomState
 class randomGenerator:
     def __init__(self, seed):
         self.seed = seed
         self.random = RandomState(seed)
-
+        
 
 tim = datetime.datetime.now()
 seed = tim.hour*10000+tim.minute*100+tim.second
-random.seed(seed)# seed = None
 r = randomGenerator(seed)
 r.random.get_state()[1][0]
+
+logger = logging.getLogger()
 
 
 #if you check end of last tree you still get 249,250,621, the length of chr1 in hg19....
@@ -50,21 +46,57 @@ simulator = tsim.TSimulatorStdPopsim()
 trees = simulator.run_simulation("default", r)
 
 #-----------------------
-# Sample specs
+# Read trees
 #-----------------------
+
+
+
+trees = tskit.load("/data/ARGWAS/experiments/test_2.trees")
 
 samp_ids = trees.samples()
 N = len(samp_ids)
+
+trees_relate = tskit.load("/data/ARGWAS/experiments/relate_test_2_propTyped1/test_2_propTyped1.trees")
+variants = tvar.TVariantsFiltered(trees, samp_ids, 0, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger,
+                                  filtered_variants_file = "/data/ARGWAS/experiments/relate_test_2_propTyped1/test_2_propTyped1_filtered_sample_variants.csv")
+print(variants.number_typed)
+len(list(trees_relate.variants(samples=samp_ids)))
+
+trees_relate = tskit.load("/data/ARGWAS/experiments/relate_test_2_propTyped0.01/test_2_propTyped0.01.trees")
+variants = tvar.TVariantsFiltered(trees, samp_ids, 0, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger,
+                                  filtered_variants_file = "/data/ARGWAS/experiments/relate_test_2_propTyped0.01/test_2_propTyped0.01_filtered_sample_variants.csv")
+print(variants.number_typed)
+len(list(trees_relate.variants(samples=samp_ids)))
+
+
+trees_relate = tskit.load("/data/ARGWAS/experiments/relate_test_2_propTyped0.05/test_2_propTyped0.05.trees")
+variants = tvar.TVariantsFiltered(trees, samp_ids, 0, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger,
+                                  filtered_variants_file = "/data/ARGWAS/experiments/relate_test_2_propTyped0.05/test_2_propTyped0.05_filtered_sample_variants.csv")
+print(variants.number_typed)
+len(list(trees_relate.variants(samples=samp_ids)))
+
+#-----------------------
+# Sample specs
+#-----------------------
+
+
+
 
 #-----------------------
 # create diploids and variants
 #-----------------------
 
 inds = tind.Individuals(2, N)
-variants = tvar.TVariantsSamples(trees, samp_ids, 0.01, 1)
-# variants.fill_diploidGenotypes(samp_ids)
+variants = tvar.TVariantsFiltered(trees, samp_ids, 0.01, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger)
+variants.number_typed
 
-  
+#see variants from tree directly
+list(trees.variants(samples=samp_ids))[0]
+len(list(trees.variants(samples=samp_ids)))
+
+variants_relate = tvar.TVariantsFiltered(trees_relate, samp_ids, 0.01, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger)
+len(list(trees_relate.variants(samples=samp_ids)))
+variants_relate.number_typed
 #-----------------------
 # create phenotypes
 #-----------------------

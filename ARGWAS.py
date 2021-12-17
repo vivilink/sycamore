@@ -33,19 +33,21 @@ os.chdir(os.path.dirname(sys.argv[0]))
 # initialize arguments
 #-----------------------------
 
-parser = argparse.ArgumentParser(description='Running GWAS on variants and trees.')
+parser = argparse.ArgumentParser(description='Running association tests on variants and trees.')
 
 # general arguments
-parser.add_argument('--task', dest="task", required=True, choices=['simulate', 'associate', 'downsampleVariants'],
+parser.add_argument('--task', required=True, choices=['simulate', 'associate', 'downsampleVariants'],
                     help = 'The task to be executed (simulate or associate)')
-parser.add_argument('--out', dest="out", required=True,
+parser.add_argument('--out', required=True,
                     help = 'Prefix of all output files')
-parser.add_argument('--seed', dest="seed", type=int, default = datetime.datetime.now().hour*10000+datetime.datetime.now().minute*100+datetime.datetime.now().second, 
+parser.add_argument('--seed', type=int, default = datetime.datetime.now().hour*10000+datetime.datetime.now().minute*100+datetime.datetime.now().second, 
                     help='Set seed of random generator. Default is time stamp.')
 # parser.add_argument('--verbose', dest="verbose", 
 #                     help="Write output to screen")
-parser.add_argument('--tree_file', dest = "tree_file", 
+parser.add_argument('--tree_file',  
                     help = "File of simulated trees in tskit format")
+parser.add_argument('--variants_file', dest = "variants_file",
+                    help = "File of variant info. Useful if they have been downsampled and you want to use the same typed variants")
 
 #simulating trees
 parser.add_argument('--sim_tree_simulator', dest = "sim_tree_simulator", default = "stdPopsim", choices=["stdPopsim"],
@@ -56,15 +58,15 @@ parser.add_argument('--pos_int', type=float, default = True,
 
 #simulating phenotypes
 pty = parser.add_argument_group('phenotypes')
-parser.add_argument('--name', dest = "name", 
+parser.add_argument('--name', 
                     help = "Name of phenotype and GWAS object, will be used for headers in plots")
-pty.add_argument('--pty_sd_envNoise', type=float, dest = "pty_sd_envNoise", default = 0, 
+pty.add_argument('--pty_sd_envNoise', type=float, default = 0, 
                     help = "Std. dev. for environmental noise. If set to 0, no noise will be simulated.")
-pty.add_argument('--pty_sim_method', dest = "pty_sim_method", choices=['uniform', 'fixed', 'singleTyped', 'singleUntyped'],
+pty.add_argument('--pty_sim_method', choices=['uniform', 'fixed', 'singleTyped', 'singleUntyped'],
                     help = "Phenotype simulations method")
-pty.add_argument('--pty_prop_causal_mutations', type=float, dest = "pty_prop_causal_mutations", default = 0, 
+pty.add_argument('--pty_prop_causal_mutations', type=float, default = 0, 
                     help = "Proportion of causal mutations to simulate at uniformly distributed positions if pt.sim_method is set to 'uniform'. If set to 0, there will be no causal mutations simulated randomly")
-pty.add_argument('--pty_sd_beta_causal_mutations', type=float, dest = "pty_sd_beta_causal_mutations", 
+pty.add_argument('--pty_sd_beta_causal_mutations', type=float, 
                     help = "Std. dev. for betas of causal mutations if pty_sim_method is set to 'uniform'.")
 pty.add_argument('--pty_fixed_betas', nargs='+', type=float, 
                     help = "Fixed betas of causal mutations if pt.sim_method is set to 'fixed_variants'.")
@@ -75,16 +77,17 @@ pty.add_argument('--single_variant_af', type=float,
 
 #run associations
 assoc = parser.add_argument_group('associations')
-assoc.add_argument('--ass_method', dest = "ass_method", choices = ["GWAS", "ARGWAS", "both"], 
-                   help = "Either run only GWAS, ARGWAS or both")
+assoc.add_argument('--ass_method', choices = ["GWAS", "AIM", "both"], 
+                   help = "Either run only GWAS, AIM or both")
+
 
 
 #limit data
-parser.add_argument('--min_allele_freq', type=float, default=0.01, 
+parser.add_argument('--min_allele_freq', type=float, default = 0.01, 
                     help = "Minimum frequency an allele needs to have to be typed")
-parser.add_argument('--max_allele_freq', type=float, default=1, 
+parser.add_argument('--max_allele_freq', type=float, default = 1, 
                     help = "Maximum frequency an allele needs to have to be typed")
-parser.add_argument('--prop_typed_variants', type=float, default = 1, 
+parser.add_argument('--prop_typed_variants', type=float, default = 1,
                     help = "Proportion of variants that are typed (out of the ones that pass the frequency filter).")
 # parser.add_argument('--tree_interval', nargs='+',
 #                     help = "Indeces of variants that should be simulated as causal if pty_sim_method is set to 'fixed'.")
@@ -152,6 +155,8 @@ if args.task == "simulate":
 # Downsample variants
 #-----------------------
 if args.task == "downsampleVariants":
+    if args.prop_typed_variants is None:
+        raise ValueError("Must provide downsampling probability to task 'downsampleVariant'")
     logger.info("- TASK: Downsampling variants")
     logger.info("- Reading tree simulations from " + args.tree_file)
     trees = tskit.load(args.tree_file)
@@ -189,6 +194,7 @@ if args.task == "associate":
     #--------------------------------
     
     inds = tind.Individuals(1, N)
+    # TODO: find way to save variants in their tskit format without needing to read the original tree. I only need original tree in association task for this. It would be nice if the only tree that needs to be read would be estimated tree
     variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq, args.prop_typed_variants, args.pos_int, r, logger)
   
     #--------------------------------
@@ -197,25 +203,28 @@ if args.task == "associate":
     
     pheno = pt.Phenotypes(args.name, variants, N, logger)
     pheno.simulateEnvNoise(args.pty_sd_envNoise, r)
-    logger.info("Simulating environmental noise with sd " + str(args.pty_sd_envNoise))
+    logger.info("- Simulating environmental noise with sd " + str(args.pty_sd_envNoise))
     if args.pty_sim_method == 'uniform':
-        logger.info("Simulating phenotypes based on uniformly chosen variants with prop_causal_mutations: " + str(args.pty_prop_causal_mutations) + " and sd_beta_causal_mutations: " + str(args.pty_sd_beta_causal_mutations)) 
+        logger.info("- Simulating phenotypes based on uniformly chosen variants with prop_causal_mutations: " + str(args.pty_prop_causal_mutations) + " and sd_beta_causal_mutations: " + str(args.pty_sd_beta_causal_mutations)) 
         pheno.simulateUniform(variants, prop_causal_mutations=args.pty_prop_causal_mutations, sd_beta_causal_mutations=args.pty_sd_beta_causal_mutations, random=r)
+        pheno.write_to_file(variants, args.out, logger)
  
     elif args.pty_sim_method == 'fixed':
         if args.pty_fixed_betas == None:
-            raise ValueError("No beta values provided for phenotype 'singleUntyped'")
+            raise ValueError("No beta values provided for phenotype 'fixed'")
 
         logger.info("- Simulating phenotypes based on the following indeces: " + str(args.pty_fixed_variant_indeces) + " and the following betas: " + str(args.pty_fixed_betas)) 
         pheno.simulateFixed(variants, args.pty_fixed_variant_indeces, args.pty_fixed_betas, logger)
-        
+        pheno.write_to_file(variants, args.out, logger)
+
     elif args.pty_sim_method == 'singleTyped':
         if args.pty_fixed_betas == None:
-            raise ValueError("No beta values provided for phenotype 'singleUntyped'")
+            raise ValueError("No beta values provided for phenotype 'singleTyped'")
             
         var_index = variants.findVariant(typed=True, freq = args.single_variant_af, interval = [49461796, 49602827] , logfile=logger)
         logger.info("- Simulating a phenotypes based on the following typed variant index: " + str(var_index) + " at position " +  str(variants.info['position'][var_index]) + " with allele freq " + str(variants.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
         pheno.simulateFixed(variants, [var_index], args.pty_fixed_betas, logger)
+        pheno.write_to_file(variants, args.out, logger)
 
         
     elif args.pty_sim_method == 'singleUntyped':
@@ -224,17 +233,21 @@ if args.task == "associate":
             
         var_index = variants.findVariant(typed=False, freq = args.single_variant_af, interval = [49461796, 49602827], logfile=logger)   
         logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants.info['position'][var_index]) + " with allele freq " + str(variants.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
-        pheno.simulateFixed(variants, [var_index], args.pty_fixed_betas, logger)
-
+        #to know which variants are untyped you need variants from simulated tree, not estimated tree
+        if args.variants_file is None:
+            raise ValueError("Must provide file with untyped variants to simulate phenotype with 'singleUntyped' model")
+        variants_orig = tvar.TVariantsFiltered(trees, samp_ids, 0, 1, 1, args.pos_int, r, logger, args.variants_file)
+        pheno.simulateFixed(variants_orig, [var_index], args.pty_fixed_betas, logger)
+        pheno.write_to_file(variants_orig, args.out, logger)
 
     #--------------------------------
     # run association tests and plot
     #--------------------------------
     
     if args.ass_method == "both":
-        logger.info("Running both GWAS and ARGWAS for associating")
+        logger.info("- Running both GWAS and AIM for associating")
     else:
-        logger.info("Running " + args.ass_method + " for associating")
+        logger.info("- Running " + args.ass_method + " for associating")
     
     if args.ass_method == "GWAS" or args.ass_method == "both":
         pGWAS = gwas.TpGWAS(phenotypes=pheno)
@@ -247,23 +260,30 @@ if args.task == "associate":
         fig.set_size_inches(30, 30)
         fig.savefig(args.out + '_OLS_GWAS.png', bbox_inches='tight')# 
 
-    if args.ass_method == "ARGWAS" or args.ass_method == "both":
+    if args.ass_method == "AIM" or args.ass_method == "both":
         
-        pheno.findCausalTrees(trees)
+        logger.info("- Reading tree estimations for tree-based association from " + args.estimated_tree_file)
+        trees_estimated = tskit.load(args.estimated_tree_file)
         
-        tGWAS = gwas.TtGWAS(trees, pheno)
-        tGWAS.runCGTA_HE(trees, N, args.out, logger)
-        tGWAS.writeToFile(trees, args.out, logger)
+        # the individuals of true and estimated ARGs should be identical
+        if len(trees_estimated.samples()) != N:
+            raise ValueError("Number of individuals in estimated tree (" + str(len(trees_estimated.samples())) + ") and true tree (" + str(N) + ") are not the same")
+        
+        pheno.findCausalTrees(trees_estimated)
+        
+        tGWAS = gwas.TtGWAS(trees_estimated, pheno)
+        tGWAS.runCGTA_HE(trees_estimated, N, args.out, logger)
+        tGWAS.writeToFile(trees_estimated, args.out, logger)
 
         fig, ax = plt.subplots(5,figsize=(30,30))
-        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_Jackknife, subplot=ax[1], logfile=logger, title_supplement = "HECP_Jackknife")
-        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_OLS, subplot=ax[2],  logfile=logger, title_supplement = "HECP_OLS")
-        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_Jackknife, subplot=ax[3], logfile=logger, title_supplement = "HESD_Jackknife")
-        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_OLS, ax[4], logfile=logger, title_supplement = "HESD_OLS")
+        tGWAS.manhattan_plot_special_pvalues(range(trees_estimated.num_trees), tGWAS.p_values_HECP_Jackknife, subplot=ax[1], logfile=logger, title_supplement = "HECP_Jackknife")
+        tGWAS.manhattan_plot_special_pvalues(range(trees_estimated.num_trees), tGWAS.p_values_HECP_OLS, subplot=ax[2],  logfile=logger, title_supplement = "HECP_OLS")
+        tGWAS.manhattan_plot_special_pvalues(range(trees_estimated.num_trees), tGWAS.p_values_HESD_Jackknife, subplot=ax[3], logfile=logger, title_supplement = "HESD_Jackknife")
+        tGWAS.manhattan_plot_special_pvalues(range(trees_estimated.num_trees), tGWAS.p_values_HESD_OLS, ax[4], logfile=logger, title_supplement = "HESD_OLS")
         
         fig.tight_layout()
         fig.set_size_inches(30, 30)
         fig.show()
-        fig.savefig(args.out + '_HE_ARGWAS.png', bbox_inches='tight')# 
+        fig.savefig(args.out + '_HE_AIM.png', bbox_inches='tight')# 
  
 

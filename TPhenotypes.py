@@ -14,6 +14,9 @@ class Phenotypes:
     def __init__(self, name, variants, num_inds, logfile):
         self.name = name
         self.num_variants = variants.number
+        
+        print("number of variants", variants.number)
+        
         self.N = num_inds
         self.y = np.zeros(self.N)
         self.betas = [0] * self.num_variants
@@ -64,7 +67,7 @@ class Phenotypes:
         None.
 
         """
-        causal_variants = [variants.info['variant'][i] for i in causal_variant_indeces]
+        causal_variants = [variants.variants[i] for i in causal_variant_indeces]
         if(len(causal_variants) != len(betas)):
             raise ValueError("must provide equal number of causal variants and betas to simulate fixed phenotype")
             
@@ -80,7 +83,7 @@ class Phenotypes:
             
             logfile.info("- Simulated causal variant at index " + str(causal_variant_indeces[v]) + " with beta " + str(betas[v]) + " and allele freq " + str(allele_freq) + " resulting in a power of " + str(betas[v]**2 * allele_freq * (1-allele_freq)))
         
-    def simulateUniform(self, variants, prop_causal_mutations, sd_beta_causal_mutations, random, mean_beta_causal_mutation = 0):
+    def simulateUniform(self, variants, prop_causal_mutations, sd_beta_causal_mutations, random, logfile, mean_beta_causal_mutation = 0):
         """
         Parameters
         ----------
@@ -99,27 +102,30 @@ class Phenotypes:
         
 
         #add phenotypic effect to mutations that are uniformly distributed
-        for v, var in enumerate(variants.info['variant']): 
-            r = random.random.uniform(0,1,1)
-
-            if(r < prop_causal_mutations):
-                                
-                #define beta
-                beta = random.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)[0]
-                self.betas[v] = beta
-                
-                #simulate phenotype
-                self.y[var.genotypes == 1] += beta
-                self.y[var.genotypes == 2] += 2 * beta
-
-                #save causal position
-                self.causal_variants.append(var)
-                self.causal_betas.append(beta)
-                allele_freq = variants.info['allele_freq'][v]
-                self.causal_power.append(beta**2 * allele_freq * (1-allele_freq))
-                self.causal_variant_indeces.append(v)
+        for v, var in enumerate(variants.variant): 
+            
+            if variants.info["typed"] == True:
+            
+                r = random.random.uniform(0,1,1)
+    
+                if(r < prop_causal_mutations):
+                                    
+                    #define beta
+                    beta = random.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)[0]
+                    self.betas[v] = beta
+                    
+                    #simulate phenotype
+                    self.y[var.genotypes == 1] += beta
+                    self.y[var.genotypes == 2] += 2 * beta
+    
+                    #save causal position
+                    self.causal_variants.append(var)
+                    self.causal_betas.append(beta)
+                    allele_freq = variants.info['allele_freq'][v]
+                    self.causal_power.append(beta**2 * allele_freq * (1-allele_freq))
+                    self.causal_variant_indeces.append(v)
         
-        print("simulated phenotypes based on " + str(len(self.causal_variants)) + " causal variants out of a total of " + str(self.num_variants) + ".")
+        logfile.info("- Simulated phenotypes based on " + str(len(self.causal_variants)) + " causal variants out of a total of " + str(self.num_variants) + ".")
         self.filled = True
         
     
@@ -160,7 +166,7 @@ class Phenotypes:
         buffer = cols - rows
         return np.abs(buffer)
     
-    def write_to_file_gcta(self, out):
+    def write_to_file_gcta(self, out, logfile):
         """
         write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value)
 
@@ -174,4 +180,28 @@ class Phenotypes:
         tmp_pheno['1'] = np.arange(1,self.N+1)
         tmp_pheno['2'] = tmp_pheno['1']
         tmp_pheno['3'] = self.y        
+        
+        logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
+
+    def write_to_file(self, variants, out, logfile):
+        """
+        write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value)
+
+        Returns
+        -------
+        None.
+
+        """
+    
+        #results for each variant
+        table = pd.DataFrame()
+        table['start'] = variants.info['position']
+        table['end'] = variants.info['position']
+        table['typed'] = variants.info['typed']
+        table['causal'] = np.repeat("FALSE", variants.number)
+        table.loc[self.causal_variant_indeces, 'causal'] = "TRUE"
+        table['betas'] = self.betas 
+      
+        logfile.info("- Writing phenotype data '" + out + "_pheno_causal_vars.csv'")
+        table.to_csv(out + "_variants_results.csv", index = False, header = True)       
