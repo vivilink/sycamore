@@ -9,17 +9,17 @@ Created on Mon Aug 16 17:52:46 2021
 import numpy as np
 import pandas as pd
 
+#TODO: being typed or not should be an option for all causal variants
 
 class Phenotypes:
     def __init__(self, name, variants, num_inds, logfile):
         self.name = name
-        self.num_variants = variants.number
         
         print("number of variants", variants.number)
         
         self.N = num_inds
         self.y = np.zeros(self.N)
-        self.betas = [0] * self.num_variants
+        self.betas = [0] * variants.number
         self.causal_variants = []
         self.causal_betas = []
         self.causal_power = []
@@ -125,7 +125,7 @@ class Phenotypes:
                     self.causal_power.append(beta**2 * allele_freq * (1-allele_freq))
                     self.causal_variant_indeces.append(v)
         
-        logfile.info("- Simulated phenotypes based on " + str(len(self.causal_variants)) + " causal variants out of a total of " + str(self.num_variants) + ".")
+        logfile.info("- Simulated phenotypes based on " + str(len(self.causal_variants)) + " causal variants out of a total of " + str(variants.number) + ".")
         self.filled = True
         
     
@@ -193,6 +193,11 @@ class Phenotypes:
         None.
 
         """
+        
+        print("variants number", variants.number)
+        print("variants number tyoed", variants.number_typed)
+        print("len self.betas", len(self.betas))
+
     
         #results for each variant
         table = pd.DataFrame()

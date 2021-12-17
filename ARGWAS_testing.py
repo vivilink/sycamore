@@ -5,6 +5,8 @@ Created on Mon Aug  9 16:57:18 2021
 
 @author: linkv
 """
+
+
 import tskit
 import matplotlib.pyplot as plt
 import TPhenotypes as pt
@@ -17,6 +19,10 @@ import argparse
 import logging
 import os
 import sys
+import numpy 
+
+os.chdir(os.path.dirname(sys.argv[0]))
+
 
 from numpy.random import RandomState
 class randomGenerator:
@@ -49,29 +55,29 @@ trees = simulator.run_simulation("default", r)
 # Read trees
 #-----------------------
 
+directory = "/home/vivian/postdoc_USC/AIM/experiments/"
 
-
-trees = tskit.load("/data/ARGWAS/experiments/test_2.trees")
+trees = tskit.load(directory + "test_2.trees")
 
 samp_ids = trees.samples()
 N = len(samp_ids)
 
-trees_relate = tskit.load("/data/ARGWAS/experiments/relate_test_2_propTyped1/test_2_propTyped1.trees")
+trees_relate = tskit.load(directory + "relate_test_2_propTyped1/test_2_propTyped1.trees")
 variants = tvar.TVariantsFiltered(trees, samp_ids, 0, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger,
-                                  filtered_variants_file = "/data/ARGWAS/experiments/relate_test_2_propTyped1/test_2_propTyped1_filtered_sample_variants.csv")
+                                  filtered_variants_file = directory + "/relate_test_2_propTyped1/test_2_propTyped1_filtered_sample_variants.csv")
 print(variants.number_typed)
 len(list(trees_relate.variants(samples=samp_ids)))
 
-trees_relate = tskit.load("/data/ARGWAS/experiments/relate_test_2_propTyped0.01/test_2_propTyped0.01.trees")
+trees_relate = tskit.load(directory + "relate_test_2_propTyped0.01/test_2_propTyped0.01.trees")
 variants = tvar.TVariantsFiltered(trees, samp_ids, 0, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger,
-                                  filtered_variants_file = "/data/ARGWAS/experiments/relate_test_2_propTyped0.01/test_2_propTyped0.01_filtered_sample_variants.csv")
+                                  filtered_variants_file = directory + "relate_test_2_propTyped0.01/test_2_propTyped0.01_filtered_sample_variants.csv")
 print(variants.number_typed)
 len(list(trees_relate.variants(samples=samp_ids)))
 
 
-trees_relate = tskit.load("/data/ARGWAS/experiments/relate_test_2_propTyped0.05/test_2_propTyped0.05.trees")
+trees_relate = tskit.load(directory + "relate_test_2_propTyped0.05/test_2_propTyped0.05.trees")
 variants = tvar.TVariantsFiltered(trees, samp_ids, 0, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger,
-                                  filtered_variants_file = "/data/ARGWAS/experiments/relate_test_2_propTyped0.05/test_2_propTyped0.05_filtered_sample_variants.csv")
+                                  filtered_variants_file = directory + "relate_test_2_propTyped0.05/test_2_propTyped0.05_filtered_sample_variants.csv")
 print(variants.number_typed)
 len(list(trees_relate.variants(samples=samp_ids)))
 

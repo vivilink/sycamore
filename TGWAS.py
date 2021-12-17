@@ -24,7 +24,6 @@ class TGWAS:
         self.phenotypes = phenotypes
         self.num_associations = -1
         self.p_values = np.empty(0)
-        self.num_variants = phenotypes.num_variants
         # self.p_values_init = False
         
     # def _check_compatibility(self, ts_object, phenotypes):
@@ -46,11 +45,12 @@ class TGWAS:
 
 class TpGWAS(TGWAS):
     
-    def __init__(self, phenotypes):
+    def __init__(self, phenotypes, num_typed_variants):
         
         super().__init__(phenotypes)
         
-        self.num_associations = self.num_variants
+        self.num_typed_variants = num_typed_variants
+        self.num_associations = self.num_typed_variants
         # self._check_compatibility(ts_object, phenotypes)
         self.p_values = np.empty(self.num_associations)
         # self.q_values = np.empty(self.num_associations)
@@ -280,14 +280,14 @@ class TtGWAS(TGWAS):
             raise ValueError("tree index", tree.index, "produced negative p-value for SD Jackknife")
 
     def runGCTA_REML(self, ts_object, N, out, logfile):        
-        self.phenotypes.write_to_file_gcta(out)        
+        self.phenotypes.write_to_file_gcta(out, logfile)        
         
         start = time.time()
         for tree in ts_object.trees():
             self.runGCTA_REML_one_tree(tree, N, start, out, logfile)              
 
     def runCGTA_HE(self, ts_object, N, out, logfile):        
-        self.phenotypes.write_to_file_gcta(out)        
+        self.phenotypes.write_to_file_gcta(out, logfile)        
         
         start = time.time()
         for tree in ts_object.trees():
