@@ -8,7 +8,7 @@ Install limix_lmm:
 conda install -c conda-forge limix
 
 Download and unpack gcta:
-https://cnsgenomics.com/software/gcta/#Download
+https://cnsgenomics.com/software/gcta/#Download, provide correct path to executable in run_gcta_HE.sh
 
 Build environment with:
 conda env create -f argwas_environment.yml
@@ -18,3 +18,5 @@ conda install -c conda-forge statsmodels
 
 Install tskit package from within environment:
 conda install -c conda-forge tskit
+
+Install plinkFile library in R
