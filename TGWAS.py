@@ -56,8 +56,6 @@ class TpGWAS(TGWAS):
         # self.q_values = np.empty(self.num_associations)
         
     def OLS(self, variants, logfile):
-        print("len(variants.variants)", variants.number_typed)
-        print("len(self.p_values)", len(self.p_values))
         i = 0
         for v, variant in enumerate(variants.variants):
             if variants.info.iloc[v]['typed'] == True:
@@ -74,7 +72,7 @@ class TpGWAS(TGWAS):
         info_typed.set_index(info_typed['index'], drop=True, inplace=True)
         
         table = pd.DataFrame()
-        table['end'] = info_typed['position']
+        table['start'] = info_typed['position']
         table['end'] = info_typed['position']
         # table['typed'] = variants.info['typed']
         table['p_value'] = self.p_values
