@@ -211,4 +211,4 @@ class TVariantsFiltered(TVariants):
                 raise ValueError("allele frequency became negative while searching for one in interval " + str(interval))
                 
         logfile.info("- Found variant with freq " + str(freq) + " within the following interval: " + str(interval))
-        return info.iloc[0]['index']
+        return info.iloc[0]['index'], info.iloc[0]['position']

@@ -69,11 +69,12 @@ class Phenotypes:
         """
 
         causal_variants = [variants.variants[i] for i in causal_variant_indeces]
+        causal_pos = [variants.variants[i].site.position for i in causal_variant_indeces]
         if(len(causal_variants) != len(betas)):
             raise ValueError("must provide equal number of causal variants and betas to simulate fixed phenotype")
                     
         for v, var in enumerate(causal_variants):
-            self.betas[v] = betas[v]            
+            self.betas[causal_variant_indeces[v]] = betas[v]            
             self.y[var.genotypes == 1] += betas[v]
             self.causal_variants.append(var)
             self.causal_betas.append(betas[v])
@@ -81,7 +82,7 @@ class Phenotypes:
             self.causal_power.append(betas[v]**2 * allele_freq * (1-allele_freq))            
             self.causal_variant_indeces.append(causal_variant_indeces[v])
             
-            logfile.info("- Simulated causal variant at index " + str(causal_variant_indeces[v]) + " with beta " + str(betas[v]) + " and allele freq " + str(allele_freq) + " resulting in a power of " + str(betas[v]**2 * allele_freq * (1-allele_freq)))
+            logfile.info("- Simulated causal variant at position " + str(causal_pos[v]) + " at index " + str(causal_variant_indeces[v]) + " with beta " + str(betas[v]) + " and allele freq " + str(allele_freq) + " resulting in a power of " + str(betas[v]**2 * allele_freq * (1-allele_freq)))
         
     def simulateUniform(self, variants, prop_causal_mutations, sd_beta_causal_mutations, random, logfile, mean_beta_causal_mutation = 0):
         """
@@ -202,6 +203,9 @@ class Phenotypes:
         table['causal'] = np.repeat("FALSE", variants.number)
         table.loc[self.causal_variant_indeces, 'causal'] = "TRUE"
         table['betas'] = self.betas 
+        # table.loc[self.causal_variant_indeces, 'betas'] = "TRUE"
+
+        print(table.loc[self.causal_variant_indeces, 'start'])
       
         logfile.info("- Writing phenotype data '" + out + "_pheno_causal_vars.csv'")
         table.to_csv(out + "_pheno_causal_vars.csv", index = False, header = True)       
