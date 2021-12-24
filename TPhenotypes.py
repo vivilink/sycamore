@@ -203,9 +203,6 @@ class Phenotypes:
         table['causal'] = np.repeat("FALSE", variants.number)
         table.loc[self.causal_variant_indeces, 'causal'] = "TRUE"
         table['betas'] = self.betas 
-        # table.loc[self.causal_variant_indeces, 'betas'] = "TRUE"
-
-        print(table.loc[self.causal_variant_indeces, 'start'])
       
         logfile.info("- Writing phenotype data '" + out + "_pheno_causal_vars.csv'")
         table.to_csv(out + "_pheno_causal_vars.csv", index = False, header = True)       

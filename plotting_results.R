@@ -77,8 +77,8 @@ for(af in c(0.4)){#c(0.4, 0.2, 0.1, 0.05)
         ARGWAS <- ARGWAS[-1,]
         GWAS <- read.csv(paste(dir,"freq", af, "_indexUntyped_beta", beta, "_propTyped", prop, noise, "_aH_variants_results.csv", sep=''))
         pt_info <- read.csv(paste(dir,"freq0.4_indexUntyped_beta1_propTyped", prop, noise, "_aH_pheno_causal_vars.csv", sep = ''))
-        causal_pos_neg <- pt_info$start[which(pt_info$causal == TRUE && pt_info$betas < 0)]
-        causal_pos_pos <- pt_info$start[which(pt_info$betas < 0)]
+        causal_pos_neg <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas < 0)]
+        causal_pos_pos <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas > 0)]
         
         #get actual allele freq simulated
         # af <- read.csv()

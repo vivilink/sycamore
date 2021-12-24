@@ -172,7 +172,7 @@ class TVariantsFiltered(TVariants):
         haps.to_csv(name + "_variants.haps", sep=' ', header=False, index=False)
         
         
-    def findVariant(self, typed, freq, interval, logfile):
+    def findVariant(self, typed, freq, interval, random, logfile):
         """
         Find a variant that fits criteria to simulate fixed genotype depending on only one variant
 
@@ -204,11 +204,25 @@ class TVariantsFiltered(TVariants):
             raise ValueError("There are no variants of typed status '" + str(typed) +"'")
  
         info = self.info[(self.info['typed'] == typed) & (self.info['allele_freq'] == freq) & (self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
+        r = random.random.uniform(0,1,1)
+        if info.shape[0] < 1:
+            logfile.info("Did not find locus with requested af. Adapting af in increments of 0.001.")
         while info.shape[0] < 1:
-            freq = round(freq - 0.001,3)
+            #remove or add small value to freq until a locus is found
+            if r < 0.5:
+                freq = round(freq - 0.001,3)
+            else:
+                freq = round(freq + 0.001,3)
+
             info = self.info[(self.info['typed'] == typed) & (self.info['allele_freq'] == freq) & (self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
-            if freq < 0:
-                raise ValueError("allele frequency became negative while searching for one in interval " + str(interval))
+            if freq < 0 or freq > 0.5:
+                logfile.warning("Allele frequency became negative or exceeded 0.5 while searching for locus with requested af in interval " + str(interval) + ". Starting search in opposite direction.")
+                if r > 0.5:
+                    freq = round(freq - 0.001,3)
+                else:
+                    freq = round(freq + 0.001,3)
+                info = self.info[(self.info['typed'] == typed) & (self.info['allele_freq'] == freq) & (self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
+
                 
         logfile.info("- Found variant with freq " + str(freq) + " within the following interval: " + str(interval))
         return info.iloc[0]['index'], info.iloc[0]['position']

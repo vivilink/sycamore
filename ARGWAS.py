@@ -239,7 +239,7 @@ if args.task == "associate":
         if args.pty_fixed_betas == None:
             raise ValueError("No beta values provided for phenotype 'singleUntyped'")
             
-        var_index = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = [49461796, 49602827], logfile=logger)   
+        var_index, pos = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = [49461796, 49602827], random = r, logfile = logger)   
         logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
         #to know which variants are untyped you need variants from simulated tree, not estimated tree
         if args.variants_file is None:
@@ -256,11 +256,20 @@ if args.task == "associate":
         ah_info = pd.read_csv(args.allelic_hetero_file, delimiter = "\t")
         variant_indeces = []
         fixed_betas = []
+        sum_betas = 0
         for index, row in ah_info.iterrows():
-            var_index, pos = variants_orig.findVariant(typed=False, freq = row['freq'], interval = [49461796, 49602827], logfile=logger)   
+            f = -1
+            if row['freq'] > 0.5:
+                f = 1 - row['freq']
+                logger.warning("- Allele frequencies above 0.5 are not allowed. Transformed " + str(row['freq'])  + " to " + str(f) + ".")
+            else:
+                f = row['freq']
+            var_index, pos = variants_orig.findVariant(typed=False, freq = f, interval = [49461796, 49602827], random = r, logfile = logger)   
             variant_indeces.append(var_index)
             fixed_betas.append(row['beta'])
+            sum_betas += row['beta']
         logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
+        logger.info("- Simulating allelic heterogeneous phenotype with total beta " + str(sum_betas))
         pheno.simulateFixed(variants_orig, variant_indeces, fixed_betas, logger)
         pheno.write_to_file(variants_orig, args.out, logger)
 
@@ -275,7 +284,6 @@ if args.task == "associate":
     
     if args.ass_method == "GWAS" or args.ass_method == "both":
         pGWAS = gwas.TpGWAS(phenotypes = pheno, num_typed_variants = variants.number_typed)
-        print("variants.number_typed in ARGWAS 2", variants.number_typed)
         pGWAS.OLS(variants, logger)
         pGWAS.writeToFile(variants, args.out, logger)
         
