@@ -202,6 +202,8 @@ class TVariantsFiltered(TVariants):
         # check if there are variants with requested typed status
         if self.info[self.info['typed'] == typed].shape[0] == 0:
             raise ValueError("There are no variants of typed status '" + str(typed) +"'")
+            
+        print("random seed", random.seed)
  
         info = self.info[(self.info['typed'] == typed) & (self.info['allele_freq'] == freq) & (self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
         r = random.random.uniform(0,1,1)

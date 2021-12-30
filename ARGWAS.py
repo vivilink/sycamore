@@ -7,6 +7,7 @@ Created on Mon Aug  9 16:57:18 2021
 """
 # import numpy as np
 import tskit
+import numpy as np
 import matplotlib.pyplot as plt
 import TPhenotypes as pt
 import TGWAS as gwas
@@ -212,6 +213,7 @@ if args.task == "associate":
     pheno = pt.Phenotypes(args.name, variants_orig, N, logger)
     pheno.simulateEnvNoise(args.pty_sd_envNoise, r)
     logger.info("- Simulating environmental noise with sd " + str(args.pty_sd_envNoise))
+
     if args.pty_sim_method == 'uniform':
         logger.info("- Simulating phenotypes based on uniformly chosen variants with prop_causal_mutations: " + str(args.pty_prop_causal_mutations) + " and sd_beta_causal_mutations: " + str(args.pty_sd_beta_causal_mutations)) 
         pheno.simulateUniform(variants_orig, prop_causal_mutations=args.pty_prop_causal_mutations, sd_beta_causal_mutations=args.pty_sd_beta_causal_mutations, random=r)
@@ -258,16 +260,31 @@ if args.task == "associate":
         fixed_betas = []
         sum_betas = 0
         for index, row in ah_info.iterrows():
+            #get allele freq
             f = -1
             if row['freq'] > 0.5:
                 f = 1 - row['freq']
                 logger.warning("- Allele frequencies above 0.5 are not allowed. Transformed " + str(row['freq'])  + " to " + str(f) + ".")
             else:
                 f = row['freq']
+            
+            #get beta
+            if not np.isnan(row['beta']) and not np.isnan(row['power']):
+                raise ValueError("Cannot fix power and beta value. One value must be set to 'NA'. Beta is " + str(row['beta']) + " and power is " + str(row['power']))
+            if np.isnan(row['beta']):
+                beta = np.sqrt(row['power'] / (f * (1 - f)))
+                #some betas should be negative
+                r_num = r.random.uniform(0,1,1)
+                if r_num < 0.5:
+                    beta = -beta
+            else:
+                beta = row['beta']
+
+            print("random seed in argwas ", r.seed)
             var_index, pos = variants_orig.findVariant(typed=False, freq = f, interval = [49461796, 49602827], random = r, logfile = logger)   
             variant_indeces.append(var_index)
-            fixed_betas.append(row['beta'])
-            sum_betas += row['beta']
+            fixed_betas.append(beta)
+            sum_betas += beta
         logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
         logger.info("- Simulating allelic heterogeneous phenotype with total beta " + str(sum_betas))
         pheno.simulateFixed(variants_orig, variant_indeces, fixed_betas, logger)
