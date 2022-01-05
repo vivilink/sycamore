@@ -218,7 +218,7 @@ class TVariantsFiltered(TVariants):
 
             info = self.info[(self.info['typed'] == typed) & (self.info['allele_freq'] == freq) & (self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
             if freq < 0 or freq > 0.5:
-                logfile.warning("Allele frequency became negative or exceeded 0.5 while searching for locus with requested af in interval " + str(interval) + ". Starting search in opposite direction.")
+                logfile.warning("Allele frequency became negative or exceeded 0.5 while searching for locus with requested af " + str(freq) + " in interval " + str(interval) + ". Starting search in opposite direction.")
                 if r > 0.5:
                     freq = round(freq - 0.001,3)
                 else:
