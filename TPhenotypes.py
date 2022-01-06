@@ -14,9 +14,6 @@ import pandas as pd
 class Phenotypes:
     def __init__(self, name, variants, num_inds, logfile):
         self.name = name
-        
-        print("number of variants", variants.number)
-        
         self.N = num_inds
         self.y = np.zeros(self.N)
         self.betas = [0] * variants.number
@@ -82,7 +79,7 @@ class Phenotypes:
             self.causal_power.append(betas[v]**2 * allele_freq * (1-allele_freq))            
             self.causal_variant_indeces.append(causal_variant_indeces[v])
             
-            logfile.info("- Simulated causal variant at position " + str(causal_pos[v]) + " at index " + str(causal_variant_indeces[v]) + " with beta " + str(betas[v]) + " and allele freq " + str(allele_freq) + " resulting in a power of " + str(betas[v]**2 * allele_freq * (1-allele_freq)))
+            logfile.info("- Simulated causal variant at position " + str(causal_pos[v]) + " at index " + str(causal_variant_indeces[v]) + " with beta " + str(round(betas[v], 3)) + " and allele freq " + str(allele_freq) + " resulting in a power of " + str(round(betas[v]**2 * allele_freq * (1-allele_freq), 3)))
         
     def simulateUniform(self, variants, prop_causal_mutations, sd_beta_causal_mutations, random, logfile, mean_beta_causal_mutation = 0):
         """

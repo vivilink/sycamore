@@ -17,7 +17,9 @@ import TSimulator as tsim
 import pandas as pd
 import datetime
 import argparse
+from python_log_indenter import IndentedLoggerAdapter
 import logging
+from logging import handlers
 import os
 import sys
 # import statsmodels.api as sm
@@ -107,21 +109,32 @@ args = parser.parse_args()
 #-----------------------------
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-logging.basicConfig(
-    level = logging.INFO,
-    format = '%(asctime)s %(levelname)s %(message)s',
-    filename = args.out + ".log",
-    filemode = 'w' #this makes the log file be not append I think
-)
-
-logger.info("writing output files with prefix '" + args.out + "'")
-
 file_handler = logging.FileHandler(args.out + ".log")
 logger.addHandler(logging.StreamHandler())
 logger.addHandler(file_handler)
 
-logger.info(str(args))
+logging.basicConfig(
+    format = '%(asctime)s %(levelname)s %(message)s',
+    filename = args.out + ".log",
+    filemode = 'w' #this makes the log file be not append I think
+)
+logger = IndentedLoggerAdapter(logger)
+logger.setLevel(logging.INFO)
+
+
+
+#-----------------------------
+# Header
+#-----------------------------
+
+logger.info("---------------------")
+logger.info("AIM 0.1")
+logger.info("---------------------")
+
+
+#print arguments to logfile
+logger.info("- The following parameters were passed: " + str(args))
+logger.info("- Writing output files with prefix '" + args.out + "'.")
 
 
 #-----------------------------
@@ -136,7 +149,7 @@ class randomGenerator:
 
 r = randomGenerator(args.seed)
 
-logger.info("randomGenerator seed set to " + str(r.random.get_state()[1][0]))
+logger.info("- randomGenerator seed is set to " + str(r.random.get_state()[1][0]))
 
 
 #-----------------------
@@ -209,7 +222,6 @@ if args.task == "associate":
     # create phenotypes
     #--------------------------------
     variants_orig = tvar.TVariantsFiltered(trees_orig, samp_ids, 0, 1, 1, args.pos_int, r, logger, args.variants_file)
-    print("len(variants_orig.variants) after reading variants_orig",len(variants_orig.variants))
     pheno = pt.Phenotypes(args.name, variants_orig, N, logger)
     pheno.simulateEnvNoise(args.pty_sd_envNoise, r)
     logger.info("- Simulating environmental noise with sd " + str(args.pty_sd_envNoise))
@@ -259,6 +271,10 @@ if args.task == "associate":
         variant_indeces = []
         fixed_betas = []
         sum_betas = 0
+        
+        logger.info("- Searching for loci with requested allele frequencies.")
+        logger.add()
+            
         for index, row in ah_info.iterrows():
             #get allele freq
             f = -1
@@ -280,15 +296,21 @@ if args.task == "associate":
             else:
                 beta = row['beta']
 
-            print("random seed in argwas ", r.seed)
-            var_index, pos = variants_orig.findVariant(typed=False, freq = f, interval = [49461796, 49602827], random = r, logfile = logger)   
+
+            var_index, pos = variants_orig.findVariant(typed=False, freq = f, interval = [row["interval_start"], row["interval_end"]], random = r, logfile = logger)   
             variant_indeces.append(var_index)
             fixed_betas.append(beta)
             sum_betas += beta
-        logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
+
+        logger.sub()
+
         logger.info("- Simulating allelic heterogeneous phenotype with total beta " + str(sum_betas))
+        
+        logger.info("- Simulating phenotypes:")
+        logger.add()
         pheno.simulateFixed(variants_orig, variant_indeces, fixed_betas, logger)
         pheno.write_to_file(variants_orig, args.out, logger)
+        logger.sub()
 
     #--------------------------------
     # run association tests and plot
@@ -300,6 +322,9 @@ if args.task == "associate":
         logger.info("- Running " + args.ass_method + " for associating")
     
     if args.ass_method == "GWAS" or args.ass_method == "both":
+        
+        logger.info("- GWAS:")
+        logger.add()
         pGWAS = gwas.TpGWAS(phenotypes = pheno, num_typed_variants = variants.number_typed)
         pGWAS.OLS(variants, logger)
         pGWAS.writeToFile(variants, args.out, logger)
@@ -309,9 +334,12 @@ if args.task == "associate":
         fig.tight_layout()
         fig.set_size_inches(30, 30)
         fig.savefig(args.out + '_OLS_GWAS.png', bbox_inches='tight')# 
+        
+        logger.sub()
 
     if args.ass_method == "AIM" or args.ass_method == "both":
-        
+        logger.info("- AIM:")
+        logger.add()
         logger.info("- Reading tree estimations for tree-based association from " + args.tree_file)
         
         pheno.findCausalTrees(trees)
@@ -331,4 +359,5 @@ if args.task == "associate":
         fig.show()
         fig.savefig(args.out + '_HE_AIM.png', bbox_inches='tight')# 
  
+        logger.sub()
 
