@@ -202,29 +202,42 @@ class TVariantsFiltered(TVariants):
         # check if there are variants with requested typed status
         if self.info[self.info['typed'] == typed].shape[0] == 0:
             raise ValueError("There are no variants of typed status '" + str(typed) +"'")
-            
-        print("random seed", random.seed)
- 
+             
+        # find first variant with requested allele frequency
         info = self.info[(self.info['typed'] == typed) & (self.info['allele_freq'] == freq) & (self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
-        r = random.random.uniform(0,1,1)
         if info.shape[0] < 1:
-            logfile.info("Did not find locus with requested af. Adapting af in increments of 0.001.")
-        while info.shape[0] < 1:
+            logfile.info("- Did not find locus with requested af " + str(freq) + ". Adapting af in increments of 0.001.")
+        
+        #set direction of search
+        r = random.random.uniform(0,1,1)
+        if r < 0.5:
+            step = -0.001
+        else:
+            step = 0.001
+            
+        freq_orig = freq
+            
+        while info.shape[0] < 1 and freq >= 0 and freq <= 0.5:
             #remove or add small value to freq until a locus is found
-            if r < 0.5:
-                freq = round(freq - 0.001,3)
-            else:
-                freq = round(freq + 0.001,3)
+
+            freq = round(freq + step,3)
 
             info = self.info[(self.info['typed'] == typed) & (self.info['allele_freq'] == freq) & (self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
-            if freq < 0 or freq > 0.5:
-                logfile.warning("Allele frequency became negative or exceeded 0.5 while searching for locus with requested af " + str(freq) + " in interval " + str(interval) + ". Starting search in opposite direction.")
-                if r > 0.5:
-                    freq = round(freq - 0.001,3)
-                else:
-                    freq = round(freq + 0.001,3)
+        
+        #if loop was left because out of bounds, search in other direction
+        if freq < 0 or freq > 0.5:
+            logfile.warning("Allele frequency became negative or exceeded 0.5 while searching for locus with requested af " + str(freq_orig) + " in interval " + str(interval) + ". Starting search in opposite direction.")
+            step = -step
+            
+            #set search back to starting freq and go in other direction
+            freq = freq_orig
+
+            while info.shape[0] < 1 and freq >= 0 and freq <= 0.5:
+                freq = round(freq + step,3)    
                 info = self.info[(self.info['typed'] == typed) & (self.info['allele_freq'] == freq) & (self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
 
-                
-        logfile.info("- Found variant with freq " + str(freq) + " within the following interval: " + str(interval))
+        if freq < 0 or freq > 0.5:
+            raise ValueError("Could not find locus with requested allele frequency")
+
+        # logfile.info("--> Found variant with freq " + str(freq) + " within the following interval: " + str(interval))
         return info.iloc[0]['index'], info.iloc[0]['position']
