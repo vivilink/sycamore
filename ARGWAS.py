@@ -58,7 +58,7 @@ parser.add_argument('--tree_file_simulated',
 #simulating trees
 parser.add_argument('--sim_tree_simulator', dest = "sim_tree_simulator", default = "stdPopsim", choices=["stdPopsim"],
                     help = "Method used for simulating. stdPopsim is real human chromosome")
-parser.add_argument('--N', 
+parser.add_argument('--N', type=int, 
                     help =  "Number of haploid individuals to simulate")
 parser.add_argument('--pos_int', type=float, default = True,
                     help = "Should the positions of the variants be transformed into integers. Msprime simulates a continuous genome, so if pos_int is true, the simulated positions are rounded and if one position overlaps the previous, it is moved to the next position in the genome.")
