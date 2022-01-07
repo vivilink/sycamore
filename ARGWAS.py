@@ -58,6 +58,8 @@ parser.add_argument('--tree_file_simulated',
 #simulating trees
 parser.add_argument('--sim_tree_simulator', dest = "sim_tree_simulator", default = "stdPopsim", choices=["stdPopsim"],
                     help = "Method used for simulating. stdPopsim is real human chromosome")
+parser.add_argument('--N', 
+                    help =  "Number of haploid individuals to simulate")
 parser.add_argument('--pos_int', type=float, default = True,
                     help = "Should the positions of the variants be transformed into integers. Msprime simulates a continuous genome, so if pos_int is true, the simulated positions are rounded and if one position overlaps the previous, it is moved to the next position in the genome.")
 
@@ -157,11 +159,15 @@ logger.info("- randomGenerator seed is set to " + str(r.random.get_state()[1][0]
 #-----------------------
 
 if args.task == "simulate":
+    logger.info("- TASK: simulate")
+
     if args.sim_tree_simulator == "stdPopsim":
         simulator = tsim.TSimulatorStdPopsim()
-        trees = simulator.run_simulation(args.out, r, logger)
+        trees = simulator.run_simulation(args.N, args.out, r, logger)
         samp_ids = trees.samples()
         N = len(samp_ids)
+        if args.N != N:
+            logger.warning("Number of samples in tree does not match number of samples in arguments")
         inds = tind.Individuals(2, N)
         variants = tvar.TVariants(trees, samp_ids)
         variants.writeVariantInfo(trees, samp_ids, args.out)
