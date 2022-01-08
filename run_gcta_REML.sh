@@ -1,10 +1,12 @@
 #!/bin/bash
 
-Rscript /data/ARGWAS/argwas/create_gcta_GRM.R
+Rscript create_gcta_GRM.R ${1}
 
-/data/ARGWAS/gcta_1.93.2beta/gcta64 --reml --grm /data/ARGWAS/argwas/GRM_covariance --pheno /data/ARGWAS/argwas/phenotypes.phen --out /data/ARGWAS/argwas/GRM_covariance_tests --threads 15 --reml-no-constrain
+gcta_1.93.3beta2/gcta64 --reml --grm ${1}_GRM_covariance --pheno ${1}_phenotypes.phen --out ${1}_REML --threads 2 > ${1}_tmp.out
 
 #extract correct lines, replace white space with tab and remove possibly introduced double tabs
-sed -n '2,4p' GRM_covariance_tests.HEreg | unexpand -a | tr -s '\t' > HE-CP_result.txt
-sed -n '7,9p' GRM_covariance_tests.HEreg | unexpand -a | tr -s '\t' > HE-SD_result.txt
+grep "Pval" ${1}_REML.hsq | cut -f 2 > ${1}_REML_result.txt
 
+
+
+#~/git/argwas/gcta_1.93.3beta2/gcta64 --reml --grm freq0.4_indexUntyped_beta1_propTyped0.7_aH_GRM_covariance --pheno freq0.4_indexUntyped_beta1_propTyped0.7_aH_phenotypes.phen --out REML_test --threads 2

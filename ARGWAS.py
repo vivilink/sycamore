@@ -19,7 +19,6 @@ import datetime
 import argparse
 from python_log_indenter import IndentedLoggerAdapter
 import logging
-from logging import handlers
 import os
 import sys
 # import statsmodels.api as sm
@@ -89,7 +88,8 @@ pty.add_argument('--allelic_hetero_file',
 assoc = parser.add_argument_group('associations')
 assoc.add_argument('--ass_method', choices = ["GWAS", "AIM", "both"], 
                    help = "Either run only GWAS, AIM or both")
-
+assoc.add_argument('--AIM_method', choices = ["HE", "REML"],
+                   help = "Use either Haseman-Elston or REML to test trees for association")
 
 
 #limit data
@@ -351,19 +351,30 @@ if args.task == "associate":
         pheno.findCausalTrees(trees)
         
         tGWAS = gwas.TtGWAS(trees, pheno)
-        tGWAS.runCGTA_HE(trees, N, args.out, logger)
-        tGWAS.writeToFile(trees, args.out, logger)
-
-        fig, ax = plt.subplots(5,figsize=(30,30))
-        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_Jackknife, subplot=ax[1], logfile=logger, title_supplement = "HECP_Jackknife")
-        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_OLS, subplot=ax[2],  logfile=logger, title_supplement = "HECP_OLS")
-        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_Jackknife, subplot=ax[3], logfile=logger, title_supplement = "HESD_Jackknife")
-        tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_OLS, ax[4], logfile=logger, title_supplement = "HESD_OLS")
         
-        fig.tight_layout()
-        fig.set_size_inches(30, 30)
-        fig.show()
-        fig.savefig(args.out + '_HE_AIM.png', bbox_inches='tight')# 
+        if args.AIM_method == "HE":
+            logger.info("- Using Haseman-Elston to test for association between trees and phenotypes")
+            tGWAS.runCGTA_HE(trees, N, args.out, logger)
+            tGWAS.writeToFile(trees, args.out, logger)
+    
+            fig, ax = plt.subplots(5,figsize=(30,30))
+            tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_Jackknife, subplot=ax[1], logfile=logger, title_supplement = "HECP_Jackknife")
+            tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_OLS, subplot=ax[2],  logfile=logger, title_supplement = "HECP_OLS")
+            tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_Jackknife, subplot=ax[3], logfile=logger, title_supplement = "HESD_Jackknife")
+            tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_OLS, ax[4], logfile=logger, title_supplement = "HESD_OLS")
+            
+            fig.tight_layout()
+            fig.set_size_inches(30, 30)
+            fig.show()
+            fig.savefig(args.out + '_HE_AIM.png', bbox_inches='tight')# 
+        
+        if args.AIM_method == "REML":
+            logger.info("- Using REML to test for association between trees and phenotypes")
+            tGWAS.runGCTA_REML(trees, N, args.out, logger)
+            tGWAS.writeToFile(trees, args.out, logger)
+            
+        else:
+            logger.error("ERROR: No method for tree association provided. Use '--AIM_method' to set method.")
  
         logger.sub()
 

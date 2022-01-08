@@ -222,30 +222,14 @@ class TtGWAS(TGWAS):
         f.close()
                 
         # create gcta input files, run gcta and parse output
-        exit_code = subprocess.call("run_gcta_REML.sh")
-        # exit_code = subprocess.call(os.getcwd() + "/run_gcta_REML.sh")
-        # TODO: locations of gcta and run_gcta_HE scripts only exist for me
+        exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_REML.sh", out])
 
         # read results
-        HE_CP = pd.read_table(out + "_HE-CP_result.txt")
-        HE_SD = pd.read_table(out + "_HE-SD_result.txt")
-        
-        self.p_values_HECP_OLS[tree.index] = HE_CP["P_OLS"][1]
-        if(HE_CP["P_OLS"][1] < 0):
-            raise ValueError("tree index", tree.index, "produced negative p-value for CP OLS")
-            
-        self.p_values_HECP_Jackknife[tree.index] = HE_CP["P_Jackknife"][1]        
-        if(HE_CP["P_Jackknife"][1] < 0):
-            raise ValueError("tree index", tree.index, "produced negative p-value for CP Jackknife")
-
-        self.p_values_HESD_OLS[tree.index] = HE_SD["P_OLS"][1]
-        if(HE_SD["P_OLS"][1] < 0):
-            raise ValueError("tree index", tree.index, "produced negative p-value for SD OLS")
-
-        self.p_values_HESD_Jackknife[tree.index] = HE_SD["P_Jackknife"][1]
-        if(HE_SD["P_Jackknife"][1] < 0):
-            raise ValueError("tree index", tree.index, "produced negative p-value for SD Jackknife")
-
+        result = pd.read_table(out + "_REML.hsq")
+        result_pvalue = float(result['Variance'][result['Source'] == 'Pval'])
+        self.p_values[tree.index] = result_pvalue
+        if(result_pvalue < 0):
+            raise ValueError("tree index", tree.index, "produced negative p-value with REML")
                 
     def runCGTA_HE_one_tree(self, tree, N, start, out, logfile):        
         #log progress
