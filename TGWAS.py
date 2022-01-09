@@ -217,7 +217,7 @@ class TtGWAS(TGWAS):
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, N)
         covariance = tree_obj.covariance(N)
-        with open('GRM_covariance.txt', 'w') as f:
+        with open(out + '_GRM_covariance.txt', 'w') as f:
             np.savetxt(f, covariance)
         f.close()
                 
