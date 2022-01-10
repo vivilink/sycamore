@@ -53,11 +53,11 @@ for(noise in c("_withNoise", "")){
 #------------------------------------
 
 
-dir <- "/home/vivian/postdoc_USC/AIM/experiments/aH/"
+dir <- "~/postdoc_USC/AIM/experiments_N5k/aH/twoLoci/HE/"
 
-for(af in c(0.4)){#c(0.4, 0.2, 0.1, 0.05)
+for(af in c("")){#c(0.4, 0.2, 0.1, 0.05)
   for(noise in c("", "_withNoise")){
-    for(beta in c(1) ){ #c(1,0.01)
+    for(beta in c("") ){ #c(1,0.01)
       pdf(paste(dir,"test_2_results_beta", beta, "_freq", af, noise, "_aH.pdf", sep=''), width=20, height=10)
       
       m_layout <- matrix(nrow=3, ncol=8)
@@ -73,10 +73,10 @@ for(af in c(0.4)){#c(0.4, 0.2, 0.1, 0.05)
       layout(m_layout)
       # /data/ARGWAS/experiments/freq0.4_indexUntyped_beta1_propTyped0.7_trees_results.csv
       for(prop in c(0.7, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01)){ #1, 0.7, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01
-        ARGWAS <- read.csv(paste(dir,"freq", af, "_indexUntyped_beta", beta, "_propTyped", prop , noise, "_aH_trees_results.csv", sep=''))
+        ARGWAS <- read.csv(paste(dir,"freq", af, "_indexUntyped_aH_beta", beta, "_propTyped", prop , noise, "_trees_results.csv", sep=''))
         ARGWAS <- ARGWAS[-1,]
-        GWAS <- read.csv(paste(dir,"freq", af, "_indexUntyped_beta", beta, "_propTyped", prop, noise, "_aH_variants_results.csv", sep=''))
-        pt_info <- read.csv(paste(dir,"freq0.4_indexUntyped_beta1_propTyped", prop, noise, "_aH_pheno_causal_vars.csv", sep = ''))
+        GWAS <- read.csv(paste(dir,"freq", af, "_indexUntyped_aH_beta", beta, "_propTyped", prop, noise, "_variants_results.csv", sep=''))
+        pt_info <- read.csv(paste(dir,"freq", af, "_indexUntyped_aH_beta", beta, "_propTyped", prop, noise, "_pheno_causal_vars.csv", sep = ''))
         causal_pos_neg <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas < 0)]
         causal_pos_pos <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas > 0)]
         
@@ -103,10 +103,11 @@ for(af in c(0.4)){#c(0.4, 0.2, 0.1, 0.05)
         abline(v=causal_pos_pos, col="red")
         abline(v=causal_pos_neg, col="blue")
         
-        plot(GWAS$end, -log10(GWAS_p), main=paste("GWAS - PrTyped:", prop), xlab="position", ylab="-log10(p)")
-        abline(v=causal_pos_pos, col="red")
-        abline(v=causal_pos_neg, col="blue")
-        abline(h=8, col="gray")
+        # plot(GWAS$end, -log10(GWAS_p), main=paste("GWAS - PrTyped:", prop), xlab="position", ylab="-log10(p)")
+        # abline(v=causal_pos_pos, col="red")
+        # abline(v=causal_pos_neg, col="blue")
+        # abline(h=8, col="gray")
+        
         # if(ARGWAS$start[which(ARGWAS$causal == TRUE)] != GWAS$start[which(GWAS$causal == TRUE)]){
         #   stop("causal positions of ARGWAS and GWAS don't match")
       }
@@ -114,6 +115,13 @@ for(af in c(0.4)){#c(0.4, 0.2, 0.1, 0.05)
     dev.off()
   }
 }
+
+
+freq <- read.table("/home/vivian/postdoc_USC/AIM/experiments_N5k/simulation5k_simulated_sample_variants.csv", sep=',', header=TRUE)
+hist(freq$allele_freq)
+
+freq_0.01 <- read.table("/home/vivian/postdoc_USC/AIM/experiments_N5k/relate_simulation5k_propTyped0.01/simulation5k_propTyped0.01_filtered_sample_variants.csv", sep=',', header=TRUE)
+hist(freq_0.01$allele_freq[freq_0.01$typed == "False" & freq_0.01$position >= 49461796 & freq_0.01$position <= 49476796], breaks=seq(0,0.5,0.001))
 
 #-----------------------------
 # downsampled RELATE

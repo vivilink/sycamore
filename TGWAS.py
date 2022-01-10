@@ -59,7 +59,13 @@ class TpGWAS(TGWAS):
         i = 0
         for v, variant in enumerate(variants.variants):
             if variants.info.iloc[v]['typed'] == True:
-                self.p_values[i] = sm.OLS(self.phenotypes.y, sm.tools.add_constant(variant.genotypes)).fit().pvalues[1]
+                PVALUE = sm.OLS(self.phenotypes.y, sm.tools.add_constant(variant.genotypes)).fit().pvalues[1]
+                print("PVALUE", PVALUE)
+                print("variant.genotypes", variant.genotypes)
+                print("self.phenotypes.y", self.phenotypes.y)
+
+                raise ValueError("done")
+                self.p_values[i] = PVALUE
                 i += 1
             # else:
             #     self.p_values[v] = np.nan
@@ -88,8 +94,6 @@ class TpGWAS(TGWAS):
         stats['max_p_value'] = max(self.p_values) 
         logfile.info("- Writing stats from OLS to '" + name + "_variants_stats.csv'")           
         stats.to_csv(name + "_variants_stats.csv", index = False, header = True)        
-
-
         
             
     def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, logfile, size=1, n_snps_lowess = 0, *args):

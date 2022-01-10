@@ -136,8 +136,11 @@ logger.info("---------------------")
 
 #print arguments to logfile
 logger.info("- The following parameters were passed: " + str(args))
-logger.info("- Writing output files with prefix '" + args.out + "'.")
-
+logger.info("- Writing output files with prefix '" + args.out + "'")
+logger.info("- Adding plots to the following directory '", args.out + "_plots'")
+plots_dir = args.out + "_plots/"
+if not os.path.exists(plots_dir):
+    os.mkdir(plots_dir)
 
 #-----------------------------
 # initialize random generator
@@ -249,7 +252,7 @@ if args.task == "associate":
         if args.pty_fixed_betas == None:
             raise ValueError("No beta values provided for phenotype 'singleTyped'")
             
-        var_index = variants_orig.findVariant(typed=True, freq = args.single_variant_af, interval = [49461796, 49602827] , logfile=logger)
+        var_index = variants_orig.findVariant(typed=True, freq = args.single_variant_af, interval = [49461796, 49602827], out = args.out, random = r, logfile = logger)
         logger.info("- Simulating a phenotypes based on the following typed variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
         pheno.simulateFixed(variants_orig, [var_index], args.pty_fixed_betas, logger)
         pheno.write_to_file(variants_orig, args.out, logger)
@@ -259,7 +262,7 @@ if args.task == "associate":
         if args.pty_fixed_betas == None:
             raise ValueError("No beta values provided for phenotype 'singleUntyped'")
             
-        var_index, pos = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = [49461796, 49602827], random = r, logfile = logger)   
+        var_index, pos = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = [49461796, 49602827], out = args.out, random = r, logfile = logger)   
         logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
         #to know which variants are untyped you need variants from simulated tree, not estimated tree
         if args.variants_file is None:
@@ -280,7 +283,9 @@ if args.task == "associate":
         
         logger.info("- Searching for loci with requested allele frequencies.")
         logger.add()
-            
+        
+        #start plot 
+        fig, ax = plt.subplots(ah_info.shape[0],figsize=(30,30))        
         for index, row in ah_info.iterrows():
             #get allele freq
             f = -1
@@ -303,10 +308,15 @@ if args.task == "associate":
                 beta = row['beta']
 
 
-            var_index, pos = variants_orig.findVariant(typed=False, freq = f, interval = [row["interval_start"], row["interval_end"]], random = r, logfile = logger)   
+            var_index, pos = variants_orig.findVariant(typed=False, freq = f, interval = [row["interval_start"], row["interval_end"]], out = args.out, subplot = ax[index], random = r, logfile = logger)   
             variant_indeces.append(var_index)
             fixed_betas.append(beta)
             sum_betas += beta
+
+            fig.tight_layout()
+            fig.set_size_inches(30, 30)
+            fig.show()
+            fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
 
         logger.sub()
 
@@ -339,7 +349,7 @@ if args.task == "associate":
         pGWAS.manhattan_plot(variants.info['position'], ax, logger)
         fig.tight_layout()
         fig.set_size_inches(30, 30)
-        fig.savefig(args.out + '_OLS_GWAS.png', bbox_inches='tight')# 
+        fig.savefig(plots_dir + 'OLS_GWAS.png', bbox_inches='tight')# 
         
         logger.sub()
 
@@ -351,6 +361,9 @@ if args.task == "associate":
         pheno.findCausalTrees(trees)
         
         tGWAS = gwas.TtGWAS(trees, pheno)
+        
+        if args.AIM_method == None:
+            logger.error("ERROR: No method for tree association provided. Use '--AIM_method' to set method.")
         
         if args.AIM_method == "HE":
             logger.info("- Using Haseman-Elston to test for association between trees and phenotypes")
@@ -366,15 +379,13 @@ if args.task == "associate":
             fig.tight_layout()
             fig.set_size_inches(30, 30)
             fig.show()
-            fig.savefig(args.out + '_HE_AIM.png', bbox_inches='tight')# 
-        
+            fig.savefig(plots_dir + 'HE_AIM.png', bbox_inches='tight')#    
+            
         if args.AIM_method == "REML":
             logger.info("- Using REML to test for association between trees and phenotypes")
             tGWAS.runGCTA_REML(trees, N, args.out, logger)
             tGWAS.writeToFile(trees, args.out, logger)
             
-        else:
-            logger.error("ERROR: No method for tree association provided. Use '--AIM_method' to set method.")
  
         logger.sub()
 

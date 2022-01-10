@@ -8,6 +8,8 @@ Created on Mon Aug 30 17:44:45 2021
 import numpy as np
 import pandas as pd
 import datatable as dt
+import matplotlib.pyplot as plt
+
 
 class TVariants:
     def __init__(self, ts_object, samp_ids):
@@ -172,7 +174,7 @@ class TVariantsFiltered(TVariants):
         haps.to_csv(name + "_variants.haps", sep=' ', header=False, index=False)
         
         
-    def findVariant(self, typed, freq, interval, random, logfile):
+    def findVariant(self, typed, freq, interval, out, subplot, random, logfile):
         """
         Find a variant that fits criteria to simulate fixed genotype depending on only one variant
 
@@ -196,15 +198,32 @@ class TVariantsFiltered(TVariants):
 
         """
         # check if interval is valid
-        if self.info[(self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])].shape[0] == 0:
+        num_lines = self.info[(self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])].shape[0]
+        if num_lines == 0:
             raise ValueError("The interval " + str(interval) + " contains no variants")
             
+        # make subset of variants in interval
+        info_interval = self.info.loc[(self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
+        info_interval['index'] = range(self.info[(self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])].shape[0])
+        info_interval.set_index(info_interval['index'], drop=True, inplace=True)
+                   
         # check if there are variants with requested typed status
-        if self.info[self.info['typed'] == typed].shape[0] == 0:
+        num_lines = info_interval[info_interval['typed'] == typed].shape[0]
+        if num_lines == 0:
             raise ValueError("There are no variants of typed status '" + str(typed) +"'")
-             
+            
+        # make subset of variants in interval with correct typed status
+        info_interval = info_interval.loc[info_interval['typed'] == typed]
+        info_interval['index'] = range(num_lines)
+        info_interval.set_index(info_interval['index'], drop=True, inplace=True)
+        
+        # plot allele freq spectrum
+        n, bins, patches = subplot.hist(info_interval['allele_freq'], density=False)
+        subplot.axvline(x = freq, color = "red", lw = 1)
+        subplot.set(xlabel='Allele freq', ylabel='count', title = 'Histogram of af in requested interval and typed status')
+
         # find first variant with requested allele frequency
-        info = self.info[(self.info['typed'] == typed) & (self.info['allele_freq'] == freq) & (self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
+        info = info_interval[info_interval['allele_freq'] == freq]
         if info.shape[0] < 1:
             logfile.info("- Did not find locus with requested af " + str(freq) + ". Adapting af in increments of 0.001.")
         
@@ -218,11 +237,12 @@ class TVariantsFiltered(TVariants):
         freq_orig = freq
             
         while info.shape[0] < 1 and freq >= 0 and freq <= 0.5:
+            print(freq)
             #remove or add small value to freq until a locus is found
 
             freq = round(freq + step,3)
 
-            info = self.info[(self.info['typed'] == typed) & (self.info['allele_freq'] == freq) & (self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
+            info = info_interval[info_interval['allele_freq'] == freq]
         
         #if loop was left because out of bounds, search in other direction
         if freq < 0 or freq > 0.5:
@@ -234,10 +254,13 @@ class TVariantsFiltered(TVariants):
 
             while info.shape[0] < 1 and freq >= 0 and freq <= 0.5:
                 freq = round(freq + step,3)    
-                info = self.info[(self.info['typed'] == typed) & (self.info['allele_freq'] == freq) & (self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
+                info = info_interval[info_interval['allele_freq'] == freq]
 
         if freq < 0 or freq > 0.5:
             raise ValueError("Could not find locus with requested allele frequency")
+            
+        subplot.axvline(x = freq, color = "black", lw = 1)
+
 
         # logfile.info("--> Found variant with freq " + str(freq) + " within the following interval: " + str(interval))
         return info.iloc[0]['index'], info.iloc[0]['position']
