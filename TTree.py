@@ -6,11 +6,20 @@ Created on Tue Sep  7 17:43:29 2021
 @author: linkv
 """
 import numpy as np
+import pandas as pd
 
 class TTrees:
     def __init__(self, ts_object):
-        self.trees = ts_object.trees()
+        # self.trees = ts_object.trees()
         self.number = ts_object.num_trees
+        
+    def writeStats(self, ts_object, name, logfile):
+        info = pd.DataFrame(index=range(self.number),columns=['index', 'start', 'end', 'length', 'num_mutations']) 
+        for tree in ts_object.trees():
+            info.iloc[tree.index] = [tree.index, tree.interval.left, tree.interval.right, tree.interval.right - tree.interval.left, len(list(tree.mutations()))]
+
+        logfile.info("- Writing tree info to file '" + name + "_trees_statistics.csv'")
+        info.to_csv(name + "_trees_statistics.csv", header=True, index=False)
         
 #     # def make(X):
 #     #     X_ = (X+X.T)/2

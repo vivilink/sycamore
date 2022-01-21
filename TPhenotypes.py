@@ -102,7 +102,7 @@ class Phenotypes:
         #add phenotypic effect to mutations that are uniformly distributed
         for v, var in enumerate(variants.variant): 
             
-            if variants.info["typed"] == True:
+            # if variants.info["typed"] == True:
             
                 r = random.random.uniform(0,1,1)
     
@@ -126,6 +126,30 @@ class Phenotypes:
         logfile.info("- Simulated phenotypes based on " + str(len(self.causal_variants)) + " causal variants out of a total of " + str(variants.number) + ".")
         self.filled = True
         
+    def simulateCausalRegion(self, variants, left_bound, right_bound, sd_beta_causal_mutations, random, logfile):
+        #add phenotypic effect to mutations that are uniformly distributed
+        for v, var in enumerate(variants.variants): 
+            # is the variant in the tree
+            if left_bound <= variants.info.loc[v]['position'] <= right_bound:
+                
+                #define beta
+                beta = random.random.normal(loc=0, scale = sd_beta_causal_mutations, size=1)[0]
+                self.betas[v] = beta
+                
+                #simulate phenotype
+                self.y[var.genotypes == 1] += beta
+                self.y[var.genotypes == 2] += 2 * beta
+
+                #save causal position
+                self.causal_variants.append(var)
+                self.causal_betas.append(beta)
+                allele_freq = variants.info['allele_freq'][v]
+                self.causal_power.append(beta**2 * allele_freq * (1-allele_freq))
+                self.causal_variant_indeces.append(v)
+
+        logfile.info("- Simulated phenotypes based on " + str(len(self.causal_variants)) + " causal variants out of a total of " + str(variants.number) + ".")
+        self.filled = True
+
     
     def findCausalTrees(self, ts_object):
         for v in self.causal_variants:

@@ -64,7 +64,6 @@ class TpGWAS(TGWAS):
                 print("variant.genotypes", variant.genotypes)
                 print("self.phenotypes.y", self.phenotypes.y)
 
-                raise ValueError("done")
                 self.p_values[i] = PVALUE
                 i += 1
             # else:

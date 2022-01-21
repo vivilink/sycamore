@@ -55,7 +55,7 @@ trees = simulator.run_simulation("default", r)
 # Read trees
 #-----------------------
 
-directory = "/home/vivian/postdoc_USC/AIM/experiments/"
+directory = "/data/ARGWAS/experiments_N500/"
 
 trees = tskit.load(directory + "test_2.trees")
 
@@ -82,11 +82,15 @@ print(variants.number_typed)
 len(list(trees_relate.variants(samples=samp_ids)))
 
 #-----------------------
-# Sample specs
+# simulate pheno based on all variants of a tree
 #-----------------------
+causal_tree = trees.at(49500000)
+len(list(causal_tree.mutations()))
+for m in causal_tree.mutations():
+    print(m)
 
-
-
+for m in causal_tree.sites():
+    print(m)
 
 #-----------------------
 # create diploids and variants

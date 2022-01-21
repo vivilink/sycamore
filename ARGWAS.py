@@ -14,6 +14,7 @@ import TGWAS as gwas
 import TVariants as tvar
 import TIndividuals as tind
 import TSimulator as tsim
+import TTree as tt
 import pandas as pd
 import datetime
 import argparse
@@ -24,7 +25,6 @@ import sys
 # import statsmodels.api as sm
 # import pickle
 # import tqdm
-# import TTree as tt
 # import scipy as sp
 # from limix_lmm.lmm_core import LMMCore
 # import time
@@ -39,9 +39,9 @@ os.chdir(os.path.dirname(sys.argv[0]))
 parser = argparse.ArgumentParser(description='Running association tests on variants and trees.')
 
 # general arguments
-parser.add_argument('--task', required=True, choices=['simulate', 'associate', 'downsampleVariants'],
+parser.add_argument('--task', required=True, choices=['simulate', 'associate', 'downsampleVariants', 'ARGStatistics'],
                     help = 'The task to be executed (simulate or associate)')
-parser.add_argument('--out', required=True,
+parser.add_argument('--out', required=True, type=str,
                     help = 'Prefix of all output files')
 parser.add_argument('--seed', type=int, default = datetime.datetime.now().hour*10000+datetime.datetime.now().minute*100+datetime.datetime.now().second, 
                     help='Set seed of random generator. Default is time stamp.')
@@ -69,7 +69,7 @@ parser.add_argument('--name',
                     help = "Name of phenotype and GWAS object, will be used for headers in plots")
 pty.add_argument('--pty_sd_envNoise', type=float, default = 0, 
                     help = "Std. dev. for environmental noise. If set to 0, no noise will be simulated.")
-pty.add_argument('--pty_sim_method', choices=['uniform', 'fixed', 'singleTyped', 'singleUntyped', "allelicHetero"],
+pty.add_argument('--pty_sim_method', choices=['uniform', 'fixed', 'singleTyped', 'singleUntyped', "allelicHetero", "oneTree"],
                     help = "Phenotype simulations method")
 pty.add_argument('--pty_prop_causal_mutations', type=float, default = 0, 
                     help = "Proportion of causal mutations to simulate at uniformly distributed positions if pt.sim_method is set to 'uniform'. If set to 0, there will be no causal mutations simulated randomly")
@@ -83,6 +83,8 @@ pty.add_argument('--single_variant_af', type=float,
                     help = "Simulate a single, central causal variant that is typed. If there is no such variant in the given range, will search for one with an allele frequency that is close.")
 pty.add_argument('--allelic_hetero_file',
                      help = "txt file with columns 'freq', 'typed', 'beta'")
+pty.add_argument('--causal_tree_pos', type=int,
+                     help = "genomic position of causal tree")
 
 #run associations
 assoc = parser.add_argument_group('associations')
@@ -136,13 +138,12 @@ logger.info("---------------------")
 
 #print arguments to logfile
 logger.info("- The following parameters were passed: " + str(args))
-logger.info("- Writing output files with prefix '" + args.out + "'")
-logger.info("- Adding plots to the following directory '", args.out + "_plots'")
+logger.info("- Writing output files with prefix '" + str(args.out) + "'")
+logger.info("- Adding plots to the following directory '" + str(args.out) + "_plots'")
+
 plots_dir = args.out + "_plots/"
 if not os.path.exists(plots_dir):
     os.mkdir(plots_dir)
-
-#-----------------------------
 # initialize random generator
 #-----------------------------
     
@@ -178,6 +179,18 @@ if args.task == "simulate":
     else:
         logger.error("use of any simulator besides stdPopSim not tested")
         raise ValueError("use of any simulator besides stdPopSim not tested")
+        
+#-----------------------
+# ARG statistics
+#-----------------------   
+if args.task == "ARGStatistics":
+
+    logger.info("- TASK: ARGStatistics")    
+    logger.info("- Reading tree from " + args.tree_file)
+    trees = tskit.load(args.tree_file)
+    trees_class = tt.TTrees(trees)
+    trees_class.writeStats(trees, args.out, logger)
+
 
 #-----------------------
 # Downsample variants
@@ -256,7 +269,6 @@ if args.task == "associate":
         logger.info("- Simulating a phenotypes based on the following typed variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
         pheno.simulateFixed(variants_orig, [var_index], args.pty_fixed_betas, logger)
         pheno.write_to_file(variants_orig, args.out, logger)
-
         
     elif args.pty_sim_method == 'singleUntyped':
         if args.pty_fixed_betas == None:
@@ -270,6 +282,14 @@ if args.task == "associate":
         pheno.simulateFixed(variants_orig, [var_index], args.pty_fixed_betas, logger)
         pheno.write_to_file(variants_orig, args.out, logger)
         
+    elif args.pty_sim_method == 'oneTree':
+        causal_tree = trees.at(args.causal_tree_pos)
+        logger.info("- Simulating phenotypes based on all variants of the tree covering postion " + str(args.causal_tree_pos))
+        if args.pty_sd_beta_causal_mutations is None:
+            raise ValueError("pty_sd_beta_causal_mutations must be set to simulate phenotype with method 'oneTree'")
+        pheno.simulateCausalRegion(variants_orig, left_bound = causal_tree.interval.left, right_bound = causal_tree.interval.right, sd_beta_causal_mutations = args.pty_sd_beta_causal_mutations, random = r, logfile = logger)
+        pheno.write_to_file(variants_orig, args.out, logger)
+
     elif args.pty_sim_method == 'allelicHetero':
         if args.allelic_hetero_file == None:
             raise ValueError("No instruction file provided for allelic heterogeneity simulation")
