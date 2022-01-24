@@ -95,9 +95,9 @@ assoc.add_argument('--AIM_method', choices = ["HE", "REML"],
 
 
 #limit data
-parser.add_argument('--min_allele_freq', type=float, default = 0, 
+parser.add_argument('--min_allele_freq', type=float, default = 0,
                     help = "Minimum frequency an allele needs to have to be typed")
-parser.add_argument('--max_allele_freq', type=float, default = 1, 
+parser.add_argument('--max_allele_freq', type=float, default = 1,
                     help = "Maximum frequency an allele needs to have to be typed")
 parser.add_argument('--prop_typed_variants', type=float, default = 1,
                     help = "Proportion of variants that are typed (out of the ones that pass the frequency filter).")
@@ -144,6 +144,9 @@ logger.info("- Adding plots to the following directory '" + str(args.out) + "_pl
 plots_dir = args.out + "_plots/"
 if not os.path.exists(plots_dir):
     os.mkdir(plots_dir)
+    
+
+#-----------------------------    
 # initialize random generator
 #-----------------------------
     
@@ -164,6 +167,9 @@ logger.info("- randomGenerator seed is set to " + str(r.random.get_state()[1][0]
 
 if args.task == "simulate":
     logger.info("- TASK: simulate")
+    
+    if args.N is None:
+        raise ValueError("Must provide sample size with argument '--N'")
 
     if args.sim_tree_simulator == "stdPopsim":
         simulator = tsim.TSimulatorStdPopsim()
@@ -217,17 +223,16 @@ if args.task == "downsampleVariants":
 
 
 
-#-----------------------
-# Read simulation
-#-----------------------
+#----------------------------------------------------------------
+# Read simulation to simulate phenotypes and perform association
+#----------------------------------------------------------------
 
 if args.task == "associate":
     
     logger.info("- TASK: Associate")
-    
-    logger.info("- Reading tree from " + args.tree_file)
+    logger.info("- Reading simulated tree used for simulating phenotypes from " + args.tree_file_simulated)
     trees_orig = tskit.load(args.tree_file_simulated)
-    logger.info("- Reading simulated tree from " + args.tree_file_simulated)
+    logger.info("- Reading tree used for Aim's association testing, and for defining variants to be tested by GWAS, from " + args.tree_file)
     trees = tskit.load(args.tree_file)
     samp_ids = trees.samples()
     N = len(samp_ids)
@@ -237,13 +242,19 @@ if args.task == "associate":
     #--------------------------------
     
     inds = tind.Individuals(1, N)
+ 
     # TODO: find way to save variants in their tskit format without needing to read the original tree. I only need original tree in association task for this. It would be nice if the only tree that needs to be read would be estimated tree
+    # do not provide variant file here but have it estimated from tree, otherwise variants and tree won't match (tree only contains typed variants). The variant file is only useful for simulating phenotypes to be able to keep track of untyped variants
     variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq, args.prop_typed_variants, args.pos_int, r, logger)
 
+    #variants_orig are used to simulate phenotypes. They need to be consistent with original tree and the typed status that might have been defined earlier with a variants file. 
+    #The causal mutation should not be affected by a freq filter
+    variants_orig = tvar.TVariantsFiltered(trees_orig, samp_ids, 0, 1, 1, args.pos_int, r, logger, args.variants_file)
+    
     #--------------------------------
     # create phenotypes
-    #--------------------------------
-    variants_orig = tvar.TVariantsFiltered(trees_orig, samp_ids, 0, 1, 1, args.pos_int, r, logger, args.variants_file)
+    #--------------------------------    
+
     pheno = pt.Phenotypes(args.name, variants_orig, N, logger)
     pheno.simulateEnvNoise(args.pty_sd_envNoise, r)
     logger.info("- Simulating environmental noise with sd " + str(args.pty_sd_envNoise))

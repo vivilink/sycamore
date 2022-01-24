@@ -36,7 +36,12 @@ class TVariants:
 class TVariantsFiltered(TVariants):
     
     def __init__(self, ts_object, samp_ids, min_allele_freq, max_allele_freq, prop_typed_variants, pos_int, random, logfile, filtered_variants_file = None):
-
+        
+        """
+        When should the filtered_variants_file be provided? If it is provided, the allele frequencies will be the original allele frequencies and the typed status will be predefined
+        Also they may also already be filtered for min and max freq. However, they may not match the tree file?
+        """
+        
         # TODO: I don't understand if I should use the variants as a list or not. I don't know how to save them if not as a list (self.variants = trees.variants() or trees.variants does not work)
         self.variants = list(ts_object.variants(samples=samp_ids))
         self.number = -1
@@ -97,9 +102,7 @@ class TVariantsFiltered(TVariants):
         self.number_typed = self.info['typed'].value_counts()[True]
         if len(self.info['index']) != self.number != len(self.variants):
             raise ValueError("Variant file " + filtered_variants_file + " contains " + str(len(self.info['index'])) + " variants, expected " + str(self.number))
- 
-
-    
+     
     def print_genotypes(self, index):        
         file = "genotypes_variant" + str(index) + ".txt"
         self.info['variant'][index].genotypes.tofile(file=file)

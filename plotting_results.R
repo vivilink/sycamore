@@ -53,66 +53,70 @@ for(noise in c("_withNoise", "")){
 #------------------------------------
 
 
-dir <- "/data/ARGWAS/experiments_N500/HE/aH/oneTree/"
+dir <- "/data/ARGWAS/experiments_N500/aH/oneTree/HE/"
 
 for(af in c("")){#c(0.4, 0.2, 0.1, 0.05)
   for(noise in c("", "_withNoise")){
     for(beta in c("") ){ #c(1,0.01)
-      pdf(paste(dir,"test_2_results_beta", beta, "_freq", af, noise, "_aH.pdf", sep=''), width=10, height=20)
-      
-      # m_layout <- matrix(nrow=3, ncol=8)
-      # m_layout[,1] <- c(1:3)
-      # m_layout[,2] <- c(4:6)
-      # m_layout[,3] <- c(7:9)
-      # m_layout[,4] <- c(10:12)
-      # m_layout[,5] <- c(13:15)
-      # m_layout[,6] <- c(16:18)
-      # m_layout[,7] <- c(19:21)
-      # m_layout[,8] <- c(22:24)
-      # 
-      # layout(m_layout)
-      # /data/ARGWAS/experiments/freq0.4_indexUntyped_beta1_propTyped0.7_trees_results.csv
-      for(prop in c(0.7, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01)){ #1, 0.7, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01
-        ARGWAS <- read.csv(paste(dir,"freq", af, "_indexUntyped_aH_beta", beta, "_propTyped", prop , noise, "_trees_results.csv", sep=''))
-        ARGWAS <- ARGWAS[-1,]
-        GWAS <- read.csv(paste(dir,"freq", af, "_indexUntyped_aH_beta", beta, "_propTyped", prop, noise, "_variants_results.csv", sep=''))
-        pt_info <- read.csv(paste(dir,"freq", af, "_indexUntyped_aH_beta", beta, "_propTyped", prop, noise, "_pheno_causal_vars.csv", sep = ''))
-        causal_pos_neg <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas < 0)]
-        causal_pos_pos <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas > 0)]
+      for(tree in c("", "_trueTree")){
+        pdf(paste(dir,"test_2_results_beta", beta, "_freq", af, tree, noise, ".pdf", sep=''), width=10, height=20)
         
-        #get actual allele freq simulated
-        # af <- read.csv()
+        par(mfrow=c(8,3))
         
-        ARGWAS_p <- ARGWAS$p_values_HECP_Jackknife
-        ARGWAS_p[which(ARGWAS_p == 0)] <- .Machine$double.xmin
-        GWAS_p <- GWAS$p_value
-        GWAS_p[which(GWAS_p == 0)] <- .Machine$double.xmin
-        max_q <- max(-log10(ARGWAS_p), -log10(GWAS_p))
-        
-        plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("ARGWAS CP - PrTyped:", prop), xlab="position", ylab="-log10(p)")
-        abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.05))
-        abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.05))
-        
-        ARGWAS_p <- ARGWAS$p_values_HESD_Jackknife
-        ARGWAS_p[which(ARGWAS_p == 0)] <- .Machine$double.xmin
-        GWAS_p <- GWAS$p_value
-        GWAS_p[which(GWAS_p == 0)] <- .Machine$double.xmin
-        max_q <- max(-log10(ARGWAS_p), -log10(GWAS_p))
-        
-        plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("ARGWAS SD - PrTyped:", prop), xlab="position", ylab="-log10(p)")
-        abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.05))
-        abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.05))
-        
-        plot(GWAS$end, -log10(GWAS_p), main=paste("GWAS - PrTyped:", prop), xlab="position", ylab="-log10(p)")
-        abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.05))
-        abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.05))
-        abline(h=8, col="gray")
-        
-        # if(ARGWAS$start[which(ARGWAS$causal == TRUE)] != GWAS$start[which(GWAS$causal == TRUE)]){
-        #   stop("causal positions of ARGWAS and GWAS don't match")
+        # m_layout <- matrix(nrow=3, ncol=8)
+        # m_layout[,1] <- c(1:3)
+        # m_layout[,2] <- c(4:6)
+        # m_layout[,3] <- c(7:9)
+        # m_layout[,4] <- c(10:12)
+        # m_layout[,5] <- c(13:15)
+        # m_layout[,6] <- c(16:18)
+        # m_layout[,7] <- c(19:21)
+        # m_layout[,8] <- c(22:24)
+        # 
+        # layout(m_layout)
+
+        for(prop in c(1, 0.7, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01)){ #1, 0.7, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01
+          ARGWAS <- read.csv(paste(dir,"freq", af, "_indexUntyped_aH_beta", beta, "_propTyped", prop , tree, noise, "_trees_results.csv", sep=''))
+          ARGWAS <- ARGWAS[-1,]
+          GWAS <- read.csv(paste(dir,"freq", af, "_indexUntyped_aH_beta", beta, "_propTyped", prop, tree, noise, "_variants_results.csv", sep=''))
+          pt_info <- read.csv(paste(dir,"freq", af, "_indexUntyped_aH_beta", beta, "_propTyped", prop, tree, noise, "_pheno_causal_vars.csv", sep = ''))
+          causal_pos_neg <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas < 0)]
+          causal_pos_pos <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas > 0)]
+          
+          #get actual allele freq simulated
+          # af <- read.csv()
+          
+          ARGWAS_p <- ARGWAS$p_values_HECP_Jackknife
+          ARGWAS_p[which(ARGWAS_p == 0)] <- .Machine$double.xmin
+          GWAS_p <- GWAS$p_value
+          GWAS_p[which(GWAS_p == 0)] <- .Machine$double.xmin
+          max_q <- max(-log10(ARGWAS_p), -log10(GWAS_p))
+          
+          plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("ARGWAS CP - PrTyped:", prop), xlab="position", ylab="-log10(p)")
+          abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.05))
+          abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.05))
+          
+          ARGWAS_p <- ARGWAS$p_values_HESD_Jackknife
+          ARGWAS_p[which(ARGWAS_p == 0)] <- .Machine$double.xmin
+          GWAS_p <- GWAS$p_value
+          GWAS_p[which(GWAS_p == 0)] <- .Machine$double.xmin
+          max_q <- max(-log10(ARGWAS_p), -log10(GWAS_p))
+          
+          plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("ARGWAS SD - PrTyped:", prop), xlab="position", ylab="-log10(p)")
+          abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.05))
+          abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.05))
+          
+          plot(GWAS$end, -log10(GWAS_p), main=paste("GWAS - PrTyped:", prop), xlab="position", ylab="-log10(p)")
+          abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.05))
+          abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.05))
+          abline(h=8, col="gray")
+          
+          # if(ARGWAS$start[which(ARGWAS$causal == TRUE)] != GWAS$start[which(GWAS$causal == TRUE)]){
+          #   stop("causal positions of ARGWAS and GWAS don't match")
+        }
+        dev.off()
       }
     }
-    dev.off()
   }
 }
 

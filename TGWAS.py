@@ -60,9 +60,9 @@ class TpGWAS(TGWAS):
         for v, variant in enumerate(variants.variants):
             if variants.info.iloc[v]['typed'] == True:
                 PVALUE = sm.OLS(self.phenotypes.y, sm.tools.add_constant(variant.genotypes)).fit().pvalues[1]
-                print("PVALUE", PVALUE)
-                print("variant.genotypes", variant.genotypes)
-                print("self.phenotypes.y", self.phenotypes.y)
+                # print("PVALUE", PVALUE)
+                # print("variant.genotypes", variant.genotypes)
+                # print("self.phenotypes.y", self.phenotypes.y)
 
                 self.p_values[i] = PVALUE
                 i += 1
