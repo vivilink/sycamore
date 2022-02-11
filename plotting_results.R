@@ -26,7 +26,7 @@ for(noise in c("_withNoise", "")){
       GWAS_p[which(GWAS_p == 0)] <- .Machine$double.xmin
       max_q <- max(-log10(ARGWAS_p), -log10(GWAS_p))
       
-      plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("ARGWAS CP - Allele freq:", m[i,1], "Beta:", beta), xlab="position", ylab="-log10(p)")
+      plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("HE CP - Allele freq:", m[i,1], "Beta:", beta), xlab="position", ylab="-log10(p)")
       abline(v=GWAS$start[which(GWAS$causal == TRUE)], col="red")
       
       ARGWAS_p <- ARGWAS$p_values_HESD_Jackknife
@@ -35,7 +35,7 @@ for(noise in c("_withNoise", "")){
       GWAS_p[which(GWAS_p == 0)] <- .Machine$double.xmin
       max_q <- max(-log10(ARGWAS_p), -log10(GWAS_p))
       
-      plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("ARGWAS SD - Allele freq:", m[i,1], "Beta:", beta), xlab="position", ylab="-log10(p)")
+      plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("HE SD - Allele freq:", m[i,1], "Beta:", beta), xlab="position", ylab="-log10(p)")
       abline(v=GWAS$start[which(GWAS$causal == TRUE)], col="red")
       
       plot(GWAS$start, -log10(GWAS_p), main=paste("GWAS - Allele freq:", m[i,1], "Beta:", beta), xlab="position", ylab="-log10(p)")
@@ -56,12 +56,12 @@ for(noise in c("_withNoise", "")){
 dir <- "/data/ARGWAS/experiments_N500/aH/oneTree/HE/"
 
 for(af in c("")){#c(0.4, 0.2, 0.1, 0.05)
-  for(noise in c("", "_withNoise")){
+  for(noise in c("", "_withNoise", "_withLotsNoise")){
     for(beta in c("") ){ #c(1,0.01)
-      for(tree in c("", "_trueTree")){
-        pdf(paste(dir,"test_2_results_beta", beta, "_freq", af, tree, noise, ".pdf", sep=''), width=10, height=20)
+      for(tree in c("")){
+        pdf(paste(dir,"test_2_results_beta", beta, "_freq", af, tree, noise, ".pdf", sep=''), width=10, height=13)
         
-        par(mfrow=c(8,3))
+        par(mfrow=c(7,3))
         
         # m_layout <- matrix(nrow=3, ncol=8)
         # m_layout[,1] <- c(1:3)
@@ -75,7 +75,7 @@ for(af in c("")){#c(0.4, 0.2, 0.1, 0.05)
         # 
         # layout(m_layout)
 
-        for(prop in c(1, 0.7, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01)){ #1, 0.7, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01
+        for(prop in c(1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01)){ #1, 0.7, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01
           ARGWAS <- read.csv(paste(dir,"freq", af, "_indexUntyped_aH_beta", beta, "_propTyped", prop , tree, noise, "_trees_results.csv", sep=''))
           ARGWAS <- ARGWAS[-1,]
           GWAS <- read.csv(paste(dir,"freq", af, "_indexUntyped_aH_beta", beta, "_propTyped", prop, tree, noise, "_variants_results.csv", sep=''))
@@ -83,16 +83,13 @@ for(af in c("")){#c(0.4, 0.2, 0.1, 0.05)
           causal_pos_neg <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas < 0)]
           causal_pos_pos <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas > 0)]
           
-          #get actual allele freq simulated
-          # af <- read.csv()
-          
           ARGWAS_p <- ARGWAS$p_values_HECP_Jackknife
           ARGWAS_p[which(ARGWAS_p == 0)] <- .Machine$double.xmin
           GWAS_p <- GWAS$p_value
           GWAS_p[which(GWAS_p == 0)] <- .Machine$double.xmin
           max_q <- max(-log10(ARGWAS_p), -log10(GWAS_p))
           
-          plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("ARGWAS CP - PrTyped:", prop), xlab="position", ylab="-log10(p)")
+          plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("HE CP - PrTyped:", prop), xlab="position", ylab="-log10(p)")
           abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.05))
           abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.05))
           
@@ -102,7 +99,7 @@ for(af in c("")){#c(0.4, 0.2, 0.1, 0.05)
           GWAS_p[which(GWAS_p == 0)] <- .Machine$double.xmin
           max_q <- max(-log10(ARGWAS_p), -log10(GWAS_p))
           
-          plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("ARGWAS SD - PrTyped:", prop), xlab="position", ylab="-log10(p)")
+          plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("HE SD - PrTyped:", prop), xlab="position", ylab="-log10(p)")
           abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.05))
           abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.05))
           
@@ -121,12 +118,66 @@ for(af in c("")){#c(0.4, 0.2, 0.1, 0.05)
 }
 
 
-freq <- read.table("/home/vivian/postdoc_USC/AIM/experiments_N5k/simulation5k_simulated_sample_variants.csv", sep=',', header=TRUE)
-hist(freq$allele_freq)
+#---------------
+# true tree
+#---------------
 
-freq_0.01 <- read.table("/home/vivian/postdoc_USC/AIM/experiments_N5k/relate_simulation5k_propTyped0.01/simulation5k_propTyped0.01_filtered_sample_variants.csv", sep=',', header=TRUE)
-hist(freq_0.01$allele_freq[freq_0.01$typed == "False" & freq_0.01$position >= 49461796 & freq_0.01$position <= 49476796], breaks=seq(0,0.5,0.001))
+for(noise in c("", "_withNoise", "_withLotsNoise")){
+  
+  pdf(paste(dir,"test_2_results", noise, "_trueTree.pdf", sep=''), width=6, height=8)
+  par(mfrow=c(4,2))
+  
+  for(prop in c(1)){ #1, 0.7, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01
+    ARGWAS <- read.csv(paste(dir,"freq_indexUntyped_aH_beta_propTyped", prop , "_trueTree", noise, "_trees_results.csv", sep=''))
+    ARGWAS <- ARGWAS[-1,]
+    
+    ARGWAS_p <- ARGWAS$p_values_HECP_Jackknife
+    ARGWAS_p[which(ARGWAS_p == 0)] <- .Machine$double.xmin
+    max_q <- max(-log10(ARGWAS_p))
+    
+    pt_info <- read.csv(paste(dir,"freq_indexUntyped_aH_beta_propTyped", prop, "_trueTree", noise, "_pheno_causal_vars.csv", sep = ''))
+    causal_pos_neg <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas < 0)]
+    causal_pos_pos <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas > 0)]
+    
+    plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("HE CP - PrTyped:", prop), xlab="position", ylab="-log10(p)")
+    abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.05))
+    abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.05))
+    
+    ARGWAS_p <- ARGWAS$p_values_HESD_Jackknife
+    ARGWAS_p[which(ARGWAS_p == 0)] <- .Machine$double.xmin
+    max_q <- max(-log10(ARGWAS_p))
+    
+    plot(ARGWAS$start, -log10(ARGWAS_p), main=paste("HE SD - PrTyped:", prop), xlab="position", ylab="-log10(p)")
+    abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.05))
+    abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.05))
+  }
+  
+  for(prop in c(1, 0.5, 0.2, 0.1, 0.05, 0.02)){ #1, 0.7, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01
+    GWAS <- read.csv(paste(dir,"freq_indexUntyped_aH_beta_propTyped", prop, "_trueTree", noise, "_variants_results.csv", sep=''))
+    pt_info <- read.csv(paste(dir,"freq_indexUntyped_aH_beta_propTyped", prop, "_trueTree", noise, "_pheno_causal_vars.csv", sep = ''))
+    causal_pos_neg <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas < 0)]
+    causal_pos_pos <- pt_info$start[which(pt_info$causal == TRUE & pt_info$betas > 0)]
+    
+    GWAS_p <- GWAS$p_value
+    GWAS_p[which(GWAS_p == 0)] <- .Machine$double.xmin
+    max_q <- max(-log10(ARGWAS_p), -log10(GWAS_p))
+    
+    plot(GWAS$end, -log10(GWAS_p), main=paste("GWAS - PrTyped:", prop), xlab="position", ylab="-log10(p)")
+    abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.05))
+    abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.05))
+    abline(h=8, col="gray")
+    
+  }
+  
+  dev.off()
+}
 
+# freq <- read.table("/home/vivian/postdoc_USC/AIM/experiments_N5k/simulation5k_simulated_sample_variants.csv", sep=',', header=TRUE)
+# hist(freq$allele_freq)
+# 
+# freq_0.01 <- read.table("/home/vivian/postdoc_USC/AIM/experiments_N5k/relate_simulation5k_propTyped0.01/simulation5k_propTyped0.01_filtered_sample_variants.csv", sep=',', header=TRUE)
+# hist(freq_0.01$allele_freq[freq_0.01$typed == "False" & freq_0.01$position >= 49461796 & freq_0.01$position <= 49476796], breaks=seq(0,0.5,0.001))
+# 
 #-----------------------------
 # downsampled RELATE
 #-----------------------------

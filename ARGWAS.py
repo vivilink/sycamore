@@ -257,7 +257,7 @@ if args.task == "associate":
 
     pheno = pt.Phenotypes(args.name, variants_orig, N, logger)
     pheno.simulateEnvNoise(args.pty_sd_envNoise, r)
-    logger.info("- Simulating environmental noise with sd " + str(args.pty_sd_envNoise))
+    logger.info("- Simulating random noise with sd " + str(args.pty_sd_envNoise))
 
     if args.pty_sim_method == 'uniform':
         logger.info("- Simulating phenotypes based on uniformly chosen variants with prop_causal_mutations: " + str(args.pty_prop_causal_mutations) + " and sd_beta_causal_mutations: " + str(args.pty_sd_beta_causal_mutations)) 
@@ -316,6 +316,7 @@ if args.task == "associate":
         logger.add()
         
         #start plot 
+        # TODO: this plotting should not be done here
         fig, ax = plt.subplots(ah_info.shape[0],figsize=(30,30))        
         for index, row in ah_info.iterrows():
             #get allele freq
@@ -401,6 +402,7 @@ if args.task == "associate":
             tGWAS.runCGTA_HE(trees, N, args.out, logger)
             tGWAS.writeToFile(trees, args.out, logger)
     
+            # TODO: move plotting function to tGWAS, should accept p values as argument
             fig, ax = plt.subplots(5,figsize=(30,30))
             tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_Jackknife, subplot=ax[1], logfile=logger, title_supplement = "HECP_Jackknife")
             tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_OLS, subplot=ax[2],  logfile=logger, title_supplement = "HECP_OLS")
