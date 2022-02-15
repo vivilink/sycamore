@@ -65,7 +65,7 @@ parser.add_argument('--pos_int', type=float, default = True,
 
 #simulating phenotypes
 pty = parser.add_argument_group('phenotypes')
-parser.add_argument('--name', 
+parser.add_argument('--name', default = "default",
                     help = "Name of phenotype and GWAS object, will be used for headers in plots")
 pty.add_argument('--pty_sd_envNoise', type=float, default = 0, 
                     help = "Std. dev. for environmental noise. If set to 0, no noise will be simulated.")
@@ -229,6 +229,9 @@ if args.task == "downsampleVariants":
 
 if args.task == "associate":
     
+    if args.tree_file_simulated == None or args.tree_file == None:
+        raise ValueError("Both the simulated and estimated trees need to be provided with 'tree_file_simulated' and 'tree_file'.")
+    
     logger.info("- TASK: Associate")
     logger.info("- Reading simulated tree used for simulating phenotypes from " + args.tree_file_simulated)
     trees_orig = tskit.load(args.tree_file_simulated)
@@ -276,7 +279,13 @@ if args.task == "associate":
         if args.pty_fixed_betas == None:
             raise ValueError("No beta values provided for phenotype 'singleTyped'")
             
-        var_index = variants_orig.findVariant(typed=True, freq = args.single_variant_af, interval = [49461796, 49602827], out = args.out, random = r, logfile = logger)
+        fig, ax = plt.subplots(1,figsize=(30,30))            
+        var_index, pos = variants_orig.findVariant(typed=True, freq = args.single_variant_af, interval = [49461796, 49602827], out = args.out, subplot = ax, random = r, logfile = logger)
+        fig.tight_layout()
+        fig.set_size_inches(30, 30)
+        fig.show()
+        fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
+
         logger.info("- Simulating a phenotypes based on the following typed variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
         pheno.simulateFixed(variants_orig, [var_index], args.pty_fixed_betas, logger)
         pheno.write_to_file(variants_orig, args.out, logger)
