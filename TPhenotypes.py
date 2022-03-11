@@ -64,9 +64,14 @@ class Phenotypes:
         None.
 
         """
+        
+        print("causal_variant_indeces", causal_variant_indeces)
 
         causal_variants = [variants.variants[i] for i in causal_variant_indeces]
         causal_pos = [variants.variants[i].site.position for i in causal_variant_indeces]
+        
+        print("causal pos", causal_pos)
+        
         if(len(causal_variants) != len(betas)):
             raise ValueError("must provide equal number of causal variants and betas to simulate fixed phenotype")
                     

@@ -44,6 +44,9 @@ class TGWAS:
         return(tmp)
 
 class TpGWAS(TGWAS):
+    """
+    SNP based association testing
+    """
     
     def __init__(self, phenotypes, num_typed_variants):
         
@@ -154,6 +157,9 @@ class TpGWAS(TGWAS):
     
     
 class TtGWAS(TGWAS):
+    """
+    base class for all tree-based association tests
+    """
     
     def __init__(self, ts_object, phenotypes):
         
@@ -161,162 +167,11 @@ class TtGWAS(TGWAS):
 
         self.num_associations = ts_object.num_trees
         # self._check_compatibility(ts_object, phenotypes)
-        self.p_values = np.empty(self.num_associations)
+               
         
-        self.p_values_HECP_OLS = np.empty(self.num_associations)
-        self.p_values_HECP_Jackknife = np.empty(self.num_associations)
-        self.p_values_HESD_OLS = np.empty(self.num_associations)
-        self.p_values_HESD_Jackknife = np.empty(self.num_associations)
-        
-        self.lrt = np.empty(self.num_associations)
-
-    def runMantel(self, ts_object, phenotypes, N):
-        #test for associations
-        diffs = phenotypes.diffs()
-        start = time.time()
-        for tree in ts_object.trees():
-            if tree.index % 100 == 0:
-                end = time.time()
-                print("Ran Mantel for", tree.index, "trees in ", round(end-start), "s")
-            if tree.total_branch_length == 0: 
-                print("tree's total branch length is zero")
-                continue
-            tree_obj = tt.TTree(tree, N)
-            tmrca = tree_obj.TMRCA(N)
-            # print("tmrca",tmrca)
-            self.p_values[tree.index] = ut.mantel(tmrca, diffs)
-            if(self.p_values[tree.index] < 0):
-                print(tmrca)
-                raise ValueError("p-value is negative")
-            
-    def runLimix(self, ts_object, N, y, F, random):   
-        raise ValueError("Limix not currently implemented")
-        
-    #     G = np.zeros(N).reshape(N,1) 
-    #     # G = np.random.binomial(1, 0.5, N).reshape(N,1)
-    #     # Inter = np.zeros(N).reshape(N,1)
-    #     Inter = None
-
-    #     for tree in ts_object.trees():
-    #         # if tree.index == ts_object.num_trees-1:
-    #         #     continue
-    #         # if tree.index % 1000 == 0:
-    #         print("tree index: ",tree.index)
-    #         tree_obj = tt.TTree(tree, N)
-    #         lmm = LMMCore(y, F, tree_obj.solving_function)    
-    #         lmm.process(G, Inter) #this needs step param to produce only one p-value per tree. for this i need the number of sites per tree, or just use 1?
-    #         self.p_values[tree.index] = lmm.getPv()
-    #         print("p-value", self.p_values[tree.index])
-    #         # raise ValueError("printing covariance")
-    #         # beta = lmm.getBetaSNP()
-    #         # beta_ste = lmm.getBetaSNPste()
-    #         # self.lrt[tree.index] = lmm.getLRT() #likelihood ratio
-    
-    def runGCTA_REML_one_tree(self, tree, N, start, out, logfile):  
-        if tree.index % 100 == 0:
-            end = time.time()
-            print("Ran REML for", tree.index, "trees in ", round(end-start), "s")
-            
-        #calculate covariance and write to file
-        tree_obj = tt.TTree(tree, N)
-        covariance = tree_obj.covariance(N)
-        with open(out + '_GRM_covariance.txt', 'w') as f:
-            np.savetxt(f, covariance)
-        f.close()
-                
-        # create gcta input files, run gcta and parse output
-        exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_REML.sh", out])
-
-        # read results
-        result = pd.read_table(out + "_REML.hsq")
-        result_pvalue = float(result['Variance'][result['Source'] == 'Pval'])
-        self.p_values[tree.index] = result_pvalue
-        if(result_pvalue < 0):
-            raise ValueError("tree index", tree.index, "produced negative p-value with REML")
-                
-    def runCGTA_HE_one_tree(self, tree, N, start, out, logfile):        
-        #log progress
-        if tree.index % 100 == 0:
-            end = time.time()
-            logfile.info("- Ran HE for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
-            
-        #calculate covariance and write to file
-        tree_obj = tt.TTree(tree, N)
-        covariance = tree_obj.covariance(N)
-        with open(out + "_GRM_covariance.txt", 'w') as f:
-            np.savetxt(f, covariance)
-        f.close()
-        
-        # create gcta input files, run gcta and parse output
-        exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_HE.sh", out])
-        # exit_code = subprocess.call([os.getcwd() + "/run_gcta_HE.sh", out])
-        # TODO: locations of gcta and run_gcta_HE scripts only exist for me
-
-        # read results
-        HE_CP = pd.read_table(out + "_HE-CP_result.txt")
-        HE_SD = pd.read_table(out + "_HE-SD_result.txt")
-        
-        self.p_values_HECP_OLS[tree.index] = HE_CP["P_OLS"][1]
-        if(HE_CP["P_OLS"][1] < 0):
-            raise ValueError("tree index", tree.index, "produced negative p-value for CP OLS")
-            
-        self.p_values_HECP_Jackknife[tree.index] = HE_CP["P_Jackknife"][1]        
-        if(HE_CP["P_Jackknife"][1] < 0):
-            raise ValueError("tree index", tree.index, "produced negative p-value for CP Jackknife")
-
-        self.p_values_HESD_OLS[tree.index] = HE_SD["P_OLS"][1]
-        if(HE_SD["P_OLS"][1] < 0):
-            raise ValueError("tree index", tree.index, "produced negative p-value for SD OLS")
-
-        self.p_values_HESD_Jackknife[tree.index] = HE_SD["P_Jackknife"][1]
-        if(HE_SD["P_Jackknife"][1] < 0):
-            raise ValueError("tree index", tree.index, "produced negative p-value for SD Jackknife")
-
-    def runGCTA_REML(self, ts_object, N, out, logfile):        
-        self.phenotypes.write_to_file_gcta(out, logfile)        
-        
-        start = time.time()
-        for tree in ts_object.trees():
-            self.runGCTA_REML_one_tree(tree, N, start, out, logfile)              
-
-    def runCGTA_HE(self, ts_object, N, out, logfile):        
-        self.phenotypes.write_to_file_gcta(out, logfile)        
-        
-        start = time.time()
-        for tree in ts_object.trees():
-            self.runCGTA_HE_one_tree(tree, N, start, out, logfile)            
-            
-    def writeToFile(self, ts_object, name, logfile):
-        table = pd.DataFrame()
-        table['start'] = ts_object.breakpoints(as_array=True)[0:self.num_associations] #otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
-        table['end'] = table['start']
-        table['p_values_HECP_OLS'] = self.p_values_HECP_OLS
-        table['p_values_HECP_Jackknife'] = self.p_values_HECP_Jackknife
-        table['p_values_HESD_OLS'] = self.p_values_HESD_OLS
-        table['p_values_HESD_Jackknife'] = self.p_values_HESD_Jackknife     
-        table['causal'] = np.repeat("FALSE", self.num_associations)
-        table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
-        
-        table.to_csv(name + "_trees_results.csv", index = False, header = True)        
-        logfile.info("- Wrote results from HE to '" + name + "_trees_results.csv'")
-        
-        stats = pd.DataFrame()
-        stats['min_p_value_HECP_OLS'] = min(self.p_values_HECP_OLS)
-        stats['min_p_value_HECP_Jackknife'] = min(self.p_values_HECP_Jackknife)
-        stats['min_p_value_HESD_OLS'] = min(self.p_values_HESD_OLS)
-        stats['min_p_value_HESD_Jackknife'] = min(self.p_values_HESD_Jackknife)
-        
-        stats['max_p_value_HECP_OLS'] = max(self.p_values_HECP_OLS)
-        stats['max_p_value_HECP_Jackknife'] = max(self.p_values_HECP_Jackknife)
-        stats['max_p_value_HESD_OLS'] = max(self.p_values_HESD_OLS)
-        stats['max_p_value_HESD_Jackknife'] = max(self.p_values_HESD_Jackknife)
- 
-        stats.to_csv(name + "_trees_stats.csv", index = False, header = True)        
-        logfile.info("- Wrote stats from HE to '" + name + "_trees_stats.csv'")           
-
     def manhattan_plot(self, variant_positions, subplot, logfile, *args):
         self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = self.p_values, logfile = logfile)    
-
+    
     def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, logfile, title_supplement = "", *args):
         logfile.info("Plotting " + str(self.num_associations) + " associations")
         self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values = p_values, logfile = logfile, title_supplement = title_supplement)    
@@ -374,6 +229,231 @@ class TtGWAS(TGWAS):
             
         subplot.axhline(y=8, color="red", lw=0.5)
 
+
+class HE_tGWAS(TtGWAS):
+    """
+    tree-based asssociation testing using GCTA Haseman-Elston algorithm
+    """
+    
+    def __init__(self, ts_object, phenotypes):
+        
+        super().__init__(ts_object, phenotypes)
+        
+        #p-value containers
+        self.p_values_HECP_OLS = np.empty(self.num_associations)
+        self.p_values_HECP_Jackknife = np.empty(self.num_associations)
+        self.p_values_HESD_OLS = np.empty(self.num_associations)
+        self.p_values_HESD_Jackknife = np.empty(self.num_associations)
+          
+
+    def run_association(self, ts_object, N, out, logfile):        
+        self.phenotypes.write_to_file_gcta(out, logfile)        
+        
+        start = time.time()
+        for tree in ts_object.trees():
+            self.run_association_one_tree(tree, N, start, out, logfile)  
+        
+    def run_association_one_tree(self, tree, N, start, out, logfile):        
+        #log progress
+        if tree.index % 100 == 0:
+            end = time.time()
+            logfile.info("- Ran HE for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
+            
+        #calculate covariance and write to file
+        tree_obj = tt.TTree(tree, N)
+        covariance = tree_obj.covariance(N)
+        with open(out + "_GRM_covariance.txt", 'w') as f:
+            np.savetxt(f, covariance)
+        f.close()
+        
+        # create gcta input files, run gcta and parse output
+        exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_HE.sh", out])
+        # exit_code = subprocess.call([os.getcwd() + "/run_gcta_HE.sh", out])
+
+        # read results
+        HE_CP = pd.read_table(out + "_HE-CP_result.txt")
+        HE_SD = pd.read_table(out + "_HE-SD_result.txt")
+        
+        self.p_values_HECP_OLS[tree.index] = HE_CP["P_OLS"][1]
+        if(HE_CP["P_OLS"][1] < 0):
+            raise ValueError("tree index", tree.index, "produced negative p-value for CP OLS")
+            
+        self.p_values_HECP_Jackknife[tree.index] = HE_CP["P_Jackknife"][1]        
+        if(HE_CP["P_Jackknife"][1] < 0):
+            raise ValueError("tree index", tree.index, "produced negative p-value for CP Jackknife")
+
+        self.p_values_HESD_OLS[tree.index] = HE_SD["P_OLS"][1]
+        if(HE_SD["P_OLS"][1] < 0):
+            raise ValueError("tree index", tree.index, "produced negative p-value for SD OLS")
+
+        self.p_values_HESD_Jackknife[tree.index] = HE_SD["P_Jackknife"][1]
+        if(HE_SD["P_Jackknife"][1] < 0):
+            raise ValueError("tree index", tree.index, "produced negative p-value for SD Jackknife")
+            
+    def write_to_file(self, ts_object, name, logfile):
+        table = pd.DataFrame()
+        table['start'] = ts_object.breakpoints(as_array=True)[0:self.num_associations] #otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
+        table['end'] = table['start']
+        table['p_values_HECP_OLS'] = self.p_values_HECP_OLS
+        table['p_values_HECP_Jackknife'] = self.p_values_HECP_Jackknife
+        table['p_values_HESD_OLS'] = self.p_values_HESD_OLS
+        table['p_values_HESD_Jackknife'] = self.p_values_HESD_Jackknife     
+        table['causal'] = np.repeat("FALSE", self.num_associations)
+        table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
+        
+        table.to_csv(name + "_trees_results.csv", index = False, header = True)        
+        logfile.info("- Wrote results from tree association tests to '" + name + "_trees_results.csv'")
+        
+        stats = pd.DataFrame()
+        stats['min_p_value_HECP_OLS'] = min(self.p_values_HECP_OLS)
+        stats['min_p_value_HECP_Jackknife'] = min(self.p_values_HECP_Jackknife)
+        stats['min_p_value_HESD_OLS'] = min(self.p_values_HESD_OLS)
+        stats['min_p_value_HESD_Jackknife'] = min(self.p_values_HESD_Jackknife)
+        
+        stats['max_p_value_HECP_OLS'] = max(self.p_values_HECP_OLS)
+        stats['max_p_value_HECP_Jackknife'] = max(self.p_values_HECP_Jackknife)
+        stats['max_p_value_HESD_OLS'] = max(self.p_values_HESD_OLS)
+        stats['max_p_value_HESD_Jackknife'] = max(self.p_values_HESD_Jackknife)
+ 
+        stats.to_csv(name + "_trees_stats.csv", index = False, header = True)        
+        logfile.info("- Wrote stats from HE to '" + name + "_trees_stats.csv'")   
+
+
+class REML_tGWAS(TtGWAS):
+    """
+    tree-based association testing using CGTA REML algorithm
+    """
+    
+    def __init__(self, ts_object, phenotypes):
+        
+        super().__init__(ts_object, phenotypes)
+        
+        # p-value containers
+        self.p_values = np.empty(self.num_associations)
+        
+
+    def run_association_one_tree(self, tree, N, start, out, logfile):  
+        if tree.index % 100 == 0:
+            end = time.time()
+            logfile.info("- Ran REML for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
+            
+        #calculate covariance and write to file
+        tree_obj = tt.TTree(tree, N)
+        covariance = tree_obj.covariance(N)
+        
+        if np.linalg.cond(covariance) > 1/sys.float_info.epsilon:
+            raise ValueError("Covariance matrix is singular, which means it's not invertible (?)")
+        # else:
+        #     print(np.linalg.inv(covariance))
+            
+        
+        with open(out + '_GRM_covariance.txt', 'w') as f:
+            np.savetxt(f, covariance)
+        f.close()
+                
+        # create gcta input files, run gcta and parse output
+        exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_REML.sh", out])
+
+        # read results
+        result = pd.read_table(out + "_REML.hsq")
+        result_pvalue = float(result['Variance'][result['Source'] == 'Pval'])
+        if result_pvalue < 0:
+            raise ValueError("Negative p-value for tree starting at " + str(start))
+        if result_pvalue > 1:
+            raise ValueError("p-value larger than 1 for tree starting at " + str(start))
+
+        self.p_values[tree.index] = result_pvalue
+        if(result_pvalue < 0):
+            raise ValueError("tree index", tree.index, "produced negative p-value with REML")
+                
+
+
+    def run_association(self, ts_object, N, out, logfile):        
+        self.phenotypes.write_to_file_gcta(out, logfile)        
+        
+        start = time.time()
+        for tree in ts_object.trees():
+            self.run_association_one_tree(tree, N, start, out, logfile)              
+
+    def write_to_file(self, ts_object, name, logfile):
+        table = pd.DataFrame()
+        table['start'] = ts_object.breakpoints(as_array=True)[0:self.num_associations] #otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
+        table['end'] = table['start']
+        table['p_values'] = self.p_values
+        table['causal'] = np.repeat("FALSE", self.num_associations)
+        table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
+        
+        table.to_csv(name + "_trees_results.csv", index = False, header = True)        
+        logfile.info("- Wrote results from tree association tests to '" + name + "_trees_results.csv'")
+        
+        stats = pd.DataFrame()
+        stats['min_p_value'] = min(self.p_values)
+        stats['max_p_value'] = max(self.p_values) 
+        stats.to_csv(name + "_trees_stats.csv", index = False, header = True)        
+        logfile.info("- Wrote stats from tree association tests to '" + name + "_trees_stats.csv'")   
+
+
+class Mantel_tGWAS(TtGWAS):
+    
+    def __init__(self, ts_object, phenotypes):
+        
+        super().__init__(ts_object, phenotypes)
+        
+        # p-value containers
+        self.p_values = np.empty(self.num_associations)
+
+    def run_Mantel(self, ts_object, phenotypes, N):
+        #test for associations
+        diffs = phenotypes.diffs()
+        start = time.time()
+        for tree in ts_object.trees():
+            if tree.index % 100 == 0:
+                end = time.time()
+                print("Ran Mantel for", tree.index, "trees in ", round(end-start), "s")
+            if tree.total_branch_length == 0: 
+                print("tree's total branch length is zero")
+                continue
+            tree_obj = tt.TTree(tree, N)
+            tmrca = tree_obj.TMRCA(N)
+            # print("tmrca",tmrca)
+            self.p_values[tree.index] = ut.mantel(tmrca, diffs)
+            if(self.p_values[tree.index] < 0):
+                print(tmrca)
+                raise ValueError("p-value is negative")
+            
+
+
+# def runLimix(self, ts_object, N, y, F, random):   
+    # self.lrt = np.empty(self.num_associations)
+
+#     raise ValueError("Limix not currently implemented")
+    
+#     G = np.zeros(N).reshape(N,1) 
+#     # G = np.random.binomial(1, 0.5, N).reshape(N,1)
+#     # Inter = np.zeros(N).reshape(N,1)
+#     Inter = None
+
+#     for tree in ts_object.trees():
+#         # if tree.index == ts_object.num_trees-1:
+#         #     continue
+#         # if tree.index % 1000 == 0:
+#         print("tree index: ",tree.index)
+#         tree_obj = tt.TTree(tree, N)
+#         lmm = LMMCore(y, F, tree_obj.solving_function)    
+#         lmm.process(G, Inter) #this needs step param to produce only one p-value per tree. for this i need the number of sites per tree, or just use 1?
+#         self.p_values[tree.index] = lmm.getPv()
+#         print("p-value", self.p_values[tree.index])
+#         # raise ValueError("printing covariance")
+#         # beta = lmm.getBetaSNP()
+#         # beta_ste = lmm.getBetaSNPste()
+#         # self.lrt[tree.index] = lmm.getLRT() #likelihood ratio
+    
+
+
+
+
+
+
 #-----------------   
 # example_tree = trees.aslist()[10995]
 # tree_obj = tt.TTree(example_tree, N)
@@ -408,3 +488,6 @@ class TtGWAS(TGWAS):
 # G = sp.zeros(N).reshape(N,1)
 # lmm.process(G, Inter)
 # lmm.getPv()
+
+
+       

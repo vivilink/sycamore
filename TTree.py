@@ -46,7 +46,8 @@ class TTree:
     def __init__(self, tree_iterator, N):
         self.tree = tree_iterator
         self.N = N
-        self.tree_starts = -1
+        self.start = tree_iterator.interval.left
+        self.end = tree_iterator.interval.right
         self.index = tree_iterator.index
         self.height = -1
         

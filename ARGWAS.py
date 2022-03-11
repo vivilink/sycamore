@@ -293,8 +293,14 @@ if args.task == "associate":
     elif args.pty_sim_method == 'singleUntyped':
         if args.pty_fixed_betas == None:
             raise ValueError("No beta values provided for phenotype 'singleUntyped'")
-            
-        var_index, pos = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = [49461796, 49602827], out = args.out, random = r, logfile = logger)   
+        
+        fig, ax = plt.subplots(1,figsize=(30,30))            
+        var_index, pos = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = [49461796, 49602827], out = args.out, subplot = ax, random = r, logfile = logger)   
+        fig.tight_layout()
+        fig.set_size_inches(30, 30)
+        fig.show()
+        fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
+ 
         logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
         #to know which variants are untyped you need variants from simulated tree, not estimated tree
         if args.variants_file is None:
@@ -400,16 +406,16 @@ if args.task == "associate":
         logger.info("- Reading tree estimations for tree-based association from " + args.tree_file)
         
         pheno.findCausalTrees(trees)
-        
-        tGWAS = gwas.TtGWAS(trees, pheno)
-        
+                
         if args.AIM_method == None:
             logger.error("ERROR: No method for tree association provided. Use '--AIM_method' to set method.")
         
         if args.AIM_method == "HE":
-            logger.info("- Using Haseman-Elston to test for association between trees and phenotypes")
-            tGWAS.runCGTA_HE(trees, N, args.out, logger)
-            tGWAS.writeToFile(trees, args.out, logger)
+            logger.info("- Using GCTA Haseman-Elston to test for association between trees and phenotypes")
+            tGWAS = gwas.HE_tGWAS(trees, pheno)
+            
+            tGWAS.run_association(trees, N, args.out, logger)
+            tGWAS.write_to_file(trees, args.out, logger)
     
             # TODO: move plotting function to tGWAS, should accept p values as argument
             fig, ax = plt.subplots(5,figsize=(30,30))
@@ -424,10 +430,11 @@ if args.task == "associate":
             fig.savefig(plots_dir + 'HE_AIM.png', bbox_inches='tight')#    
             
         if args.AIM_method == "REML":
-            logger.info("- Using REML to test for association between trees and phenotypes")
-            tGWAS.runGCTA_REML(trees, N, args.out, logger)
-            tGWAS.writeToFile(trees, args.out, logger)
-            
+            logger.info("- Using GCTA REML to test for association between trees and phenotypes")
+            tGWAS = gwas.REML_tGWAS(trees, pheno)
+
+            tGWAS.run_association(trees, N, args.out, logger)
+            tGWAS.write_to_file(trees, args.out, logger)            
  
         logger.sub()
 
