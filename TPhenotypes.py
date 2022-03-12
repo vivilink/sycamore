@@ -101,7 +101,7 @@ class Phenotypes:
         
 
         #add phenotypic effect to mutations that are uniformly distributed
-        for v, var in enumerate(variants.variant): 
+        for v, var in enumerate(variants.variants): 
             
             # if variants.info["typed"] == True:
             
