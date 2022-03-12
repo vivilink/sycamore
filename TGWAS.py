@@ -244,7 +244,15 @@ class HE_tGWAS(TtGWAS):
         self.p_values_HECP_Jackknife = np.empty(self.num_associations)
         self.p_values_HESD_OLS = np.empty(self.num_associations)
         self.p_values_HESD_Jackknife = np.empty(self.num_associations)
-          
+        
+        #other statistics
+        self.V_G_over_Vp_HECP = np.empty(self.num_associations)
+        self.V_G_over_Vp_HESD = np.empty(self.num_associations)
+        
+        self.V_G_over_Vp_SE_OLS_HECP = np.empty(self.num_associations)
+        self.V_G_over_Vp_SE_OLS_HESD = np.empty(self.num_associations)
+        self.V_G_over_Vp_SE_Jackknife_HECP = np.empty(self.num_associations)
+        self.V_G_over_Vp_SE_Jackknife_HESD = np.empty(self.num_associations)
 
     def run_association(self, ts_object, N, out, logfile):        
         self.phenotypes.write_to_file_gcta(out, logfile)        
@@ -274,6 +282,7 @@ class HE_tGWAS(TtGWAS):
         HE_CP = pd.read_table(out + "_HE-CP_result.txt")
         HE_SD = pd.read_table(out + "_HE-SD_result.txt")
         
+        #p-values        
         self.p_values_HECP_OLS[tree.index] = HE_CP["P_OLS"][1]
         if(HE_CP["P_OLS"][1] < 0):
             raise ValueError("tree index", tree.index, "produced negative p-value for CP OLS")
@@ -290,14 +299,35 @@ class HE_tGWAS(TtGWAS):
         if(HE_SD["P_Jackknife"][1] < 0):
             raise ValueError("tree index", tree.index, "produced negative p-value for SD Jackknife")
             
+        #other statistics
+        self.V_G_over_Vp_HECP[tree.index] = HE_CP["Estimate"][1]
+        self.V_G_over_Vp_HESD[tree.index] = HE_SD["Estimate"][1]
+
+        self.V_G_over_Vp_SE_OLS_HECP[tree.index] = HE_CP["SE_OLS"][1]
+        self.V_G_over_Vp_SE_OLS_HESD[tree.index] = HE_SD["SE_OLS"][1]
+        self.V_G_over_Vp_SE_Jackknife_HECP[tree.index] = HE_CP["SE_Jackknife"][1]
+        self.V_G_over_Vp_SE_Jackknife_HESD[tree.index] = HE_SD["SE_Jackknife"][1]
+
     def write_to_file(self, ts_object, name, logfile):
         table = pd.DataFrame()
         table['start'] = ts_object.breakpoints(as_array=True)[0:self.num_associations] #otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
         table['end'] = table['start']
+        
+        #p-values
         table['p_values_HECP_OLS'] = self.p_values_HECP_OLS
         table['p_values_HECP_Jackknife'] = self.p_values_HECP_Jackknife
         table['p_values_HESD_OLS'] = self.p_values_HESD_OLS
         table['p_values_HESD_Jackknife'] = self.p_values_HESD_Jackknife     
+
+        #other stats
+        table['V_G_over_Vp_HECP'] = self.V_G_over_Vp_HECP
+        table['V_G_over_Vp_HESD'] = self.V_G_over_Vp_HESD
+        table['V_G_over_Vp_SE_OLS_HECP'] = self.V_G_over_Vp_SE_OLS_HECP
+        table['V_G_over_Vp_SE_OLS_HESD'] = self.V_G_over_Vp_SE_OLS_HESD
+        table['V_G_over_Vp_SE_Jackknife_HECP'] = self.V_G_over_Vp_SE_Jackknife_HECP
+        table['V_G_over_Vp_SE_Jackknife_HESD'] = self.V_G_over_Vp_SE_Jackknife_HESD
+
+        #causal or not
         table['causal'] = np.repeat("FALSE", self.num_associations)
         table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
         
@@ -328,9 +358,21 @@ class REML_tGWAS(TtGWAS):
         
         super().__init__(ts_object, phenotypes)
         
-        # p-value containers
+        # results containers
         self.p_values = np.empty(self.num_associations)
+        self.V_G = np.empty(self.num_associations)
+        self.V_e = np.empty(self.num_associations)
+        self.Vp = np.empty(self.num_associations)
+        self.V_G_over_Vp = np.empty(self.num_associations)
+        self.logL = np.empty(self.num_associations)
+        self.logL0 = np.empty(self.num_associations)
+        self.LRT = np.empty(self.num_associations)
         
+        self.V_G_SE = np.empty(self.num_associations)
+        self.V_e_SE = np.empty(self.num_associations)
+        self.Vp_SE = np.empty(self.num_associations)
+        self.V_G_over_Vp_SE = np.empty(self.num_associations)
+
 
     def run_association_one_tree(self, tree, N, start, out, logfile):  
         if tree.index % 100 == 0:
@@ -365,7 +407,19 @@ class REML_tGWAS(TtGWAS):
         self.p_values[tree.index] = result_pvalue
         if(result_pvalue < 0):
             raise ValueError("tree index", tree.index, "produced negative p-value with REML")
-                
+            
+        self.V_G[tree.index] = float(result['Variance'][result['Source'] == 'V(G)'])
+        self.V_e[tree.index] = float(result['Variance'][result['Source'] == 'V(e)'])
+        self.Vp[tree.index] = float(result['Variance'][result['Source'] == 'Vp'])
+        self.V_G_over_Vp[tree.index] = float(result['Variance'][result['Source'] == 'V(G)/Vp'])
+        self.logL[tree.index] = float(result['Variance'][result['Source'] == 'logL'])
+        self.logL0[tree.index] = float(result['Variance'][result['Source'] == 'logL0'])
+        self.LRT[tree.index] = float(result['Variance'][result['Source'] == 'LRT'])
+        
+        self.V_G_SE[tree.index] = float(result['SE'][result['Source'] == 'V(G)'])
+        self.V_e_SE[tree.index] = float(result['SE'][result['Source'] == 'V(e)'])
+        self.Vp_SE[tree.index] = float(result['SE'][result['Source'] == 'Vp'])
+        self.V_G_over_Vp_SE[tree.index] = float(result['SE'][result['Source'] == 'V(G)/Vp'])                
 
 
     def run_association(self, ts_object, N, out, logfile):        
@@ -380,6 +434,21 @@ class REML_tGWAS(TtGWAS):
         table['start'] = ts_object.breakpoints(as_array=True)[0:self.num_associations] #otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
         table['end'] = table['start']
         table['p_values'] = self.p_values
+        
+        table['V_G'] = self.V_G
+        table['V_e'] = self.V_e
+        table['Vp'] = self.Vp
+        table['V_G_over_Vp'] = self.V_G_over_Vp
+        table['logL'] = self.logL
+        table['logL0'] = self.logL0
+        table['LRT'] = self.LRT
+        table['V_G_SE'] = self.V_G_SE
+        table['V_e_SE'] = self.V_e_SE
+        table['Vp_SE'] = self.Vp_SE
+        table['V_G_over_Vp_SE'] = self.V_G_over_Vp_SE
+        
+        
+        
         table['causal'] = np.repeat("FALSE", self.num_associations)
         table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
         

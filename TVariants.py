@@ -133,29 +133,12 @@ class TVariantsFiltered(TVariants):
         info_typed = self.info.loc[self.info['typed'] == True]
         info_typed['index'] = range(self.number_typed)
         info_typed.set_index(info_typed['index'], drop=True, inplace=True)
-
-        
-        # print("printing info")
-        # print((info_typed['position'][9:13]))
-        # print((self.info['position'][9:13]))
-        
-        # print("info_typed")
-        # print(info_typed.iloc[9:13])
-        
-        # print("info_typed position")
-        # print(info_typed.loc[9:13, 'position'])
-        
-        # print("type", info_typed['position']).dtype()
-        # print(info_typed[info_typed['position'].isnull() == True])
                 
         haps.iloc[:, 0] = np.repeat(1, self.number_typed)
         haps.iloc[:, 1] = '.'
         haps.iloc[0:self.number_typed, 2] = info_typed['position']
         haps.iloc[:, 3] = 'A'
         haps.iloc[:, 4] = 'T'
-        
-        # print("haps before adding haplotype")
-        # print(haps.iloc[9:13])
         
         logfile.info("- Building haplotypes for typed variants")
         
@@ -170,9 +153,6 @@ class TVariantsFiltered(TVariants):
                 #     print("v", v, "positions\n", self.info.iloc[v])
                 index += 1
         
-        # print("haps after adding haplotype")
-        # print(haps.iloc[9:13])
-
         logfile.info("- Writing haplotypes in Shapeit2 format to file '" + name + "_variants.haps'")
         haps.to_csv(name + "_variants.haps", sep=' ', header=False, index=False)
         
@@ -207,9 +187,9 @@ class TVariantsFiltered(TVariants):
             
         # make subset of variants in interval
         info_interval = self.info.loc[(self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
-        info_interval['index'] = range(self.info[(self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])].shape[0])
-        info_interval.set_index(info_interval['index'], drop=True, inplace=True)
-                   
+        # info_interval['index'] = range(self.info[(self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])].shape[0])
+        # info_interval.set_index(info_interval['index'], drop=True, inplace=True)
+                           
         # check if there are variants with requested typed status
         num_lines = info_interval[info_interval['typed'] == typed].shape[0]
         if num_lines == 0:
@@ -217,8 +197,8 @@ class TVariantsFiltered(TVariants):
             
         # make subset of variants in interval with correct typed status
         info_interval = info_interval.loc[info_interval['typed'] == typed]
-        info_interval['index'] = range(num_lines)
-        info_interval.set_index(info_interval['index'], drop=True, inplace=True)
+        # info_interval['index'] = range(num_lines)
+        # info_interval.set_index(info_interval['index'], drop=True, inplace=True)
         
         # plot allele freq spectrum
         n, bins, patches = subplot.hist(info_interval['allele_freq'], density=False)
