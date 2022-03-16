@@ -257,22 +257,22 @@ class HE_tGWAS(TtGWAS):
     def run_association(self, ts_object, N, out, logfile):        
         self.phenotypes.write_to_file_gcta(out, logfile)        
 
+        #log progress
         start = time.time()
-        counter = 0
+        
         for tree in ts_object.trees():
-            logfile.info("- running association test on tree with interval:" + str(tree.interval.left) + "," + str(tree.interval.right))
-            if counter == 1:
-                self.run_association_one_tree(tree, N, start, out, logfile)  
-            counter += 1
+            self.run_association_one_tree(tree, N, out, logfile)  
+            #log progress
+            if tree.index % 100 == 0:
+                end = time.time()
+                logfile.info("- Ran HE for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
+
             
         logfile.info("- done running associations")
         
-    def run_association_one_tree(self, tree, N, start, out, logfile):        
-        #log progress
-        if tree.index % 100 == 0:
-            end = time.time()
-            logfile.info("- Ran HE for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
-                        
+    def run_association_one_tree(self, tree, N, out, logfile):        
+        # logfile.info("- running association test on tree with interval:" + str(tree.interval.left) + "," + str(tree.interval.right))
+
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, N)
         covariance = tree_obj.covariance(N)
@@ -382,38 +382,30 @@ class REML_tGWAS(TtGWAS):
         self.V_G_over_Vp_SE = np.empty(self.num_associations)
 
 
-    def run_association_one_tree(self, tree, N, start, out, logfile):  
-        if tree.index % 100 == 0:
-            end = time.time()
-            logfile.info("- Ran REML for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
-            
+    def run_association_one_tree(self, tree, N, out, logfile):  
+        # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
+
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, N)
         covariance = tree_obj.covariance(N)
-                        
-        # logfile.info("testing if covariance matrix is invertible")
-        # if np.linalg.cond(covariance) > 1/sys.float_info.epsilon:
-        #     raise ValueError("Covariance matrix is singular, which means it's not invertible (?)")
-        # else:
-        #     print(np.linalg.inv(covariance))
             
-        logfile.info("writing covariance matrix to file")
+        logfile.info("- Writing covariance matrix to file")
 
         with open(out + '_GRM_covariance.txt', 'w') as f:
             np.savetxt(f, covariance)
         f.close()
                 
         # create gcta input files, run gcta and parse output
-        logfile.info("Running GCTA")
+        logfile.info("- Running GCTA")
         exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_REML.sh", out])
 
         # read results
         result = pd.read_table(out + "_REML.hsq")
         result_pvalue = float(result['Variance'][result['Source'] == 'Pval'])
         if result_pvalue < 0:
-            raise ValueError("Negative p-value for tree starting at " + str(start))
+            raise ValueError("Negative p-value for tree starting at " + str(tree.interval.left))
         if result_pvalue > 1:
-            raise ValueError("p-value larger than 1 for tree starting at " + str(start))
+            raise ValueError("p-value larger than 1 for tree starting at " + str(tree.interval.left))
 
         self.p_values[tree.index] = result_pvalue
         if(result_pvalue < 0):
@@ -436,13 +428,13 @@ class REML_tGWAS(TtGWAS):
     def run_association(self, ts_object, N, out, logfile):        
         self.phenotypes.write_to_file_gcta(out, logfile)        
         
-        start = time.time()
-        counter = 0
+        start = time.time()        
         for tree in ts_object.trees():
-            logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
-            if counter == 1:
-                self.run_association_one_tree(tree, N, start, out, logfile)          
-            counter += 1
+            self.run_association_one_tree(tree, N, start, out, logfile)         
+            if tree.index % 100 == 0:
+                end = time.time()
+                logfile.info("- Ran REML for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
+
 
     def write_to_file(self, ts_object, name, logfile):
         table = pd.DataFrame()

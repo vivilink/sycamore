@@ -7,7 +7,6 @@ Created on Mon Aug 30 17:44:45 2021
 """
 import numpy as np
 import pandas as pd
-import datatable as dt
 import matplotlib.pyplot as plt
 import math
 
@@ -95,7 +94,7 @@ class TVariantsFiltered(TVariants):
         #variants are already filtered -> read from file!
         else:
             logfile.info("- Reading variant information from " + filtered_variants_file)
-            self.info = dt.fread(filtered_variants_file).to_pandas()
+            self.info = pd.read_table(filtered_variants_file)
           
         #set number typed
         self.number = len(self.info['typed'])
@@ -222,13 +221,8 @@ class TVariantsFiltered(TVariants):
             freq_orig = freq
                 
             while info.shape[0] < 1 and freq >= 0 and freq <= 0.5:
-                print(freq)
                 #remove or add small value to freq until a locus is found
-    
-                freq = round(freq + step,3)
-                
-                print("math.isclose(info_interval['allele_freq'], freq, rel_tol=1e-5)", math.isclose(info_interval['allele_freq'], freq, rel_tol=1e-5))
-    
+                freq = round(freq + step,3)                        
                 info = info_interval[np.greater_equal(info_interval['allele_freq'], freq)]
             
             #if loop was left because out of bounds, search in other direction

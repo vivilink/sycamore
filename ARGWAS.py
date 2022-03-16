@@ -94,7 +94,8 @@ assoc.add_argument('--ass_method', choices = ["GWAS", "AIM", "both"],
                    help = "Either run only GWAS, AIM or both")
 assoc.add_argument('--AIM_method', nargs='+', #choices = ["HE", "REML"],
                    help = "Use either Haseman-Elston or REML to test trees for association")
-
+assoc.add_argument('--test_only_tree_at', type=float, #choices = ["HE", "REML"],
+                   help = "Only test tree that is overlapping the given position for association")
 
 #limit data
 parser.add_argument('--min_allele_freq', type=float, default = 0,
@@ -267,8 +268,6 @@ if args.task == "associate":
     #The causal mutation should not be affected by a freq filter
     variants_orig = tvar.TVariantsFiltered(trees_orig, samp_ids, 0, 1, 1, args.pos_int, r, logger, args.variants_file)
     
-    print("variants", variants.info)
-    print("variants_orig", variants_orig.info)
     
     #--------------------------------
     # create phenotypes
@@ -440,8 +439,13 @@ if args.task == "associate":
                 logger.add()
 
                 tGWAS = gwas.HE_tGWAS(trees, pheno)
-                                
-                tGWAS.run_association(trees, N, args.out, logger)
+                           
+                if args.test_only_tree_at is None:    
+                    tGWAS.run_association(trees, N, args.out, logger)
+                else:
+                    tree = trees.at(args.test_only_tree_at)
+                    tGWAS.run_association_one_tree(tree, N, args.out, logger)
+
                 tGWAS.write_to_file(trees, args.out, logger)
                        
                 # # TODO: move plotting function to tGWAS, should accept p values as argument
@@ -465,8 +469,12 @@ if args.task == "associate":
                 logger.add()
 
                 tGWAS = gwas.REML_tGWAS(trees, pheno)
-    
-                tGWAS.run_association(trees, N, args.out, logger)
+                
+                if args.test_only_tree_at is None:    
+                    tGWAS.run_association(trees, N, args.out, logger)
+                else:
+                    tree = trees.at(args.test_only_tree_at)
+                    tGWAS.run_association_one_tree(tree, N, args.out, logger)
                 tGWAS.write_to_file(trees, args.out, logger)         
                 
                 logger.sub()
