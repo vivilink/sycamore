@@ -48,6 +48,7 @@ class TSimulatorStdPopsim(TSimulator):
 
         
         return(self.trees)
+    
         
         
 class TSimulatorMSPrime(TSimulator):

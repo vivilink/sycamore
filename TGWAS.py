@@ -256,24 +256,32 @@ class HE_tGWAS(TtGWAS):
 
     def run_association(self, ts_object, N, out, logfile):        
         self.phenotypes.write_to_file_gcta(out, logfile)        
-        
+
         start = time.time()
+        counter = 0
         for tree in ts_object.trees():
-            self.run_association_one_tree(tree, N, start, out, logfile)  
+            logfile.info("- running association test on tree with interval:" + str(tree.interval.left) + "," + str(tree.interval.right))
+            if counter == 1:
+                self.run_association_one_tree(tree, N, start, out, logfile)  
+            counter += 1
+            
+        logfile.info("- done running associations")
         
     def run_association_one_tree(self, tree, N, start, out, logfile):        
         #log progress
         if tree.index % 100 == 0:
             end = time.time()
             logfile.info("- Ran HE for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
-            
+                        
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, N)
         covariance = tree_obj.covariance(N)
+        
         with open(out + "_GRM_covariance.txt", 'w') as f:
             np.savetxt(f, covariance)
         f.close()
         
+
         # create gcta input files, run gcta and parse output
         exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_HE.sh", out])
         # exit_code = subprocess.call([os.getcwd() + "/run_gcta_HE.sh", out])
@@ -331,8 +339,8 @@ class HE_tGWAS(TtGWAS):
         table['causal'] = np.repeat("FALSE", self.num_associations)
         table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
         
-        table.to_csv(name + "_trees_results.csv", index = False, header = True)        
-        logfile.info("- Wrote results from tree association tests to '" + name + "_trees_results.csv'")
+        table.to_csv(name + "_trees_HE_results.csv", index = False, header = True)        
+        logfile.info("- Wrote results from tree association tests to '" + name + "_trees_HE_results.csv'")
         
         stats = pd.DataFrame()
         stats['min_p_value_HECP_OLS'] = min(self.p_values_HECP_OLS)
@@ -345,8 +353,8 @@ class HE_tGWAS(TtGWAS):
         stats['max_p_value_HESD_OLS'] = max(self.p_values_HESD_OLS)
         stats['max_p_value_HESD_Jackknife'] = max(self.p_values_HESD_Jackknife)
  
-        stats.to_csv(name + "_trees_stats.csv", index = False, header = True)        
-        logfile.info("- Wrote stats from HE to '" + name + "_trees_stats.csv'")   
+        stats.to_csv(name + "_trees_HE_stats.csv", index = False, header = True)        
+        logfile.info("- Wrote stats from HE to '" + name + "_trees_HE_stats.csv'")   
 
 
 class REML_tGWAS(TtGWAS):
@@ -382,18 +390,21 @@ class REML_tGWAS(TtGWAS):
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, N)
         covariance = tree_obj.covariance(N)
-        
-        if np.linalg.cond(covariance) > 1/sys.float_info.epsilon:
-            raise ValueError("Covariance matrix is singular, which means it's not invertible (?)")
+                        
+        # logfile.info("testing if covariance matrix is invertible")
+        # if np.linalg.cond(covariance) > 1/sys.float_info.epsilon:
+        #     raise ValueError("Covariance matrix is singular, which means it's not invertible (?)")
         # else:
         #     print(np.linalg.inv(covariance))
             
-        
+        logfile.info("writing covariance matrix to file")
+
         with open(out + '_GRM_covariance.txt', 'w') as f:
             np.savetxt(f, covariance)
         f.close()
                 
         # create gcta input files, run gcta and parse output
+        logfile.info("Running GCTA")
         exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_REML.sh", out])
 
         # read results
@@ -426,8 +437,12 @@ class REML_tGWAS(TtGWAS):
         self.phenotypes.write_to_file_gcta(out, logfile)        
         
         start = time.time()
+        counter = 0
         for tree in ts_object.trees():
-            self.run_association_one_tree(tree, N, start, out, logfile)              
+            logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
+            if counter == 1:
+                self.run_association_one_tree(tree, N, start, out, logfile)          
+            counter += 1
 
     def write_to_file(self, ts_object, name, logfile):
         table = pd.DataFrame()
@@ -452,14 +467,14 @@ class REML_tGWAS(TtGWAS):
         table['causal'] = np.repeat("FALSE", self.num_associations)
         table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
         
-        table.to_csv(name + "_trees_results.csv", index = False, header = True)        
-        logfile.info("- Wrote results from tree association tests to '" + name + "_trees_results.csv'")
+        table.to_csv(name + "_trees_REML_results.csv", index = False, header = True)        
+        logfile.info("- Wrote results from tree association tests to '" + name + "_trees_REML_results.csv'")
         
         stats = pd.DataFrame()
         stats['min_p_value'] = min(self.p_values)
         stats['max_p_value'] = max(self.p_values) 
         stats.to_csv(name + "_trees_stats.csv", index = False, header = True)        
-        logfile.info("- Wrote stats from tree association tests to '" + name + "_trees_stats.csv'")   
+        logfile.info("- Wrote stats from tree association tests to '" + name + "_trees_REML_stats.csv'")   
 
 
 class Mantel_tGWAS(TtGWAS):

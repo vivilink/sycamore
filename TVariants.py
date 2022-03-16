@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import datatable as dt
 import matplotlib.pyplot as plt
-
+import math
 
 class TVariants:
     def __init__(self, ts_object, samp_ids):
@@ -180,11 +180,12 @@ class TVariantsFiltered(TVariants):
         Index of the variant found, can be used to simulate fixed phenotype.
 
         """
+        
         # check if interval is valid
         num_lines = self.info[(self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])].shape[0]
         if num_lines == 0:
             raise ValueError("The interval " + str(interval) + " contains no variants")
-            
+                
         # make subset of variants in interval
         info_interval = self.info.loc[(self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])]
         # info_interval['index'] = range(self.info[(self.info['position'] >= interval[0]) & (self.info['position'] <= interval[1])].shape[0])
@@ -206,41 +207,44 @@ class TVariantsFiltered(TVariants):
         subplot.set(xlabel='Allele freq', ylabel='count', title = 'Histogram of af in requested interval and typed status')
 
         # find first variant with requested allele frequency
-        info = info_interval[info_interval['allele_freq'] == freq]
+        info = info_interval[np.greater_equal(info_interval['allele_freq'], freq)]
+
         if info.shape[0] < 1:
             logfile.info("- Did not find locus with requested af " + str(freq) + ". Adapting af in increments of 0.001.")
         
-        #set direction of search
-        r = random.random.uniform(0,1,1)
-        if r < 0.5:
-            step = -0.001
-        else:
-            step = 0.001
-            
-        freq_orig = freq
-            
-        while info.shape[0] < 1 and freq >= 0 and freq <= 0.5:
-            print(freq)
-            #remove or add small value to freq until a locus is found
-
-            freq = round(freq + step,3)
-
-            info = info_interval[info_interval['allele_freq'] == freq]
-        
-        #if loop was left because out of bounds, search in other direction
-        if freq < 0 or freq > 0.5:
-            logfile.warning("Allele frequency became negative or exceeded 0.5 while searching for locus with requested af " + str(freq_orig) + " in interval " + str(interval) + ". Starting search in opposite direction.")
-            step = -step
-            
-            #set search back to starting freq and go in other direction
-            freq = freq_orig
-
+            #set direction of search
+            r = random.random.uniform(0,1,1)
+            if r < 0.5:
+                step = -0.001
+            else:
+                step = 0.001
+                
+            freq_orig = freq
+                
             while info.shape[0] < 1 and freq >= 0 and freq <= 0.5:
-                freq = round(freq + step,3)    
-                info = info_interval[info_interval['allele_freq'] == freq]
-
-        if freq < 0 or freq > 0.5:
-            raise ValueError("Could not find locus with requested allele frequency")
+                print(freq)
+                #remove or add small value to freq until a locus is found
+    
+                freq = round(freq + step,3)
+                
+                print("math.isclose(info_interval['allele_freq'], freq, rel_tol=1e-5)", math.isclose(info_interval['allele_freq'], freq, rel_tol=1e-5))
+    
+                info = info_interval[np.greater_equal(info_interval['allele_freq'], freq)]
+            
+            #if loop was left because out of bounds, search in other direction
+            if freq < 0 or freq > 0.5:
+                logfile.warning("Allele frequency became negative or exceeded 0.5 while searching for locus with requested af " + str(freq_orig) + " in interval " + str(interval) + ". Starting search in opposite direction.")
+                step = -step
+                
+                #set search back to starting freq and go in other direction
+                freq = freq_orig
+    
+                while info.shape[0] < 1 and freq >= 0 and freq <= 0.5:
+                    freq = round(freq + step,3)    
+                    info = info_interval[np.greater_equal(info_interval['allele_freq'], freq)]
+    
+            if freq < 0 or freq > 0.5:
+                raise ValueError("Could not find locus with requested allele frequency")
             
         subplot.axvline(x = freq, color = "black", lw = 1)
 

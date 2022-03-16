@@ -198,14 +198,15 @@ class Phenotypes:
         None.
 
         """
-    
+        logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
+
         tmp_pheno = pd.DataFrame()
         tmp_pheno['1'] = np.arange(1,self.N+1)
         tmp_pheno['2'] = tmp_pheno['1']
         tmp_pheno['3'] = self.y        
         
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
-        logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
+        
 
     def write_to_file(self, variants, out, logfile):
         """
@@ -227,6 +228,8 @@ class Phenotypes:
         table['betas'] = self.betas 
         table['power'] = 0
         table.loc[self.causal_variant_indeces, 'power'] = self.causal_power
+        table['genotypic_var'] = np.array(self.betas) * np.array(self.betas) * (np.repeat(1, variants.number) - np.array(variants.info['allele_freq']))
+        table['phenotypic_var'] = np.var(self.y)
       
         logfile.info("- Writing phenotype data '" + out + "_pheno_causal_vars.csv'")
         table.to_csv(out + "_pheno_causal_vars.csv", index = False, header = True)       

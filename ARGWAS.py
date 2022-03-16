@@ -39,7 +39,7 @@ os.chdir(os.path.dirname(sys.argv[0]))
 parser = argparse.ArgumentParser(description='Running association tests on variants and trees.')
 
 # general arguments
-parser.add_argument('--task', required=True, choices=['simulate', 'associate', 'downsampleVariants', 'ARGStatistics'],
+parser.add_argument('--task', required=True, choices=['simulate', 'associate', 'downsampleVariants', 'ARGStatistics', 'getTreeAtPosition'],
                     help = 'The task to be executed (simulate or associate)')
 parser.add_argument('--out', required=True, type=str,
                     help = 'Prefix of all output files')
@@ -81,6 +81,8 @@ pty.add_argument('--pty_fixed_variant_indeces', nargs='+', type=int,
                     help = "Indeces of variants that should be simulated as causal if pty_sim_method is set to 'fixed'.")
 pty.add_argument('--single_variant_af', type=float,
                     help = "Simulate a single, central causal variant that is typed. If there is no such variant in the given range, will search for one with an allele frequency that is close.")
+pty.add_argument('--single_variant_interval', nargs='+', type=int, default=[49461796.0, 49602827.0],
+                    help = "Simulate a single, causal variant that is typed within the here given range. If there is no such variant in the given range, will search for one with an allele frequency that is close.")
 pty.add_argument('--allelic_hetero_file',
                      help = "txt file with columns 'freq', 'typed', 'beta'")
 pty.add_argument('--causal_tree_pos', type=int,
@@ -90,7 +92,7 @@ pty.add_argument('--causal_tree_pos', type=int,
 assoc = parser.add_argument_group('associations')
 assoc.add_argument('--ass_method', choices = ["GWAS", "AIM", "both"], 
                    help = "Either run only GWAS, AIM or both")
-assoc.add_argument('--AIM_method', choices = ["HE", "REML"],
+assoc.add_argument('--AIM_method', nargs='+', #choices = ["HE", "REML"],
                    help = "Use either Haseman-Elston or REML to test trees for association")
 
 
@@ -197,6 +199,17 @@ if args.task == "ARGStatistics":
     trees_class = tt.TTrees(trees)
     trees_class.writeStats(trees, args.out, logger)
 
+#-----------------------
+# Output single tree
+#-----------------------
+
+if args.task == "getTreeAtPosition":
+    
+    logger.info("- TASK: getTreeAtPosition")    
+    logger.info("- Reading tree from " + args.tree_file)
+    trees = tskit.load(args.tree_file)
+    trees_class = tt.TTrees(trees)
+    trees_class.extract_single_tree(trees, args.out, logger, position = 49035916)  #49027865
 
 #-----------------------
 # Downsample variants
@@ -249,10 +262,13 @@ if args.task == "associate":
     # TODO: find way to save variants in their tskit format without needing to read the original tree. I only need original tree in association task for this. It would be nice if the only tree that needs to be read would be estimated tree
     # do not provide variant file here but have it estimated from tree, otherwise variants and tree won't match (tree only contains typed variants). The variant file is only useful for simulating phenotypes to be able to keep track of untyped variants
     variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq, args.prop_typed_variants, args.pos_int, r, logger)
-
+    
     #variants_orig are used to simulate phenotypes. They need to be consistent with original tree and the typed status that might have been defined earlier with a variants file. 
     #The causal mutation should not be affected by a freq filter
     variants_orig = tvar.TVariantsFiltered(trees_orig, samp_ids, 0, 1, 1, args.pos_int, r, logger, args.variants_file)
+    
+    print("variants", variants.info)
+    print("variants_orig", variants_orig.info)
     
     #--------------------------------
     # create phenotypes
@@ -261,6 +277,9 @@ if args.task == "associate":
     pheno = pt.Phenotypes(args.name, variants_orig, N, logger)
     pheno.simulateEnvNoise(args.pty_sd_envNoise, r)
     logger.info("- Simulating random noise with sd " + str(args.pty_sd_envNoise))
+    
+    if args.pty_sim_method is None:
+        raise ValueError("Must provide a phenotype simulation method with --pty_sim_method")
 
     if args.pty_sim_method == 'uniform':
         logger.info("- Simulating phenotypes based on uniformly chosen variants with prop_causal_mutations: " + str(args.pty_prop_causal_mutations) + " and sd_beta_causal_mutations: " + str(args.pty_sd_beta_causal_mutations)) 
@@ -269,7 +288,7 @@ if args.task == "associate":
  
     elif args.pty_sim_method == 'fixed':
         if args.pty_fixed_betas == None:
-            raise ValueError("No beta values provided for phenotype 'fixed'")
+            raise ValueError("Must provide beta values provided for 'fixed' phenotype using '--pty_fixed_betas'")
 
         logger.info("- Simulating phenotypes based on the following indeces: " + str(args.pty_fixed_variant_indeces) + " and the following betas: " + str(args.pty_fixed_betas)) 
         pheno.simulateFixed(variants_orig, args.pty_fixed_variant_indeces, args.pty_fixed_betas, logger)
@@ -277,13 +296,14 @@ if args.task == "associate":
 
     elif args.pty_sim_method == 'singleTyped':
         if args.pty_fixed_betas == None:
-            raise ValueError("No beta values provided for phenotype 'singleTyped'")
+            raise ValueError("Must provide beta values for 'singleTyped' phenotype using '--pty_fixed_betas'")
+        if args.single_variant_af == None:
+            raise ValueError("Must provide allele freq values for 'singleTyped' phenotype using '--single_variant_af'")
             
         fig, ax = plt.subplots(1,figsize=(30,30))            
-        var_index, pos = variants_orig.findVariant(typed=True, freq = args.single_variant_af, interval = [49461796, 49602827], out = args.out, subplot = ax, random = r, logfile = logger)
+        var_index, pos = variants_orig.findVariant(typed=True, freq = args.single_variant_af, interval = args.single_variant_interval, out = args.out, subplot = ax, random = r, logfile = logger)
         fig.tight_layout()
         fig.set_size_inches(30, 30)
-        fig.show()
         fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
 
         logger.info("- Simulating a phenotypes based on the following typed variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
@@ -298,7 +318,6 @@ if args.task == "associate":
         var_index, pos = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = [49461796, 49602827], out = args.out, subplot = ax, random = r, logfile = logger)   
         fig.tight_layout()
         fig.set_size_inches(30, 30)
-        fig.show()
         fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
  
         logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
@@ -362,7 +381,6 @@ if args.task == "associate":
 
             fig.tight_layout()
             fig.set_size_inches(30, 30)
-            fig.show()
             fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
 
         logger.sub()
@@ -401,40 +419,59 @@ if args.task == "associate":
         logger.sub()
 
     if args.ass_method == "AIM" or args.ass_method == "both":
+        
         logger.info("- AIM:")
         logger.add()
+        
+        if args.AIM_method is None:
+            raise ValueError("ERROR: No method for tree association provided. Use '--AIM_method' to set method.")
+            
         logger.info("- Reading tree estimations for tree-based association from " + args.tree_file)
         
-        pheno.findCausalTrees(trees)
-                
-        if args.AIM_method == None:
-            logger.error("ERROR: No method for tree association provided. Use '--AIM_method' to set method.")
-        
-        if args.AIM_method == "HE":
-            logger.info("- Using GCTA Haseman-Elston to test for association between trees and phenotypes")
-            tGWAS = gwas.HE_tGWAS(trees, pheno)
+        pheno.findCausalTrees(trees)        
             
-            tGWAS.run_association(trees, N, args.out, logger)
-            tGWAS.write_to_file(trees, args.out, logger)
-    
-            # TODO: move plotting function to tGWAS, should accept p values as argument
-            fig, ax = plt.subplots(5,figsize=(30,30))
-            tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_Jackknife, subplot=ax[1], logfile=logger, title_supplement = "HECP_Jackknife")
-            tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_OLS, subplot=ax[2],  logfile=logger, title_supplement = "HECP_OLS")
-            tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_Jackknife, subplot=ax[3], logfile=logger, title_supplement = "HESD_Jackknife")
-            tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_OLS, ax[4], logfile=logger, title_supplement = "HESD_OLS")
-            
-            fig.tight_layout()
-            fig.set_size_inches(30, 30)
-            fig.show()
-            fig.savefig(plots_dir + 'HE_AIM.png', bbox_inches='tight')#    
-            
-        if args.AIM_method == "REML":
-            logger.info("- Using GCTA REML to test for association between trees and phenotypes")
-            tGWAS = gwas.REML_tGWAS(trees, pheno)
+        for m in args.AIM_method:         
+                        
+            logger.add()
 
-            tGWAS.run_association(trees, N, args.out, logger)
-            tGWAS.write_to_file(trees, args.out, logger)            
- 
+            if m == "HE":
+                logger.info("- Using GCTA Haseman-Elston to test for association between trees and phenotypes")
+                
+                logger.add()
+
+                tGWAS = gwas.HE_tGWAS(trees, pheno)
+                                
+                tGWAS.run_association(trees, N, args.out, logger)
+                tGWAS.write_to_file(trees, args.out, logger)
+                       
+                # # TODO: move plotting function to tGWAS, should accept p values as argument
+                # fig, ax = plt.subplots(5,figsize=(30,30))
+                # tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_Jackknife, subplot=ax[1], logfile=logger, title_supplement = "HECP_Jackknife")
+                # tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_OLS, subplot=ax[2],  logfile=logger, title_supplement = "HECP_OLS")
+                # tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_Jackknife, subplot=ax[3], logfile=logger, title_supplement = "HESD_Jackknife")
+                # tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_OLS, ax[4], logfile=logger, title_supplement = "HESD_OLS")
+                
+                # fig.tight_layout()
+                # fig.set_size_inches(30, 30)
+                # fig.show()
+                # fig.savefig(plots_dir + 'HE_AIM.png', bbox_inches='tight')#    
+                
+                logger.sub()
+
+                
+            if m == "REML":
+                logger.info("- Using GCTA REML to test for association between trees and phenotypes")
+                
+                logger.add()
+
+                tGWAS = gwas.REML_tGWAS(trees, pheno)
+    
+                tGWAS.run_association(trees, N, args.out, logger)
+                tGWAS.write_to_file(trees, args.out, logger)         
+                
+                logger.sub()
+            
+            logger.sub()
+     
         logger.sub()
 

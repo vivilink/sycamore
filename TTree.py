@@ -39,7 +39,12 @@ class TTrees:
 #     #     inv = np.linalg.inv(covariance)
 #     #     np.dot(inv, array)
 
-    
+    def extract_single_tree(self, ts_object, out, logfile, position):
+        focal_tree = ts_object.at(position)
+        trees = ts_object.keep_intervals([np.array(focal_tree.interval)], simplify=True) 
+        trees.dump(out + "_focal.trees")
+        logfile.info("- Wrote trees with " + str(focal_tree.interval) + " to " + out + ".trees")
+               
     
 
 class TTree:
