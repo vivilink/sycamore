@@ -443,6 +443,7 @@ if args.task == "associate":
                 if args.test_only_tree_at is None:    
                     tGWAS.run_association(trees, N, args.out, logger)
                 else:
+                    pheno.write_to_file_gcta(args.out, logger)        
                     tree = trees.at(args.test_only_tree_at)
                     tGWAS.run_association_one_tree(tree, N, args.out, logger)
 
@@ -473,6 +474,7 @@ if args.task == "associate":
                 if args.test_only_tree_at is None:    
                     tGWAS.run_association(trees, N, args.out, logger)
                 else:
+                    pheno.write_to_file_gcta(args.out, logger)        
                     tree = trees.at(args.test_only_tree_at)
                     tGWAS.run_association_one_tree(tree, N, args.out, logger)
                 tGWAS.write_to_file(trees, args.out, logger)         
