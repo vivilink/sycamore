@@ -7,8 +7,6 @@ Created on Mon Aug 30 17:44:45 2021
 """
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import math
 
 class TVariants:
     def __init__(self, ts_object, samp_ids):
