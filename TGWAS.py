@@ -254,14 +254,14 @@ class HE_tGWAS(TtGWAS):
         self.V_G_over_Vp_SE_Jackknife_HECP = np.empty(self.num_associations)
         self.V_G_over_Vp_SE_Jackknife_HESD = np.empty(self.num_associations)
 
-    def run_association(self, ts_object, N, out, logfile):        
+    def run_association(self, ts_object, N, out, logfile, covariance_scaled):        
         self.phenotypes.write_to_file_gcta(out, logfile)        
 
         #log progress
         start = time.time()
         
         for tree in ts_object.trees():
-            self.run_association_one_tree(tree, N, out, logfile)  
+            self.run_association_one_tree(tree, N, out, logfile, covariance_scaled)  
             #log progress
             if tree.index % 100 == 0:
                 end = time.time()
@@ -270,13 +270,16 @@ class HE_tGWAS(TtGWAS):
             
         logfile.info("- done running associations")
         
-    def run_association_one_tree(self, tree, N, out, logfile):        
+    def run_association_one_tree(self, tree, N, out, logfile, covariance_scaled):        
         # logfile.info("- running association test on tree with interval:" + str(tree.interval.left) + "," + str(tree.interval.right))
 
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, N)
-        covariance = tree_obj.covariance(N)
-        
+        if covariance_scaled == True:
+            covariance = tree_obj.covariance_scaled(N)
+        else:
+            covariance = tree_obj.covariance(N)        
+            
         with open(out + "_GRM_covariance.txt", 'w') as f:
             np.savetxt(f, covariance)
         f.close()
@@ -382,12 +385,15 @@ class REML_tGWAS(TtGWAS):
         self.V_G_over_Vp_SE = np.empty(self.num_associations)
 
 
-    def run_association_one_tree(self, tree, N, out, logfile):  
+    def run_association_one_tree(self, tree, N, out, logfile, covariance_scaled):  
         # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
 
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, N)
-        covariance = tree_obj.covariance(N)
+        if covariance_scaled == True:
+            covariance = tree_obj.covariance_scaled(N)
+        else:
+            covariance = tree_obj.covariance(N)
             
         logfile.info("- Writing covariance matrix to file")
 
@@ -425,12 +431,12 @@ class REML_tGWAS(TtGWAS):
         self.V_G_over_Vp_SE[tree.index] = float(result['SE'][result['Source'] == 'V(G)/Vp'])                
 
 
-    def run_association(self, ts_object, N, out, logfile):        
+    def run_association(self, ts_object, N, out, logfile, covariance_scaled):        
         self.phenotypes.write_to_file_gcta(out, logfile)        
         
         start = time.time()        
         for tree in ts_object.trees():
-            self.run_association_one_tree(tree, N, start, out, logfile)         
+            self.run_association_one_tree(tree, N, start, out, logfile, covariance_scaled)         
             if tree.index % 100 == 0:
                 end = time.time()
                 logfile.info("- Ran REML for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")

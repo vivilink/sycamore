@@ -96,6 +96,8 @@ assoc.add_argument('--AIM_method', nargs='+', #choices = ["HE", "REML"],
                    help = "Use either Haseman-Elston or REML to test trees for association")
 assoc.add_argument('--test_only_tree_at', type=float, #choices = ["HE", "REML"],
                    help = "Only test tree that is overlapping the given position for association")
+assoc.add_argument('--covariance_scaled', type=bool, default=False,
+                   help = "scale the variance-covariance matrix by N/trace")
 
 #limit data
 parser.add_argument('--min_allele_freq', type=float, default = 0,
@@ -210,7 +212,7 @@ if args.task == "getTreeAtPosition":
     logger.info("- Reading tree from " + args.tree_file)
     trees = tskit.load(args.tree_file)
     trees_class = tt.TTrees(trees)
-    trees_class.extract_single_tree(trees, args.out, logger, position = 49035916)  #49027865
+    trees_class.extract_single_tree(trees, args.out, logger, position = args.test_only_tree_at)  #49027865
 
 #-----------------------
 # Downsample variants
@@ -441,11 +443,11 @@ if args.task == "associate":
                 tGWAS = gwas.HE_tGWAS(trees, pheno)
                            
                 if args.test_only_tree_at is None:    
-                    tGWAS.run_association(trees, N, args.out, logger)
+                    tGWAS.run_association(trees, N, args.out, logger, args.covariance_scaled)
                 else:
                     pheno.write_to_file_gcta(args.out, logger)        
                     tree = trees.at(args.test_only_tree_at)
-                    tGWAS.run_association_one_tree(tree, N, args.out, logger)
+                    tGWAS.run_association_one_tree(tree, N, args.out, logger, args.covariance_scaled)
 
                 tGWAS.write_to_file(trees, args.out, logger)
                        
@@ -472,11 +474,11 @@ if args.task == "associate":
                 tGWAS = gwas.REML_tGWAS(trees, pheno)
                 
                 if args.test_only_tree_at is None:    
-                    tGWAS.run_association(trees, N, args.out, logger)
+                    tGWAS.run_association(trees, N, args.out, logger, args.covariance_scaled)
                 else:
                     pheno.write_to_file_gcta(args.out, logger)        
                     tree = trees.at(args.test_only_tree_at)
-                    tGWAS.run_association_one_tree(tree, N, args.out, logger)
+                    tGWAS.run_association_one_tree(tree, N, args.out, logger, args.covariance_scaled)
                 tGWAS.write_to_file(trees, args.out, logger)         
                 
                 logger.sub()

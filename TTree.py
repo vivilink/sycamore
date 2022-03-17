@@ -110,6 +110,13 @@ class TTree:
         covariance = -covariance + self.height
         return(covariance)
     
+    def covariance_scaled(self, N):
+        covariance = self.TMRCA(self.N)
+        covariance = -covariance + self.height
+        trace = np.trace(covariance)
+        covariance = covariance * N / trace
+        return(covariance)
+    
     def print_something(self, something):
         raise ValueError("printing", something)
 
