@@ -394,15 +394,12 @@ class REML_tGWAS(TtGWAS):
             covariance = tree_obj.covariance_scaled(N)
         else:
             covariance = tree_obj.covariance(N)
-            
-        logfile.info("- Writing covariance matrix to file")
-
+        
         with open(out + '_GRM_covariance.txt', 'w') as f:
             np.savetxt(f, covariance)
         f.close()
                 
         # create gcta input files, run gcta and parse output
-        logfile.info("- Running GCTA")
         exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_REML.sh", out])
 
         # read results
@@ -436,7 +433,7 @@ class REML_tGWAS(TtGWAS):
         
         start = time.time()        
         for tree in ts_object.trees():
-            self.run_association_one_tree(tree, N, start, out, logfile, covariance_scaled)         
+            self.run_association_one_tree(tree, N, out, logfile, covariance_scaled)         
             if tree.index % 100 == 0:
                 end = time.time()
                 logfile.info("- Ran REML for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")

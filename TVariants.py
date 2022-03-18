@@ -92,7 +92,7 @@ class TVariantsFiltered(TVariants):
         #variants are already filtered -> read from file!
         else:
             logfile.info("- Reading variant information from " + filtered_variants_file)
-            self.info = pd.read_table(filtered_variants_file)
+            self.info = pd.read_csv(filtered_variants_file)
           
         #set number typed
         self.number = len(self.info['typed'])
