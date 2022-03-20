@@ -99,7 +99,7 @@ class TVariantsFiltered(TVariants):
         self.number_typed = self.info['typed'].value_counts()[True]
         if len(self.info['index']) != self.number != len(self.variants):
             raise ValueError("Variant file " + filtered_variants_file + " contains " + str(len(self.info['index'])) + " variants, expected " + str(self.number))
-     
+                 
     def print_genotypes(self, index):        
         file = "genotypes_variant" + str(index) + ".txt"
         self.info['variant'][index].genotypes.tofile(file=file)
@@ -205,7 +205,7 @@ class TVariantsFiltered(TVariants):
         subplot.set(xlabel='Allele freq', ylabel='count', title = 'Histogram of af in requested interval and typed status')
 
         # find first variant with requested allele frequency
-        info = info_interval[np.isclose(info_interval['allele_freq'], freq)]
+        info = info_interval[np.isclose(np.array(info_interval['allele_freq'], dtype = float), freq, rtol=0.01)]
         
         if info.shape[0] < 1:
             logfile.info("- Did not find locus with requested af " + str(freq) + ". Adapting af in increments of 0.001.")
@@ -221,8 +221,8 @@ class TVariantsFiltered(TVariants):
                 
             while info.shape[0] < 1 and freq >= 0 and freq <= 0.5:
                 #remove or add small value to freq until a locus is found
-                freq = round(freq + step,3)                        
-                info = info_interval[np.isclose(info_interval['allele_freq'], freq)]
+                freq = round(freq + step,3) 
+                info = info_interval[np.isclose(np.array(info_interval['allele_freq'], dtype = float), freq, rtol=0.01)]
             
             #if loop was left because out of bounds, search in other direction
             if freq < 0 or freq > 0.5:
@@ -234,7 +234,7 @@ class TVariantsFiltered(TVariants):
     
                 while info.shape[0] < 1 and freq >= 0 and freq <= 0.5:
                     freq = round(freq + step,3)    
-                    info = info_interval[np.isclose(info_interval['allele_freq'], freq)]
+                    info = info_interval[np.isclose(np.array(info_interval['allele_freq'], dtype = float), freq, rtol=0.01)]
     
             if freq < 0 or freq > 0.5:
                 raise ValueError("Could not find locus with requested allele frequency")

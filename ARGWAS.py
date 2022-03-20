@@ -313,10 +313,10 @@ if args.task == "associate":
         
     elif args.pty_sim_method == 'singleUntyped':
         if args.pty_fixed_betas == None:
-            raise ValueError("No beta values provided for phenotype 'singleUntyped'")
+            raise ValueError("Must provide beta values using '--pty_fixed_betas' for phenotype 'singleUntyped'")
         
         fig, ax = plt.subplots(1,figsize=(30,30))            
-        var_index, pos = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = [49461796, 49602827], out = args.out, subplot = ax, random = r, logfile = logger)   
+        var_index, pos = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = args.single_variant_interval, out = args.out, subplot = ax, random = r, logfile = logger)   
         fig.tight_layout()
         fig.set_size_inches(30, 30)
         fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
