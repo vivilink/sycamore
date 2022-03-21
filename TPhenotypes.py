@@ -229,7 +229,7 @@ class Phenotypes:
         table['betas'] = self.betas 
         table['power'] = 0
         table.loc[self.causal_variant_indeces, 'power'] = self.causal_power
-        table['genotypic_var'] = np.array(self.betas) * np.array(self.betas) * (np.repeat(1, variants.number) - table['allele_freq'])
+        table['genotypic_var'] = np.array(self.betas) * np.array(self.betas) * np.array(table['allele_freq']) * (np.repeat(1, variants.number) - np.array(table['allele_freq']))
         table['phenotypic_var'] = np.var(self.y)
       
         logfile.info("- Writing phenotype data '" + out + "_pheno_causal_vars.csv'")
