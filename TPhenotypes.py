@@ -12,9 +12,9 @@ import pandas as pd
 #TODO: being typed or not should be an option for all causal variants
 
 class Phenotypes:
-    def __init__(self, name, variants, num_inds, logfile):
+    def __init__(self, name, variants, inds, logfile):
         self.name = name
-        self.N = num_inds
+        self.N = inds.num_inds
         self.y = np.zeros(self.N)
         self.betas = [0] * variants.number
         self.causal_variants = []
@@ -156,31 +156,6 @@ class Phenotypes:
         for v in self.causal_variants:
             causal_tree = ts_object.at(v.site.position)
             self.causal_tree_indeces.append(causal_tree.get_index())
-        
-        # p = 0 
-        # t = 0
-        # tree = ts_object.first()
-        # while p < len(self.causal_variants):    
-        #     # # Debugging:
-        #     # #------------
-        #     # print("p: " + str(p))
-        #     # print("tree index " + str(t))
-        #     # print("causal_variants[p] + " + str(self.causal_variants[p]))
-        #     # print("tree.interval.left " + str(tree.interval.left))
-        #     # print("tree.interval.right " + str(tree.interval.right)) 
-        #     # print("trees.at(var.site.position).get_index() " + str(ts_object.at(self.causal_variants[p].site.position).get_index()))
-                
-        #     if tree.interval.left <= self.causal_variants[p].site.position <= tree.interval.right:        
-        #         #save causal tree
-        #         self.causal_tree_indeces.append(tree.get_index())
-        #         p += 1
-                
-        #     elif self.causal_variants[p].site.position < tree.interval.left:
-        #         p += 1        
-            
-        #     elif self.causal_variants[p].site.position > tree.interval.right:
-        #         tree.next()
-        #         t += 1
 
         
     def diffs(self):

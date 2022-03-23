@@ -48,9 +48,9 @@ class TTrees:
     
 
 class TTree:
-    def __init__(self, tree_iterator, N):
+    def __init__(self, tree_iterator, num_haplotypes):
         self.tree = tree_iterator
-        self.N = N
+        self.N = num_haplotypes
         self.start = tree_iterator.interval.left
         self.end = tree_iterator.interval.right
         self.index = tree_iterator.index
@@ -63,7 +63,7 @@ class TTree:
         return np.all(E > -tol)
         
         
-    def TMRCA(self, N):
+    def TMRCA(self, num_haplotypes):
         """
         see tskit to understand these classes: https://tskit.dev/tskit/docs/stable/python-api.html#the-tree-class
         
@@ -79,23 +79,20 @@ class TTree:
     
         Parameters
         ----------
-        tree : <class 'tskit.trees.Tree'>
-            The tree for which distance between samples should be calculated.
-        N : int
-            number of samples.
+        num_haplotypes : int
+            number of haplotypes.
     
         Returns
         -------
-        tmrca : matrix of dim ? and type ?
-            Time separating two samples.
+        tmrca : pairwise distance between two haplotypes. square matrix of dimension num_haplotypes and type float.
     
         """
-        tmrca = np.zeros([N, N])
+        tmrca = np.zeros([self.N, self.N])
         self.height = 0
         for c in self.tree.nodes():
             descendants = list(self.tree.samples(c))
             n = len(descendants)
-            if(n == 0 or n == N or self.tree.time(c) == 0): #The branch length for a node that has no parent (e.g., a root) is defined as zero.
+            if(n == 0 or n == self.N or self.tree.time(c) == 0): #The branch length for a node that has no parent (e.g., a root) is defined as zero.
                 continue
             t = self.tree.time(self.tree.parent(c)) - self.tree.time(c)
             tmrca[np.ix_(descendants, descendants)] -= t
@@ -105,17 +102,55 @@ class TTree:
         tmrca = (tmrca + tmrca.T) / 2
         return tmrca
     
-    def covariance(self, N):
+    def covariance(self):
+        """
+        Calculate variance-covariance between haplotypes. Total height of tree = distance_ij + covariance_ij. Variance of one haplotype = total height of tree.
+
+        Returns
+        -------
+        Variance-covariance matrix.
+
+        """
         TMRCA = self.TMRCA(self.N)
         covariance = -TMRCA + self.height
         return(covariance)
     
-    def covariance_scaled(self, N):
+    def covariance_scaled(self, inds):
+        """
+        Caclulate scaled variance-covariance between haplotypes. This allows gcta REML to run without numeric issues such as singular Information matrix.
+
+        Returns
+        -------
+        Scaled variance-covariance matrix.
+
+        """
         TMRCA = self.TMRCA(self.N)
         covariance = -TMRCA + self.height
-        covariance = covariance * float(N) / np.trace(covariance)
-        return(covariance)
-           
+        covariance = covariance * float(self.N) / np.trace(covariance)
+        
+        if inds.ploidy == 1:
+            return(covariance)
+        
+        else:
+            #add together covariance of haplotypes of one individual
+            covariance_diploid = np.zeros([inds.num_inds, inds.num_inds])
+            
+            #off-diagonals 
+            for i in range(inds.num_inds):
+                i1 = inds.ind_assignment.loc[i, 'haplotypes'] 
+                i2 = inds.ind_assignment.loc[i, 'haplotypes'] 
+                for j in range(i+1, inds.num_inds):
+                    j1 = inds.ind_assignment.loc[j, 'haplotypes'] 
+                    j2 = inds.ind_assignment.loc[j, 'haplotypes'] 
+                    covariance_diploid[i,j] = covariance.loc[i1, j1] + covariance.loc[i1, j2] + covariance.loc[i2, j1] + covariance.loc[i2, j2]
+            
+            #diagonals 
+            for ii in range(inds.num_inds):
+                ii1 = inds.ind_assignment.loc[ii, 'haplotypes'] 
+                ii2 = inds.ind_assignment.loc[ii, 'haplotypes'] 
+                covariance_diploid.loc[ii, ii] = 2.0 * self.height + 2.0 * covariance.loc[ii1, ii2]
+                
+                
     def solving_function(self, array):   
         covariance = self.covariance(self.N)
         # covariance = (X+X.T)/2

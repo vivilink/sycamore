@@ -254,14 +254,14 @@ class HE_tGWAS(TtGWAS):
         self.V_G_over_Vp_SE_Jackknife_HECP = np.empty(self.num_associations)
         self.V_G_over_Vp_SE_Jackknife_HESD = np.empty(self.num_associations)
 
-    def run_association(self, ts_object, N, out, logfile, covariance_scaled):        
+    def run_association(self, ts_object, inds, out, logfile, covariance_scaled):        
         self.phenotypes.write_to_file_gcta(out, logfile)        
 
         #log progress
         start = time.time()
         
         for tree in ts_object.trees():
-            self.run_association_one_tree(tree, N, out, logfile, covariance_scaled)  
+            self.run_association_one_tree(tree, inds, out, logfile, covariance_scaled)  
             #log progress
             if tree.index % 100 == 0:
                 end = time.time()
@@ -385,15 +385,15 @@ class REML_tGWAS(TtGWAS):
         self.V_G_over_Vp_SE = np.empty(self.num_associations)
 
 
-    def run_association_one_tree(self, tree, N, out, logfile, covariance_scaled):  
+    def run_association_one_tree(self, tree, inds, out, logfile, covariance_scaled):  
         # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
 
         #calculate covariance and write to file
-        tree_obj = tt.TTree(tree, N)
+        tree_obj = tt.TTree(tree, inds.num_haplotypes)
         if covariance_scaled == True:
-            covariance = tree_obj.covariance_scaled(N)
+            covariance = tree_obj.covariance_scaled(inds)
         else:
-            covariance = tree_obj.covariance(N)
+            covariance = tree_obj.covariance(inds)
         
         with open(out + '_GRM_covariance.txt', 'w') as f:
             np.savetxt(f, covariance)
@@ -428,12 +428,12 @@ class REML_tGWAS(TtGWAS):
         self.V_G_over_Vp_SE[tree.index] = float(result['SE'][result['Source'] == 'V(G)/Vp'])                
 
 
-    def run_association(self, ts_object, N, out, logfile, covariance_scaled):        
+    def run_association(self, ts_object, inds, out, logfile, covariance_scaled):        
         self.phenotypes.write_to_file_gcta(out, logfile)        
         
         start = time.time()        
         for tree in ts_object.trees():
-            self.run_association_one_tree(tree, N, out, logfile, covariance_scaled)         
+            self.run_association_one_tree(tree, inds, out, logfile, covariance_scaled)         
             if tree.index % 100 == 0:
                 end = time.time()
                 logfile.info("- Ran REML for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
@@ -481,7 +481,7 @@ class Mantel_tGWAS(TtGWAS):
         # p-value containers
         self.p_values = np.empty(self.num_associations)
 
-    def run_Mantel(self, ts_object, phenotypes, N):
+    def run_Mantel(self, ts_object, phenotypes, inds):
         #test for associations
         diffs = phenotypes.diffs()
         start = time.time()
@@ -492,8 +492,8 @@ class Mantel_tGWAS(TtGWAS):
             if tree.total_branch_length == 0: 
                 print("tree's total branch length is zero")
                 continue
-            tree_obj = tt.TTree(tree, N)
-            tmrca = tree_obj.TMRCA(N)
+            tree_obj = tt.TTree(tree, inds.num_haplotypes)
+            tmrca = tree_obj.TMRCA(inds.num_haplotypes)
             # print("tmrca",tmrca)
             self.p_values[tree.index] = ut.mantel(tmrca, diffs)
             if(self.p_values[tree.index] < 0):
