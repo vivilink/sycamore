@@ -270,15 +270,15 @@ class HE_tGWAS(TtGWAS):
             
         logfile.info("- done running associations")
         
-    def run_association_one_tree(self, tree, N, out, logfile, covariance_scaled):        
+    def run_association_one_tree(self, tree, inds, out, logfile, covariance_scaled):        
         # logfile.info("- running association test on tree with interval:" + str(tree.interval.left) + "," + str(tree.interval.right))
 
         #calculate covariance and write to file
-        tree_obj = tt.TTree(tree, N)
+        tree_obj = tt.TTree(tree, inds.num_haplotypes)
         if covariance_scaled == True:
-            covariance = tree_obj.covariance_scaled(N)
+            covariance = tree_obj.covariance_scaled(inds)
         else:
-            covariance = tree_obj.covariance(N)        
+            covariance = tree_obj.covariance(inds)        
             
         with open(out + "_GRM_covariance.txt", 'w') as f:
             np.savetxt(f, covariance)

@@ -108,7 +108,7 @@ if args.task == "simulate":
         N = len(samp_ids)
         if args.N != N:
             logger.warning("Number of samples in tree does not match number of samples in arguments")
-        inds = tind.Individuals(2, N)
+        inds = tind.Individuals(args.ploidy, N)
         variants = tvar.TVariants(trees, samp_ids)
         variants.writeVariantInfo(trees, samp_ids, args.out)
         
@@ -152,14 +152,13 @@ if args.task == "downsampleVariants":
 
     #--------------------------------
     # create diploids and variants
-    #--------------------------------
-    
+    #--------------------------------    
     inds = tind.Individuals(args.ploidy, args.N)
     inds.writeShapeit2(args.out, logger)
     variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq, args.prop_typed_variants, args.pos_int, r, logger)
     # variants = tvar.TVariantsFiltered(trees, samp_ids, 0.01, 1, 0.5, r)
     variants.writeVariantInfo(args.out, logger)
-    variants.writeShapeit2(args.out, N, logger)
+    variants.writeShapeit2(args.out, inds, logger)
 
 
 
@@ -184,7 +183,7 @@ if args.task == "associate":
     # create diploids and variants
     #--------------------------------
     
-    inds = tind.Individuals(1, N)
+    inds = tind.Individuals(args.ploidy, N)
  
     # TODO: find way to save variants in their tskit format without needing to read the original tree. I only need original tree in association task for this. It would be nice if the only tree that needs to be read would be estimated tree
     # do not provide variant file here but have it estimated from tree, otherwise variants and tree won't match (tree only contains typed variants). The variant file is only useful for simulating phenotypes to be able to keep track of untyped variants
@@ -367,7 +366,7 @@ if args.task == "associate":
                 tGWAS = gwas.HE_tGWAS(trees, pheno)
                            
                 if args.test_only_tree_at is None:    
-                    tGWAS.run_association(trees, N, args.out, logger, args.covariance_scaled)
+                    tGWAS.run_association(trees, inds, args.out, logger, args.covariance_scaled)
                 else:
                     pheno.write_to_file_gcta(args.out, logger)        
                     tree = trees.at(args.test_only_tree_at)

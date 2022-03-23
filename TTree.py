@@ -98,8 +98,10 @@ class TTree:
             tmrca[np.ix_(descendants, descendants)] -= t
             self.height = max(self.height, self.tree.time(self.tree.parent(c))) #time returns the time of a node
         tmrca += self.height
-        np.fill_diagonal(tmrca, 0)
-        tmrca = (tmrca + tmrca.T) / 2
+        np.fill_diagonal(tmrca, 0)        
+       
+        # tmrca = (tmrca + tmrca.T) / 2
+        
         return tmrca
     
     def covariance(self):
@@ -121,13 +123,13 @@ class TTree:
 
         Returns
         -------
-        Scaled variance-covariance matrix.
+        Scaled variance-covariance matrix
 
         """
         TMRCA = self.TMRCA(self.N)
         covariance = -TMRCA + self.height
         covariance = covariance * float(self.N) / np.trace(covariance)
-        
+                
         if inds.ploidy == 1:
             return(covariance)
         
@@ -135,20 +137,29 @@ class TTree:
             #add together covariance of haplotypes of one individual
             covariance_diploid = np.zeros([inds.num_inds, inds.num_inds])
             
-            #off-diagonals 
+            #off-diagonals upper triangle
             for i in range(inds.num_inds):
-                i1 = inds.ind_assignment.loc[i, 'haplotypes'] 
-                i2 = inds.ind_assignment.loc[i, 'haplotypes'] 
+                i1 = inds.get_haplotypes(i)[0]
+                i2 = inds.get_haplotypes(i)[1]
                 for j in range(i+1, inds.num_inds):
-                    j1 = inds.ind_assignment.loc[j, 'haplotypes'] 
-                    j2 = inds.ind_assignment.loc[j, 'haplotypes'] 
-                    covariance_diploid[i,j] = covariance.loc[i1, j1] + covariance.loc[i1, j2] + covariance.loc[i2, j1] + covariance.loc[i2, j2]
+                    print(i,j)
+                    j1 = inds.get_haplotypes(j)[0]
+                    j2 = inds.get_haplotypes(j)[1]
+                    covariance_diploid[i,j] = covariance[i1, j1] + covariance[i1, j2] + covariance[i2, j1] + covariance[i2, j2]
+                    
+            #lower triangle
+            covariance_diploid = covariance_diploid + covariance_diploid.T
             
             #diagonals 
             for ii in range(inds.num_inds):
-                ii1 = inds.ind_assignment.loc[ii, 'haplotypes'] 
-                ii2 = inds.ind_assignment.loc[ii, 'haplotypes'] 
-                covariance_diploid.loc[ii, ii] = 2.0 * self.height + 2.0 * covariance.loc[ii1, ii2]
+                ii1 = inds.get_haplotypes(ii)[0] 
+                ii2 = inds.get_haplotypes(ii)[1]
+                covariance_diploid[ii, ii] = 2.0 * self.height + 2.0 * covariance[ii1, ii2]
+            
+            covariance_diploid = covariance_diploid * float(self.N) / np.trace(covariance_diploid)
+
+            
+            return(covariance_diploid)
                 
                 
     def solving_function(self, array):   

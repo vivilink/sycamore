@@ -112,7 +112,7 @@ class TVariantsFiltered(TVariants):
         logfile.info("- Writing variant info to file '" + name + "_filtered_sample_variants.csv'")
         self.info.to_csv(name + "_filtered_sample_variants.csv", header=True, index=False)
         
-    def writeShapeit2(self, name, N, logfile):
+    def writeShapeit2(self, name, inds, logfile):
         """
         Write files in SHAPEIT2 format, to be used as input by RELATE (https://myersgroup.github.io/relate/input_data.html)
 
@@ -126,7 +126,7 @@ class TVariantsFiltered(TVariants):
         None.
 
         """
-        haps = pd.DataFrame(index=range(self.number_typed),columns=range(5 + N)) 
+        haps = pd.DataFrame(index=range(self.number_typed),columns=range(5 + inds.num_haplotypes)) 
         info_typed = self.info.loc[self.info['typed'] == True]
         info_typed['index'] = range(self.number_typed)
         info_typed.set_index(info_typed['index'], drop=True, inplace=True)
