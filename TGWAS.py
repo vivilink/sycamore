@@ -16,6 +16,8 @@ import subprocess
 import pandas as pd
 import os
 import sys
+import matplotlib.pyplot as plt
+
 
 class TGWAS:
     
@@ -150,11 +152,13 @@ class TpGWAS(TGWAS):
             subplot.plot(variant_positions[index_min:index_max], low, color="red")
         
         subplot.axhline(y=8, color="red", lw=0.5)
-
         
-    def manhattan_plot(self, variant_positions, subplot, *args):
-        self.manhattan_plot_subset(variant_positions, subplot, 0, len(self.p_values), *args)
-    
+    def manhattan_plot(self, variant_positions, plots_dir, *args):
+        fig, ax = plt.subplots(1,figsize=(10,10))
+        self.manhattan_plot_subset(variant_positions, ax, 0, len(self.p_values), *args)
+        fig.tight_layout()
+        fig.set_size_inches(30, 30)
+        fig.savefig(plots_dir + 'OLS_GWAS.png', bbox_inches='tight')    
     
 class TtGWAS(TGWAS):
     """

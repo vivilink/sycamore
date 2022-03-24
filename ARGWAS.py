@@ -9,14 +9,12 @@ Created on Mon Aug  9 16:57:18 2021
 import tskit
 import TParameters as params
 import numpy as np
-import matplotlib.pyplot as plt
 import TPhenotypes as pt
 import TGWAS as gwas
 import TVariants as tvar
 import TIndividuals as tind
 import TSimulator as tsim
 import TTree as tt
-import pandas as pd
 from python_log_indenter import IndentedLoggerAdapter
 import logging
 import os
@@ -37,6 +35,10 @@ os.chdir(os.path.dirname(sys.argv[0]))
 
 TParams = params.TParameters()
 args = TParams.initialize()
+
+plots_dir = args.out + "_plots/"
+if not os.path.exists(plots_dir):
+    os.mkdir(plots_dir)
 
 #-----------------------------
 # initialize logfile
@@ -91,6 +93,9 @@ logger.info("- randomGenerator seed is set to " + str(r.random.get_state()[1][0]
 #-----------------------
 # Simulate
 #-----------------------
+
+
+    
 
 if args.task == "simulate":
     logger.info("- TASK: simulate")
@@ -196,7 +201,7 @@ if args.task == "associate":
     #--------------------------------    
 
     pheno = pt.Phenotypes(args.name, variants_orig, inds, logger)
-    pheno.simulate(args, r, logger, variants_orig, inds, trees)
+    pheno.simulate(args, r, logger, variants_orig, inds, trees, plots_dir)
 
     #--------------------------------
     # run association tests and plot
@@ -215,11 +220,7 @@ if args.task == "associate":
         pGWAS.OLS(variants, logger)
         pGWAS.writeToFile(variants, args.out, logger)
         
-        fig, ax = plt.subplots(1,figsize=(10,10))
-        pGWAS.manhattan_plot(variants.info['position'], ax, logger)
-        fig.tight_layout()
-        fig.set_size_inches(30, 30)
-        fig.savefig(plots_dir + 'OLS_GWAS.png', bbox_inches='tight')# 
+        pGWAS.manhattan_plot(variants.info['position'], logger, plots_dir)
         
         logger.sub()
 

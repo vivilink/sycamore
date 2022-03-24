@@ -31,12 +31,8 @@ class Phenotypes:
         logfile.info("- Created '" + self.name + "' phenotype object")
         
         
-    def simulate(self, args, r, logger, variants_orig, inds, trees):
+    def simulate(self, args, r, logger, variants_orig, inds, trees, plots_dir):
         
-        plots_dir = args.out + "_plots/"
-        if not os.path.exists(plots_dir):
-            os.mkdir(plots_dir)
-            
             
         self.simulateEnvNoise(args.pty_sd_envNoise, r)
         logger.info("- Simulating random noise with sd " + str(args.pty_sd_envNoise))
