@@ -8,6 +8,8 @@ Created on Mon Aug 16 17:52:46 2021
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import os
 
 #TODO: being typed or not should be an option for all causal variants
 
@@ -25,7 +27,133 @@ class Phenotypes:
         self.causal_tree_indeces = []
         self.filled = False
         
+        
         logfile.info("- Created '" + self.name + "' phenotype object")
+        
+        
+    def simulate(self, args, r, logger, variants_orig, inds, trees):
+        
+        plots_dir = args.out + "_plots/"
+        if not os.path.exists(plots_dir):
+            os.mkdir(plots_dir)
+            
+            
+        self.simulateEnvNoise(args.pty_sd_envNoise, r)
+        logger.info("- Simulating random noise with sd " + str(args.pty_sd_envNoise))
+        
+        if args.pty_sim_method is None:
+            raise ValueError("Must provide a phenotype simulation method with --pty_sim_method")
+
+        if args.pty_sim_method == 'uniform':
+            logger.info("- Simulating phenotypes based on uniformly chosen variants with prop_causal_mutations: " + str(args.pty_prop_causal_mutations) + " and sd_beta_causal_mutations: " + str(args.pty_sd_beta_causal_mutations)) 
+            self.simulateUniform(variants_orig, inds, prop_causal_mutations=args.pty_prop_causal_mutations, sd_beta_causal_mutations=args.pty_sd_beta_causal_mutations, random=r, logfile=logger)
+     
+        elif args.pty_sim_method == 'fixed':
+            if args.pty_fixed_betas == None:
+                raise ValueError("Must provide beta values provided for 'fixed' phenotype using '--pty_fixed_betas'")
+
+            logger.info("- Simulating phenotypes based on the following indeces: " + str(args.pty_fixed_variant_indeces) + " and the following betas: " + str(args.pty_fixed_betas)) 
+            self.simulateFixed(variants_orig, args.pty_fixed_variant_indeces, args.pty_fixed_betas, logger)
+
+        elif args.pty_sim_method == 'singleTyped':
+            if args.pty_fixed_betas == None:
+                raise ValueError("Must provide beta values for 'singleTyped' phenotype using '--pty_fixed_betas'")
+            if args.single_variant_af == None:
+                raise ValueError("Must provide allele freq values for 'singleTyped' phenotype using '--single_variant_af'")
+                
+            fig, ax = plt.subplots(1,figsize=(30,30))            
+            var_index, pos = variants_orig.findVariant(typed=True, freq = args.single_variant_af, interval = args.single_variant_interval, out = args.out, subplot = ax, random = r, logfile = logger)
+            fig.tight_layout()
+            fig.set_size_inches(30, 30)
+            fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
+
+            logger.info("- Simulating a phenotypes based on the following typed variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
+            self.simulateFixed(variants_orig, [var_index], args.pty_fixed_betas, logger)
+            
+        elif args.pty_sim_method == 'singleUntyped':
+            if args.pty_fixed_betas == None:
+                raise ValueError("Must provide beta values using '--pty_fixed_betas' for phenotype 'singleUntyped'")
+            
+            fig, ax = plt.subplots(1,figsize=(30,30))            
+            var_index, pos = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = args.single_variant_interval, out = args.out, subplot = ax, random = r, logfile = logger)   
+            fig.tight_layout()
+            fig.set_size_inches(30, 30)
+            fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
+     
+            logger.info("- Simulating a phenotypes based on the following untyped variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
+            #to know which variants are untyped you need variants from simulated tree, not estimated tree
+            if args.variants_file is None:
+                raise ValueError("Must provide file with untyped variants to simulate phenotype with 'singleUntyped' model")
+            self.simulateFixed(variants_orig, [var_index], args.pty_fixed_betas, logger)
+            
+        elif args.pty_sim_method == 'oneTree':
+            causal_tree = trees.at(args.causal_tree_pos)
+            logger.info("- Simulating phenotypes based on all variants of the tree covering postion " + str(args.causal_tree_pos))
+            if args.pty_sd_beta_causal_mutations is None:
+                raise ValueError("pty_sd_beta_causal_mutations must be set to simulate phenotype with method 'oneTree'")
+            self.simulateCausalRegion(variants_orig, inds, left_bound = causal_tree.interval.left, right_bound = causal_tree.interval.right, sd_beta_causal_mutations = args.pty_sd_beta_causal_mutations, random = r, logfile = logger)
+
+        elif args.pty_sim_method == 'allelicHetero':
+            if args.allelic_hetero_file == None:
+                raise ValueError("No instruction file provided for allelic heterogeneity simulation")
+            if args.single_variant_af != None or args.pty_fixed_betas != None:
+                raise ValueError("Provided allele frequency or beta value as well as instruction file for allelic heterogeneity. Can accept only one type of instructions.")
+            
+            ah_info = pd.read_csv(args.allelic_hetero_file, delimiter = "\t")
+            variant_indeces = []
+            fixed_betas = []
+            sum_betas = 0
+            
+            logger.info("- Searching for loci with requested allele frequencies.")
+            logger.add()
+            
+            #start plot 
+            # TODO: this plotting should not be done here
+            fig, ax = plt.subplots(ah_info.shape[0],figsize=(30,30))        
+            for index, row in ah_info.iterrows():
+                #get allele freq
+                f = -1
+                if row['freq'] > 0.5:
+                    f = 1 - row['freq']
+                    logger.warning("- Allele frequencies above 0.5 are not allowed. Transformed " + str(row['freq'])  + " to " + str(f) + ".")
+                else:
+                    f = row['freq']
+                
+                #get beta
+                if not np.isnan(row['beta']) and not np.isnan(row['power']):
+                    raise ValueError("Cannot fix power and beta value. One value must be set to 'NA'. Beta is " + str(row['beta']) + " and power is " + str(row['power']))
+                if np.isnan(row['beta']):
+                    beta = np.sqrt(row['power'] / (f * (1 - f)))
+                    #some betas should be negative
+                    r_num = r.random.uniform(0,1,1)
+                    if r_num < 0.5:
+                        beta = -beta
+                else:
+                    beta = row['beta']
+
+
+                var_index, pos = variants_orig.findVariant(typed=False, freq = f, interval = [row["interval_start"], row["interval_end"]], out = args.out, subplot = ax[index], random = r, logfile = logger)   
+                variant_indeces.append(var_index)
+                fixed_betas.append(beta)
+                sum_betas += beta
+
+                fig.tight_layout()
+                fig.set_size_inches(30, 30)
+                fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
+
+            logger.sub()
+
+            logger.info("- Simulating allelic heterogeneous phenotype with total beta " + str(sum_betas))
+            
+            logger.info("- Simulating phenotypes:")
+            logger.add()
+            self.simulateFixed(variants_orig, variant_indeces, fixed_betas, logger)
+            logger.sub()
+        
+        
+        #write phenotypes to file
+        self.standardize()
+        self.write_to_file(variants_orig, args.out, logger)
         
     def returnRandomState(self, random):
         print(random.random.get_state()[1][0])
@@ -174,6 +302,9 @@ class Phenotypes:
         buffer = cols - rows
         return np.abs(buffer)
     
+    def standardize(self):
+        self.y = (self.y - np.mean(self.y)) / np.std(self.y)
+    
     def write_to_file_gcta(self, out, logfile):
         """
         write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value)
@@ -192,7 +323,6 @@ class Phenotypes:
         
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
         
-
     def write_to_file(self, variants, out, logfile):
         """
         write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value)
