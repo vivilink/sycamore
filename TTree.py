@@ -142,7 +142,6 @@ class TTree:
                 i1 = inds.get_haplotypes(i)[0]
                 i2 = inds.get_haplotypes(i)[1]
                 for j in range(i+1, inds.num_inds):
-                    print(i,j)
                     j1 = inds.get_haplotypes(j)[0]
                     j2 = inds.get_haplotypes(j)[1]
                     covariance_diploid[i,j] = covariance[i1, j1] + covariance[i1, j2] + covariance[i2, j1] + covariance[i2, j2]

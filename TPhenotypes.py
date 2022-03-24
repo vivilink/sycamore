@@ -82,7 +82,7 @@ class Phenotypes:
             
             logfile.info("- Simulated causal variant at position " + str(causal_pos[v]) + " at index " + str(causal_variant_indeces[v]) + " with beta " + str(round(betas[v], 3)) + " and allele freq " + str(allele_freq) + " resulting in a power of " + str(round(betas[v]**2 * allele_freq * (1-allele_freq), 3)))
         
-    def simulateUniform(self, variants, prop_causal_mutations, sd_beta_causal_mutations, random, logfile, mean_beta_causal_mutation = 0):
+    def simulateUniform(self, variants, inds, prop_causal_mutations, sd_beta_causal_mutations, random, logfile, mean_beta_causal_mutation = 0):
         """
         Parameters
         ----------
@@ -114,8 +114,13 @@ class Phenotypes:
                     self.betas[v] = beta
                     
                     #simulate phenotype
-                    self.y[var.genotypes == 1] += beta
-                    self.y[var.genotypes == 2] += 2 * beta
+                    if inds.ploidy == 1:
+                        self.y[var.genotypes == 1] += beta
+                        self.y[var.genotypes == 2] += 2 * beta
+                    else:
+                        genotypes = inds.get_diploid_genotypes(var.genotypes)
+                        self.y[genotypes == 1] += beta
+                        self.y[genotypes == 2] += 2 * beta
     
                     #save causal position
                     self.causal_variants.append(var)
@@ -127,7 +132,7 @@ class Phenotypes:
         logfile.info("- Simulated phenotypes based on " + str(len(self.causal_variants)) + " causal variants out of a total of " + str(variants.number) + ".")
         self.filled = True
         
-    def simulateCausalRegion(self, variants, left_bound, right_bound, sd_beta_causal_mutations, random, logfile):
+    def simulateCausalRegion(self, variants, inds, left_bound, right_bound, sd_beta_causal_mutations, random, logfile):
         #add phenotypic effect to mutations that are uniformly distributed
         for v, var in enumerate(variants.variants): 
             # is the variant in the tree
@@ -138,8 +143,13 @@ class Phenotypes:
                 self.betas[v] = beta
                 
                 #simulate phenotype
-                self.y[var.genotypes == 1] += beta
-                self.y[var.genotypes == 2] += 2 * beta
+                if inds.ploidy == 1:
+                    self.y[var.genotypes == 1] += beta
+                    self.y[var.genotypes == 2] += 2 * beta
+                else:
+                    genotypes = inds.get_diploid_genotypes(var.genotypes)
+                    self.y[genotypes == 1] += beta
+                    self.y[genotypes == 2] += 2 * beta
 
                 #save causal position
                 self.causal_variants.append(var)

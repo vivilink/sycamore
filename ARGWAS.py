@@ -207,7 +207,7 @@ if args.task == "associate":
 
     if args.pty_sim_method == 'uniform':
         logger.info("- Simulating phenotypes based on uniformly chosen variants with prop_causal_mutations: " + str(args.pty_prop_causal_mutations) + " and sd_beta_causal_mutations: " + str(args.pty_sd_beta_causal_mutations)) 
-        pheno.simulateUniform(variants_orig, prop_causal_mutations=args.pty_prop_causal_mutations, sd_beta_causal_mutations=args.pty_sd_beta_causal_mutations, random=r, logfile=logger)
+        pheno.simulateUniform(variants_orig, inds, prop_causal_mutations=args.pty_prop_causal_mutations, sd_beta_causal_mutations=args.pty_sd_beta_causal_mutations, random=r, logfile=logger)
         pheno.write_to_file(variants_orig, args.out, logger)
  
     elif args.pty_sim_method == 'fixed':
@@ -256,7 +256,7 @@ if args.task == "associate":
         logger.info("- Simulating phenotypes based on all variants of the tree covering postion " + str(args.causal_tree_pos))
         if args.pty_sd_beta_causal_mutations is None:
             raise ValueError("pty_sd_beta_causal_mutations must be set to simulate phenotype with method 'oneTree'")
-        pheno.simulateCausalRegion(variants_orig, left_bound = causal_tree.interval.left, right_bound = causal_tree.interval.right, sd_beta_causal_mutations = args.pty_sd_beta_causal_mutations, random = r, logfile = logger)
+        pheno.simulateCausalRegion(variants_orig, inds, left_bound = causal_tree.interval.left, right_bound = causal_tree.interval.right, sd_beta_causal_mutations = args.pty_sd_beta_causal_mutations, random = r, logfile = logger)
         pheno.write_to_file(variants_orig, args.out, logger)
 
     elif args.pty_sim_method == 'allelicHetero':

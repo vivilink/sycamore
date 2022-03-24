@@ -23,7 +23,6 @@ class Individuals:
             if i % 2 == 0:
                 assignment += 1
             self.ind_assignment['individual'][i] = assignment
-            
                         
     def get_individual(self, haplotype):
         if haplotype > max(self.ind_assignment['haplotype']) or haplotype < min(self.ind_assignment['haplotype']):
@@ -37,8 +36,16 @@ class Individuals:
         tmp = self.ind_assignment['haplotype'].values[self.ind_assignment['individual'] == individual]
         return(tmp)
                 
-    def print_haplotype_assignment(self):
-        print(self.ind_assignment)
+    def get_diploid_genotypes(self, haploid_genotypes):
+        table = pd.DataFrame()
+        table['individual'] = self.ind_assignment['individual']
+        table['haploid_genotypes'] = haploid_genotypes
+        
+        table = table.groupby('individual').agg(
+            diploid_genotypes=pd.NamedAgg(column='haploid_genotypes', aggfunc=sum)
+        )
+        return(table['diploid_genotypes'])
+        
     
     def writeShapeit2(self, out, logfile):
         
