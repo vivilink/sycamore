@@ -392,7 +392,7 @@ class REML_tGWAS(TtGWAS):
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, inds.num_haplotypes)
         if covariance_scaled == True:
-            covariance = tree_obj.covariance_scaled(inds)
+            covariance = tree_obj.covariance_scaled(inds, logfile)
         else:
             covariance = tree_obj.covariance(inds)
         
