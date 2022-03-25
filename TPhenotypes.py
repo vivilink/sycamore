@@ -33,10 +33,6 @@ class Phenotypes:
         
     def simulate(self, args, r, logger, variants_orig, inds, trees, plots_dir):
         
-            
-        self.simulateEnvNoise(args.pty_sd_envNoise, r)
-        logger.info("- Simulating random noise with sd " + str(args.pty_sd_envNoise))
-        
         if args.pty_sim_method is None:
             raise ValueError("Must provide a phenotype simulation method with --pty_sim_method")
 
@@ -148,7 +144,13 @@ class Phenotypes:
         
         
         #write phenotypes to file
-        self.standardize()
+        logger.info("- Simulating random noise with sd " + str(args.pty_sd_envNoise))
+        
+        # count = (self.y == 0).sum()
+        # print("number of zeros in y", count)
+        
+        self.simulateEnvNoise(args.pty_sd_envNoise, r)
+        # self.standardize(logger)
         self.write_to_file(variants_orig, args.out, logger)
         
     def returnRandomState(self, random):
@@ -235,6 +237,7 @@ class Phenotypes:
                                     
                     #define beta
                     beta = random.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)[0]
+                    print(beta)
                     self.betas[v] = beta
                     
                     #simulate phenotype
@@ -298,7 +301,8 @@ class Phenotypes:
         buffer = cols - rows
         return np.abs(buffer)
     
-    def standardize(self):
+    def standardize(self, logger):
+        logger.info("- Standardizing phenotypes")
         self.y = (self.y - np.mean(self.y)) / np.std(self.y)
     
     def write_to_file_gcta(self, out, logfile):

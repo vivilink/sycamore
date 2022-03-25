@@ -50,7 +50,7 @@ class TTrees:
 class TTree:
     def __init__(self, tree_iterator, num_haplotypes):
         self.tree = tree_iterator
-        self.N = num_haplotypes
+        # self.N = num_haplotypes
         self.start = tree_iterator.interval.left
         self.end = tree_iterator.interval.right
         self.index = tree_iterator.index
@@ -87,12 +87,12 @@ class TTree:
         tmrca : pairwise distance between two haplotypes. square matrix of dimension num_haplotypes and type float.
     
         """
-        tmrca = np.zeros([self.N, self.N])
+        tmrca = np.zeros([num_haplotypes, num_haplotypes])
         self.height = 0
         for c in self.tree.nodes():
             descendants = list(self.tree.samples(c))
             n = len(descendants)
-            if(n == 0 or n == self.N or self.tree.time(c) == 0): #The branch length for a node that has no parent (e.g., a root) is defined as zero.
+            if(n == 0 or n == num_haplotypes or self.tree.time(c) == 0): #The branch length for a node that has no parent (e.g., a root) is defined as zero.
                 continue
             t = self.tree.time(self.tree.parent(c)) - self.tree.time(c)
             tmrca[np.ix_(descendants, descendants)] -= t
@@ -104,7 +104,7 @@ class TTree:
         
         return tmrca
     
-    def covariance(self):
+    def covariance(self, inds):
         """
         Calculate variance-covariance between haplotypes. Total height of tree = distance_ij + covariance_ij. Variance of one haplotype = total height of tree.
 
@@ -113,7 +113,7 @@ class TTree:
         Variance-covariance matrix.
 
         """
-        TMRCA = self.TMRCA(self.N)
+        TMRCA = self.TMRCA(inds.num_haplotypes)
         covariance = -TMRCA + self.height
         return(covariance)
     
@@ -127,9 +127,9 @@ class TTree:
 
         """
         
-        TMRCA = self.TMRCA(self.N)
+        TMRCA = self.TMRCA(inds.num_haplotypes)
         covariance = -TMRCA + self.height
-        covariance = covariance * float(self.N) / np.trace(covariance)
+        covariance = covariance * float(inds.num_haplotypes) / np.trace(covariance)
                 
         if inds.ploidy == 1:
             return(covariance)
@@ -160,16 +160,16 @@ class TTree:
                 ii1 = inds.get_haplotypes(ii)[0] 
                 ii2 = inds.get_haplotypes(ii)[1]
                 covariance_diploid[ii, ii] = 2.0 * self.height + 2.0 * covariance[ii1, ii2]
-            
-            # covariance_diploid = covariance_diploid * float(self.N) / np.trace(covariance_diploid)
+                            
+            covariance_diploid = covariance_diploid * float(inds.num_inds) / np.trace(covariance_diploid)
             
             logfile.sub()
             
             return(covariance_diploid)
                 
                 
-    def solving_function(self, array):   
-        covariance = self.covariance(self.N)
+    def solving_function(self, array, inds):   
+        covariance = self.covariance(inds.num_haplotypes)
         # covariance = (X+X.T)/2
         # np.fill_diagonal(covariance, 0)
         # print(np.diagonal(covariance))

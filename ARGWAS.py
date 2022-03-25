@@ -92,10 +92,7 @@ logger.info("- randomGenerator seed is set to " + str(r.random.get_state()[1][0]
 
 #-----------------------
 # Simulate
-#-----------------------
-
-
-    
+#-----------------------    
 
 if args.task == "simulate":
     logger.info("- TASK: simulate")

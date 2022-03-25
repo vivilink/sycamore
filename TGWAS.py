@@ -438,7 +438,9 @@ class REML_tGWAS(TtGWAS):
         
         start = time.time()        
         for tree in ts_object.trees():
-            self.run_association_one_tree(tree, inds, out, logfile, covariance_scaled)         
+            self.run_association_one_tree(tree, inds, out, logfile, covariance_scaled)  
+            # if tree.index == 0:
+            #     raise ValueError("stop!!!")
             if tree.index % 100 == 0:
                 end = time.time()
                 logfile.info("- Ran REML for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
