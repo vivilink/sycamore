@@ -238,8 +238,7 @@ if args.task == "associate":
             logger.add()
 
             if m == "HE":
-                logger.info("- Using GCTA Haseman-Elston to test for association between trees and phenotypes")
-                
+                logger.info("- Using GCTA Haseman-Elston to test for association between trees and phenotypes")                
                 logger.add()
 
                 tGWAS = gwas.HE_tGWAS(trees, pheno)
@@ -252,25 +251,12 @@ if args.task == "associate":
                     tGWAS.run_association_one_tree(tree, inds, args.out, logger, args.covariance_scaled)
 
                 tGWAS.write_to_file(trees, args.out, logger)
-                       
-                # # TODO: move plotting function to tGWAS, should accept p values as argument
-                # fig, ax = plt.subplots(5,figsize=(30,30))
-                # tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_Jackknife, subplot=ax[1], logfile=logger, title_supplement = "HECP_Jackknife")
-                # tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HECP_OLS, subplot=ax[2],  logfile=logger, title_supplement = "HECP_OLS")
-                # tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_Jackknife, subplot=ax[3], logfile=logger, title_supplement = "HESD_Jackknife")
-                # tGWAS.manhattan_plot_special_pvalues(range(trees.num_trees), tGWAS.p_values_HESD_OLS, ax[4], logfile=logger, title_supplement = "HESD_OLS")
-                
-                # fig.tight_layout()
-                # fig.set_size_inches(30, 30)
-                # fig.show()
-                # fig.savefig(plots_dir + 'HE_AIM.png', bbox_inches='tight')#    
                 
                 logger.sub()
 
                 
             if m == "REML":
-                logger.info("- Using GCTA REML to test for association between trees and phenotypes")
-                
+                logger.info("- Using GCTA REML to test for association between trees and phenotypes")                
                 logger.add()
 
                 tGWAS = gwas.REML_tGWAS(trees, pheno)
@@ -281,6 +267,7 @@ if args.task == "associate":
                     pheno.write_to_file_gcta(args.out, logger)        
                     tree = trees.at(args.test_only_tree_at)
                     tGWAS.run_association_one_tree(tree, inds, args.out, logger, args.covariance_scaled)
+                    
                 tGWAS.write_to_file(trees, args.out, logger)         
                 
                 logger.sub()

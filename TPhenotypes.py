@@ -45,7 +45,7 @@ class Phenotypes:
                 raise ValueError("Must provide beta values provided for 'fixed' phenotype using '--pty_fixed_betas'")
 
             logger.info("- Simulating phenotypes based on the following indeces: " + str(args.pty_fixed_variant_indeces) + " and the following betas: " + str(args.pty_fixed_betas)) 
-            self.simulateFixed(variants_orig, args.pty_fixed_variant_indeces, args.pty_fixed_betas, logger)
+            self.simulateFixed(variants_orig, inds, args.pty_fixed_variant_indeces, args.pty_fixed_betas, logger)
 
         elif args.pty_sim_method == 'singleTyped':
             if args.pty_fixed_betas == None:
@@ -60,7 +60,7 @@ class Phenotypes:
             fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
 
             logger.info("- Simulating a phenotypes based on the following typed variant index: " + str(var_index) + " at position " +  str(variants_orig.info['position'][var_index]) + " with allele freq " + str(variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(args.pty_fixed_betas)) 
-            self.simulateFixed(variants_orig, [var_index], args.pty_fixed_betas, logger)
+            self.simulateFixed(variants_orig, inds, [var_index], args.pty_fixed_betas, logger)
             
         elif args.pty_sim_method == 'singleUntyped':
             if args.pty_fixed_betas == None:
@@ -76,7 +76,7 @@ class Phenotypes:
             #to know which variants are untyped you need variants from simulated tree, not estimated tree
             if args.variants_file is None:
                 raise ValueError("Must provide file with untyped variants to simulate phenotype with 'singleUntyped' model")
-            self.simulateFixed(variants_orig, [var_index], args.pty_fixed_betas, logger)
+            self.simulateFixed(variants_orig, inds, [var_index], args.pty_fixed_betas, logger)
             
         elif args.pty_sim_method == 'oneTree':
             causal_tree = trees.at(args.causal_tree_pos)
@@ -100,7 +100,7 @@ class Phenotypes:
             logger.add()
             
             #start plot 
-            # TODO: this plotting should not be done here
+            # TODO: this plotting should not be done here but in a function instead
             fig, ax = plt.subplots(ah_info.shape[0],figsize=(30,30))        
             for index, row in ah_info.iterrows():
                 #get allele freq
@@ -139,7 +139,7 @@ class Phenotypes:
             
             logger.info("- Simulating phenotypes:")
             logger.add()
-            self.simulateFixed(variants_orig, variant_indeces, fixed_betas, logger)
+            self.simulateFixed(variants_orig, inds, variant_indeces, fixed_betas, logger)
             logger.sub()
         
         

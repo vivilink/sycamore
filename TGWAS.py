@@ -276,7 +276,7 @@ class HE_tGWAS(TtGWAS):
         
     def run_association_one_tree(self, tree, inds, out, logfile, covariance_scaled):      
         
-        logfile.info("- running association test on tree with interval: " + str(tree.interval.left) + "," + str(tree.interval.right))
+        # logfile.info("- running association test on tree with interval: " + str(tree.interval.left) + "," + str(tree.interval.right))
 
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, inds.num_haplotypes)

@@ -129,16 +129,16 @@ class TTree:
         
         TMRCA = self.TMRCA(inds.num_haplotypes)
         covariance = -TMRCA + self.height
-        covariance = covariance * float(inds.num_haplotypes) / np.trace(covariance)
+        covariance_scaled = covariance * float(inds.num_haplotypes) / np.trace(covariance)
                 
         if inds.ploidy == 1:
-            return(covariance)
+            return(covariance_scaled)
         
         else:
                         
             logfile.add()
 
-            #add together covariance of haplotypes of one individual
+            #add together unscaled covariance of haplotypes of one individual
             covariance_diploid = np.zeros([inds.num_inds, inds.num_inds])    
                         
             #off-diagonals upper triangle (this only works if ind assignment is equal to neighboring pairs!)
