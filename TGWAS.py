@@ -60,20 +60,19 @@ class TpGWAS(TGWAS):
         self.p_values = np.empty(self.num_associations)
         # self.q_values = np.empty(self.num_associations)
         
-    def OLS(self, variants, logfile):
-        i = 0
+    def OLS(self, variants, inds, logfile):
+        # i = 0
         for v, variant in enumerate(variants.variants):
             if variants.info.iloc[v]['typed'] == True:
-                PVALUE = sm.OLS(self.phenotypes.y, sm.tools.add_constant(variant.genotypes)).fit().pvalues[1]
-                # print("PVALUE", PVALUE)
-                # print("variant.genotypes", variant.genotypes)
-                # print("self.phenotypes.y", self.phenotypes.y)
-
-                self.p_values[i] = PVALUE
-                i += 1
-            # else:
-            #     self.p_values[v] = np.nan
+                genotypes = inds.get_diploid_genotypes(variant.genotypes)     
+                #add constant adds intercept
+                genotypes_test = sm.tools.add_constant(genotypes)
+                PVALUE = sm.OLS(self.phenotypes.y, genotypes_test).fit().pvalues[1] 
+                self.p_values[v] = PVALUE
+                # i += 1
         logfile.info("- Ran OLS for all " + str(variants.number_typed) + " variants of " + self.name)
+        
+
         
     def writeToFile(self, variants, name, logfile):        
         #results for each variant
@@ -153,9 +152,9 @@ class TpGWAS(TGWAS):
         
         subplot.axhline(y=8, color="red", lw=0.5)
         
-    def manhattan_plot(self, variant_positions, plots_dir, *args):
+    def manhattan_plot(self, variant_positions, logfile, plots_dir, *args):
         fig, ax = plt.subplots(1,figsize=(10,10))
-        self.manhattan_plot_subset(variant_positions, ax, 0, len(self.p_values), *args)
+        self.manhattan_plot_subset(variant_positions, ax, 0, len(self.p_values), logfile, *args)
         fig.tight_layout()
         fig.set_size_inches(30, 30)
         fig.savefig(plots_dir + 'OLS_GWAS.png', bbox_inches='tight')    
