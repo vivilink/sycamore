@@ -174,7 +174,7 @@ class Phenotypes:
         self.y = random.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
         self.filled = True
 
-    def simulateFixed(self, variants, causal_variant_indeces, betas, logfile):
+    def simulateFixed(self, variants, inds, causal_variant_indeces, betas, logfile):
         """
         Simulate phenotypes based on predefined causal variant positions and effects
 
@@ -198,8 +198,18 @@ class Phenotypes:
             raise ValueError("must provide equal number of causal variants and betas to simulate fixed phenotype")
                     
         for v, var in enumerate(causal_variants):
-            self.betas[causal_variant_indeces[v]] = betas[v]            
-            self.y[var.genotypes == 1] += betas[v]
+            #define beta
+            self.betas[causal_variant_indeces[v]] = betas[v]      
+            
+            #simulate phenotype
+            if inds.ploidy == 1:
+                self.y[var.genotypes == 1] += betas[v]
+            else:
+                genotypes = inds.get_diploid_genotypes(var.genotypes)
+                self.y[genotypes == 1] += betas[v]
+                self.y[genotypes == 2] += 2 * betas[v]
+            
+            #save causal position
             self.causal_variants.append(var)
             self.causal_betas.append(betas[v])
             allele_freq = sum(var.genotypes) / len(var.genotypes)
@@ -237,7 +247,6 @@ class Phenotypes:
                                     
                     #define beta
                     beta = random.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)[0]
-                    print(beta)
                     self.betas[v] = beta
                     
                     #simulate phenotype
