@@ -152,7 +152,7 @@ class Phenotypes:
         
         self.simulateEnvNoise(args.pty_sd_envNoise, r)
         # self.standardize(logger)
-        self.write_to_file(variants_orig, args.out, logger)
+        self.write_to_file(variants_orig, inds, args.out, logger)
         
     def returnRandomState(self, random):
         print(random.random.get_state()[1][0])
@@ -330,7 +330,7 @@ class Phenotypes:
         
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
         
-    def write_to_file(self, variants, out, logfile):
+    def write_to_file(self, variants, inds, out, logfile):
         """
         write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value)
 
@@ -351,7 +351,7 @@ class Phenotypes:
         table['betas'] = self.betas 
         table['power'] = 0
         table.loc[self.causal_variant_indeces, 'power'] = self.causal_power
-        table['genotypic_var'] = np.array(self.betas) * np.array(self.betas) * np.array(table['allele_freq']) * (np.repeat(1, variants.number) - np.array(table['allele_freq']))
+        table['genotypic_var'] = np.repeat(float(inds.ploidy), variants.number) * np.array(self.betas) * np.array(self.betas) * np.array(table['allele_freq']) * (np.repeat(1.0, variants.number) - np.array(table['allele_freq']))
         table['phenotypic_var'] = np.var(self.y)
       
         logfile.info("- Writing phenotype data '" + out + "_pheno_causal_vars.csv'")
