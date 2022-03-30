@@ -64,10 +64,17 @@ class TpGWAS(TGWAS):
         # i = 0
         for v, variant in enumerate(variants.variants):
             if variants.info.iloc[v]['typed'] == True:
-                genotypes = inds.get_diploid_genotypes(variant.genotypes)     
-                #add constant adds intercept
+                if inds.ploidy == 2:
+                    genotypes = inds.get_diploid_genotypes(variant.genotypes)      
+                else: 
+                    genotypes = variant.genotypes
+                
+                #add intercept
                 genotypes_test = sm.tools.add_constant(genotypes)
+                
+                # print("self.phenotypes.y", self.phenotypes.y)
                 PVALUE = sm.OLS(self.phenotypes.y, genotypes_test).fit().pvalues[1] 
+                # print("PVALUE", PVALUE)
                 self.p_values[v] = PVALUE
                 # i += 1
         logfile.info("- Ran OLS for all " + str(variants.number_typed) + " variants of " + self.name)

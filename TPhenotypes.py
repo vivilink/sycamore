@@ -25,8 +25,7 @@ class Phenotypes:
         self.causal_trees = []
         self.causal_variant_indeces = []
         self.causal_tree_indeces = []
-        self.filled = False
-        
+        self.filled = False        
         
         logfile.info("- Created '" + self.name + "' phenotype object")
         
@@ -64,8 +63,10 @@ class Phenotypes:
             
         elif args.pty_sim_method == 'singleUntyped':
             if args.pty_fixed_betas == None:
-                raise ValueError("Must provide beta values using '--pty_fixed_betas' for phenotype 'singleUntyped'")
-            
+                raise ValueError("Must provide beta values for phenotype 'singleUntyped' using '--pty_fixed_betas'")
+            if args.single_variant_af == None:
+                raise ValueError("Must provide allele freq values for 'singleTyped' phenotype using '--single_variant_af'")
+                
             fig, ax = plt.subplots(1,figsize=(30,30))            
             var_index, pos = variants_orig.findVariant(typed=False, freq = args.single_variant_af, interval = args.single_variant_interval, out = args.out, subplot = ax, random = r, logfile = logger)   
             fig.tight_layout()
@@ -171,7 +172,7 @@ class Phenotypes:
         -------
         None.
         """
-        self.y = random.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
+        self.y += random.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
         self.filled = True
 
     def simulateFixed(self, variants, inds, causal_variant_indeces, betas, logfile):
@@ -233,8 +234,7 @@ class Phenotypes:
         -------
         None.
 
-        """
-        
+        """        
 
         #add phenotypic effect to mutations that are uniformly distributed
         for v, var in enumerate(variants.variants): 
@@ -296,13 +296,11 @@ class Phenotypes:
 
         logfile.info("- Simulated phenotypes based on " + str(len(self.causal_variants)) + " causal variants out of a total of " + str(variants.number) + ".")
         self.filled = True
-
     
     def findCausalTrees(self, ts_object):
         for v in self.causal_variants:
             causal_tree = ts_object.at(v.site.position)
             self.causal_tree_indeces.append(causal_tree.get_index())
-
         
     def diffs(self):
         cols = np.tile(self.y, (self.N, 1))

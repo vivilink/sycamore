@@ -214,6 +214,7 @@ if args.task == "associate":
         logger.info("- GWAS:")
         logger.add()
         pGWAS = gwas.TpGWAS(phenotypes = pheno, num_typed_variants = variants.number_typed)
+        
         pGWAS.OLS(variants, inds, logger)
         pGWAS.writeToFile(variants, args.out, logger)        
         pGWAS.manhattan_plot(variants.info['position'], logger, plots_dir)
