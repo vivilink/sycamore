@@ -9,7 +9,6 @@ Created on Mon Aug 16 17:52:46 2021
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import os
 
 #TODO: being typed or not should be an option for all causal variants
 

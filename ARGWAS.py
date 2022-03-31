@@ -5,10 +5,8 @@ Created on Mon Aug  9 16:57:18 2021
 
 @author: linkv
 """
-# import numpy as np
 import tskit
 import TParameters as params
-import numpy as np
 import TPhenotypes as pt
 import TGWAS as gwas
 import TVariants as tvar
@@ -19,13 +17,7 @@ from python_log_indenter import IndentedLoggerAdapter
 import logging
 import os
 import sys
-# import statsmodels.api as sm
-# import pickle
-# import tqdm
-# import scipy as sp
-# from limix_lmm.lmm_core import LMMCore
-# import time
-# import sys
+
 
 os.chdir(os.path.dirname(sys.argv[0]))
 
@@ -275,4 +267,5 @@ if args.task == "associate":
             logger.sub()
      
         logger.sub()
+
 

@@ -129,43 +129,49 @@ class TTree:
         
         TMRCA = self.TMRCA(inds.num_haplotypes)
         covariance = -TMRCA + self.height
-        covariance_scaled = covariance * float(inds.num_haplotypes) / np.trace(covariance)
-                
-        if inds.ploidy == 1:
-            return(covariance_scaled)
+
+        #the first marginal tree has height 0 in ARG simulated with stdpopsim
+        if np.trace(covariance) == 0:
+            return None
         
         else:
-                        
-            logfile.add()
-
-            #add together unscaled covariance of haplotypes of one individual
-            covariance_diploid = np.zeros([inds.num_inds, inds.num_inds])    
-                        
-            #off-diagonals upper triangle (this only works if ind assignment is equal to neighboring pairs!)
-            for i in range(inds.num_inds):
-                # if i % 100 == 0:
-                #     logfile.info("- Filling diploid covariance matrix for individual " + str(i) + " of " + str(inds.num_inds))
-                i1 = i * 2
-                i2 = i1 + 1
-                for j in range(i+1, inds.num_inds):
-                    j1 = j * 2
-                    j2 = j1 + 1
-                    covariance_diploid[i,j] = covariance[i1, j1] + covariance[i1, j2] + covariance[i2, j1] + covariance[i2, j2]
-                    
-            #lower triangle
-            covariance_diploid = covariance_diploid + covariance_diploid.T
+            covariance_scaled = covariance * float(inds.num_haplotypes) / np.trace(covariance)
+                
+            if inds.ploidy == 1:
+                return(covariance_scaled)
             
-            #diagonals 
-            for ii in range(inds.num_inds):
-                ii1 = inds.get_haplotypes(ii)[0] 
-                ii2 = inds.get_haplotypes(ii)[1]
-                covariance_diploid[ii, ii] = 2.0 * self.height + 2.0 * covariance[ii1, ii2]
+            else:
                             
-            covariance_diploid = covariance_diploid * float(inds.num_inds) / np.trace(covariance_diploid)
-            
-            logfile.sub()
-            
-            return(covariance_diploid)
+                logfile.add()
+    
+                #add together unscaled covariance of haplotypes of one individual
+                covariance_diploid = np.zeros([inds.num_inds, inds.num_inds])    
+                            
+                #off-diagonals upper triangle (this only works if ind assignment is equal to neighboring pairs!)
+                for i in range(inds.num_inds):
+                    # if i % 100 == 0:
+                    #     logfile.info("- Filling diploid covariance matrix for individual " + str(i) + " of " + str(inds.num_inds))
+                    i1 = i * 2
+                    i2 = i1 + 1
+                    for j in range(i+1, inds.num_inds):
+                        j1 = j * 2
+                        j2 = j1 + 1
+                        covariance_diploid[i,j] = covariance[i1, j1] + covariance[i1, j2] + covariance[i2, j1] + covariance[i2, j2]
+                        
+                #lower triangle
+                covariance_diploid = covariance_diploid + covariance_diploid.T
+                
+                #diagonals 
+                for ii in range(inds.num_inds):
+                    ii1 = inds.get_haplotypes(ii)[0] 
+                    ii2 = inds.get_haplotypes(ii)[1]
+                    covariance_diploid[ii, ii] = 2.0 * self.height + 2.0 * covariance[ii1, ii2]
+                                
+                covariance_diploid = covariance_diploid * float(inds.num_inds) / np.trace(covariance_diploid)
+                
+                logfile.sub()
+                
+                return(covariance_diploid)
                 
                 
     def solving_function(self, array, inds):   
