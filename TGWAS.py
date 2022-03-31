@@ -238,6 +238,21 @@ class TtGWAS(TGWAS):
             subplot.plot(variant_positions[index_min:index_max], low, color="red")
             
         subplot.axhline(y=8, color="red", lw=0.5)
+        
+    def write_covariance_matrix(self, covariance, out):
+        with open(out + '_GRM_covariance.txt', 'w') as f:
+            np.savetxt(f, covariance)
+        f.close()
+        
+        subprocess.call([os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])    
+    
+    def calculate_covariance_matrix(self, tree_obj, inds, covariance_scaled, logfile):
+        if covariance_scaled == True:
+            covariance = tree_obj.covariance_scaled(inds, logfile)
+        else:
+            covariance = tree_obj.covariance(inds)   
+        return covariance
+
 
 
 class HE_tGWAS(TtGWAS):
@@ -280,58 +295,52 @@ class HE_tGWAS(TtGWAS):
             
         logfile.info("- done running associations")
         
-    def run_association_one_tree(self, tree, inds, out, logfile, covariance_scaled):      
-        
+    def run_association_one_tree(self, tree, inds, out, logfile, covariance_scaled):              
         # logfile.info("- running association test on tree with interval: " + str(tree.interval.left) + "," + str(tree.interval.right))
-
         #calculate covariance and write to file
-        tree_obj = tt.TTree(tree, inds.num_haplotypes)
-        if covariance_scaled == True:
-            covariance = tree_obj.covariance_scaled(inds, logfile)
-        else:
-            covariance = tree_obj.covariance(inds)     
-            
-        if covariance is not None:
-            
-            with open(out + "_GRM_covariance.txt", 'w') as f:
-                np.savetxt(f, covariance)
-            f.close()
-            
-    
-            # create gcta input files, run gcta and parse output
-            exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_HE.sh", out])
-            # exit_code = subprocess.call([os.getcwd() + "/run_gcta_HE.sh", out])
-    
-            # read results
-            HE_CP = pd.read_table(out + "_HE-CP_result.txt")
-            HE_SD = pd.read_table(out + "_HE-SD_result.txt")
-            
-            #p-values        
-            self.p_values_HECP_OLS[tree.index] = HE_CP["P_OLS"][1]
-            if(HE_CP["P_OLS"][1] < 0):
-                raise ValueError("tree index", tree.index, "produced negative p-value for CP OLS")
-                
-            self.p_values_HECP_Jackknife[tree.index] = HE_CP["P_Jackknife"][1]        
-            if(HE_CP["P_Jackknife"][1] < 0):
-                raise ValueError("tree index", tree.index, "produced negative p-value for CP Jackknife")
-    
-            self.p_values_HESD_OLS[tree.index] = HE_SD["P_OLS"][1]
-            if(HE_SD["P_OLS"][1] < 0):
-                raise ValueError("tree index", tree.index, "produced negative p-value for SD OLS")
-    
-            self.p_values_HESD_Jackknife[tree.index] = HE_SD["P_Jackknife"][1]
-            if(HE_SD["P_Jackknife"][1] < 0):
-                raise ValueError("tree index", tree.index, "produced negative p-value for SD Jackknife")
-                
-            #other statistics
-            self.V_G_over_Vp_HECP[tree.index] = HE_CP["Estimate"][1]
-            self.V_G_over_Vp_HESD[tree.index] = HE_SD["Estimate"][1]
-    
-            self.V_G_over_Vp_SE_OLS_HECP[tree.index] = HE_CP["SE_OLS"][1]
-            self.V_G_over_Vp_SE_OLS_HESD[tree.index] = HE_SD["SE_OLS"][1]
-            self.V_G_over_Vp_SE_Jackknife_HECP[tree.index] = HE_CP["SE_Jackknife"][1]
-            self.V_G_over_Vp_SE_Jackknife_HESD[tree.index] = HE_SD["SE_Jackknife"][1]
+        tree_obj = tt.TTree(tree, inds.num_haplotypes)  
         
+        if tree_obj.height != -1:
+            covariance = self.calculate_covariance_matrix(tree_obj, inds, covariance_scaled, logfile)
+            self.write_covariance_matrix(covariance, out)
+            self.run_association_one_tree_gcta(tree, out)
+    
+            
+    def run_association_one_tree_gcta(self, tree, out):
+        # create gcta input files, run gcta and parse output
+        exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_HE.sh", out])
+        # exit_code = subprocess.call([os.getcwd() + "/run_gcta_HE.sh", out])
+
+        # read results
+        HE_CP = pd.read_table(out + "_HE-CP_result.txt")
+        HE_SD = pd.read_table(out + "_HE-SD_result.txt")
+        
+        #p-values        
+        self.p_values_HECP_OLS[tree.index] = HE_CP["P_OLS"][1]
+        if(HE_CP["P_OLS"][1] < 0):
+            raise ValueError("tree index", tree.index, "produced negative p-value for CP OLS")
+            
+        self.p_values_HECP_Jackknife[tree.index] = HE_CP["P_Jackknife"][1]        
+        if(HE_CP["P_Jackknife"][1] < 0):
+            raise ValueError("tree index", tree.index, "produced negative p-value for CP Jackknife")
+
+        self.p_values_HESD_OLS[tree.index] = HE_SD["P_OLS"][1]
+        if(HE_SD["P_OLS"][1] < 0):
+            raise ValueError("tree index", tree.index, "produced negative p-value for SD OLS")
+
+        self.p_values_HESD_Jackknife[tree.index] = HE_SD["P_Jackknife"][1]
+        if(HE_SD["P_Jackknife"][1] < 0):
+            raise ValueError("tree index", tree.index, "produced negative p-value for SD Jackknife")
+            
+        #other statistics
+        self.V_G_over_Vp_HECP[tree.index] = HE_CP["Estimate"][1]
+        self.V_G_over_Vp_HESD[tree.index] = HE_SD["Estimate"][1]
+
+        self.V_G_over_Vp_SE_OLS_HECP[tree.index] = HE_CP["SE_OLS"][1]
+        self.V_G_over_Vp_SE_OLS_HESD[tree.index] = HE_SD["SE_OLS"][1]
+        self.V_G_over_Vp_SE_Jackknife_HECP[tree.index] = HE_CP["SE_Jackknife"][1]
+        self.V_G_over_Vp_SE_Jackknife_HESD[tree.index] = HE_SD["SE_Jackknife"][1]
+
 
     def write_to_file(self, ts_object, name, logfile):
         table = pd.DataFrame()
@@ -397,51 +406,49 @@ class REML_tGWAS(TtGWAS):
         self.V_e_SE = np.empty(self.num_associations)
         self.Vp_SE = np.empty(self.num_associations)
         self.V_G_over_Vp_SE = np.empty(self.num_associations)
+        
 
 
     def run_association_one_tree(self, tree, inds, out, logfile, covariance_scaled):  
         # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
-
         #calculate covariance and write to file
-        tree_obj = tt.TTree(tree, inds.num_haplotypes)
-        if covariance_scaled == True:
-            covariance = tree_obj.covariance_scaled(inds, logfile)
-        else:
-            covariance = tree_obj.covariance(inds)
-            
-        if covariance is not None:
+        tree_obj = tt.TTree(tree, inds.num_haplotypes)      
         
-            with open(out + '_GRM_covariance.txt', 'w') as f:
-                np.savetxt(f, covariance)
-            f.close()
+        if tree_obj.height != -1:
+            covariance = self.calculate_covariance_matrix(tree_obj, inds, covariance_scaled, logfile)        
+            self.write_covariance_matrix(covariance, out)            
+            self.run_association_one_tree_gcta(tree, out)
                     
-            # create gcta input files, run gcta and parse output
-            exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_REML.sh", out])
     
-            # read results
-            result = pd.read_table(out + "_REML.hsq")
-            result_pvalue = float(result['Variance'][result['Source'] == 'Pval'])
-            if result_pvalue < 0:
-                raise ValueError("Negative p-value for tree starting at " + str(tree.interval.left))
-            if result_pvalue > 1:
-                raise ValueError("p-value larger than 1 for tree starting at " + str(tree.interval.left))
-    
-            self.p_values[tree.index] = result_pvalue
-            if(result_pvalue < 0):
-                raise ValueError("tree index", tree.index, "produced negative p-value with REML")
-                
-            self.V_G[tree.index] = float(result['Variance'][result['Source'] == 'V(G)'])
-            self.V_e[tree.index] = float(result['Variance'][result['Source'] == 'V(e)'])
-            self.Vp[tree.index] = float(result['Variance'][result['Source'] == 'Vp'])
-            self.V_G_over_Vp[tree.index] = float(result['Variance'][result['Source'] == 'V(G)/Vp'])
-            self.logL[tree.index] = float(result['Variance'][result['Source'] == 'logL'])
-            self.logL0[tree.index] = float(result['Variance'][result['Source'] == 'logL0'])
-            self.LRT[tree.index] = float(result['Variance'][result['Source'] == 'LRT'])
+    def run_association_one_tree_gcta(self, tree, out):
+        # create gcta input files, run gcta and parse output
+        exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_REML.sh", out])
+
+        # read results
+        result = pd.read_table(out + "_REML.hsq")
+        result_pvalue = float(result['Variance'][result['Source'] == 'Pval'])
+        if result_pvalue < 0:
+            raise ValueError("Negative p-value for tree starting at " + str(tree.interval.left))
+        if result_pvalue > 1:
+            raise ValueError("p-value larger than 1 for tree starting at " + str(tree.interval.left))
+
+        self.p_values[tree.index] = result_pvalue
+        if(result_pvalue < 0):
+            raise ValueError("tree index", tree.index, "produced negative p-value with REML")
             
-            self.V_G_SE[tree.index] = float(result['SE'][result['Source'] == 'V(G)'])
-            self.V_e_SE[tree.index] = float(result['SE'][result['Source'] == 'V(e)'])
-            self.Vp_SE[tree.index] = float(result['SE'][result['Source'] == 'Vp'])
-            self.V_G_over_Vp_SE[tree.index] = float(result['SE'][result['Source'] == 'V(G)/Vp'])                
+        self.V_G[tree.index] = float(result['Variance'][result['Source'] == 'V(G)'])
+        self.V_e[tree.index] = float(result['Variance'][result['Source'] == 'V(e)'])
+        self.Vp[tree.index] = float(result['Variance'][result['Source'] == 'Vp'])
+        self.V_G_over_Vp[tree.index] = float(result['Variance'][result['Source'] == 'V(G)/Vp'])
+        self.logL[tree.index] = float(result['Variance'][result['Source'] == 'logL'])
+        self.logL0[tree.index] = float(result['Variance'][result['Source'] == 'logL0'])
+        self.LRT[tree.index] = float(result['Variance'][result['Source'] == 'LRT'])
+        
+        self.V_G_SE[tree.index] = float(result['SE'][result['Source'] == 'V(G)'])
+        self.V_e_SE[tree.index] = float(result['SE'][result['Source'] == 'V(e)'])
+        self.Vp_SE[tree.index] = float(result['SE'][result['Source'] == 'Vp'])
+        self.V_G_over_Vp_SE[tree.index] = float(result['SE'][result['Source'] == 'V(G)/Vp'])        
+
 
 
     def run_association(self, ts_object, inds, out, logfile, covariance_scaled):        
