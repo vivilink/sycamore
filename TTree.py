@@ -7,6 +7,10 @@ Created on Tue Sep  7 17:43:29 2021
 """
 import numpy as np
 import pandas as pd
+import tskit
+import subprocess
+import os
+import sys
 
 class TTrees:
     def __init__(self, ts_object):
@@ -31,15 +35,21 @@ class TTrees:
 
 class TTree:
     def __init__(self, tree_iterator, num_haplotypes):
-        self.tree = tree_iterator
-        self.start = tree_iterator.interval.left
-        self.end = tree_iterator.interval.right
-        self.index = tree_iterator.index
-        self.height = -1
+        self.tree: tskit.TreeIterator = tree_iterator
+        self.start: float = tree_iterator.interval.left
+        self.end: float = tree_iterator.interval.right
+        self.index: int = tree_iterator.index
+        self.height: float = -1.0
         #the first marginal tree has no root and no height in ARG simulated with stdpopsim
         if len(self.tree.roots) == 1:
             self.height = self.tree.time(self.tree.root)
             
+        self.covariance: np.array = None
+        self.covariance_scaled: np.array = None
+        self.covariance_diploid: np.array = None
+        self.covariance_scaled_diploid: np.array = None
+        self.eGRM: np.array = None
+        self.eGRM_diploid: np.array = None
         
     def testPSD(self, A, tol=1e-8):
         E = np.linalg.eigvalsh(A)
@@ -89,7 +99,7 @@ class TTree:
         
         return tmrca
     
-    def covariance(self, inds):
+    def get_covariance(self, inds):
         """
         Calculate variance-covariance between haplotypes. Total height of tree = distance_ij + covariance_ij. Variance of one haplotype = total height of tree.
 
@@ -98,14 +108,17 @@ class TTree:
         Variance-covariance matrix.
 
         """
+        
         if self.height == -1:
-            raise ValueError("Not possible to calculate covariance from tree with no single root")
+            raise ValueError("Cannot calculate covariance from tree with multiple roots")
             
-        TMRCA = self.TMRCA(inds.num_haplotypes)
-        covariance = -TMRCA + self.height
-        return(covariance)
+        if self.covariance is None:
+            TMRCA = self.TMRCA(inds.num_haplotypes)
+            covariance = -TMRCA + self.height
+        else:
+            return(covariance)
     
-    def covariance_scaled(self, inds, logfile):
+    def get_covariance_scaled(self, inds, logfile) -> np.array:
         """
         Caclulate scaled variance-covariance between haplotypes. This allows gcta REML to run without numeric issues such as singular Information matrix.
 
@@ -114,48 +127,58 @@ class TTree:
         Scaled variance-covariance matrix
 
         """
-     
-        TMRCA = self.TMRCA(inds.num_haplotypes)
-        covariance = -TMRCA + self.height
+        #calculate haploid covariance and covariance scaled
+        if self.covariance is None:     
+            TMRCA = self.TMRCA(inds.num_haplotypes)
+            self.covariance = -TMRCA + self.height
 
-        covariance_scaled = covariance * float(inds.num_haplotypes) / np.trace(covariance)
-            
-        if inds.ploidy == 1:
-            return(covariance_scaled)
-        
-        else:
-                        
-            logfile.add()
-
-            #add together unscaled covariance of haplotypes of one individual
-            covariance_diploid = np.zeros([inds.num_inds, inds.num_inds])    
-                        
-            #off-diagonals upper triangle (this only works if ind assignment is equal to neighboring pairs!)
-            for i in range(inds.num_inds):
-                # if i % 100 == 0:
-                #     logfile.info("- Filling diploid covariance matrix for individual " + str(i) + " of " + str(inds.num_inds))
-                i1 = i * 2
-                i2 = i1 + 1
-                for j in range(i+1, inds.num_inds):
-                    j1 = j * 2
-                    j2 = j1 + 1
-                    covariance_diploid[i,j] = covariance[i1, j1] + covariance[i1, j2] + covariance[i2, j1] + covariance[i2, j2]
+        if self.covariance_scaled is None:
+            self.covariance_scaled = self.covariance * float(inds.num_haplotypes) / np.trace(self.covariance)
                     
-            #lower triangle
-            covariance_diploid = covariance_diploid + covariance_diploid.T
-            
-            #diagonals 
-            for ii in range(inds.num_inds):
-                ii1 = inds.get_haplotypes(ii)[0] 
-                ii2 = inds.get_haplotypes(ii)[1]
-                covariance_diploid[ii, ii] = 2.0 * self.height + 2.0 * covariance[ii1, ii2]
+        if inds.ploidy == 1:
+            return(self.covariance_scaled)
+        
+        #calculate diploid covariance scaled
+        else:            
+            if self.covariance_scaled_diploid is None:
+                # logfile.add()
+    
+                #add together unscaled covariance of haplotypes of one individual
+                self.covariance_diploid = np.zeros([inds.num_inds, inds.num_inds])    
                             
-            covariance_diploid = covariance_diploid * float(inds.num_inds) / np.trace(covariance_diploid)
-            
-            logfile.sub()
-            
-            return(covariance_diploid)
+                #off-diagonals upper triangle (this only works if ind assignment is equal to neighboring pairs!)
+                for i in range(inds.num_inds):
+                    # if i % 100 == 0:
+                    #     logfile.info("- Filling diploid covariance matrix for individual " + str(i) + " of " + str(inds.num_inds))
+                    i1 = i * 2
+                    i2 = i1 + 1
+                    for j in range(i+1, inds.num_inds):
+                        j1 = j * 2
+                        j2 = j1 + 1
+                        self.covariance_diploid[i,j] = self.covariance[i1, j1] + self.covariance[i1, j2] + self.covariance[i2, j1] + self.covariance[i2, j2]
+                        
+                #lower triangle
+                self.covariance_diploid = self.covariance_diploid + self.covariance_diploid.T
                 
+                #diagonals 
+                for ii in range(inds.num_inds):
+                    ii1 = inds.get_haplotypes(ii)[0] 
+                    ii2 = inds.get_haplotypes(ii)[1]
+                    self.covariance_diploid[ii, ii] = 2.0 * self.height + 2.0 * self.covariance[ii1, ii2]
+                                
+                self.covariance_diploid = self.covariance_diploid * float(inds.num_inds) / np.trace(self.covariance_diploid)
+                
+                # logfile.sub()
+            
+            return(self.covariance_diploid)
+                
+    def get_eGRM(self, inds, out):
+        if self.eGRM is None:
+            exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out])
+            e = self.read_eGRM(out)
+            self.eGRM = e
+        return(e)
+
                 
     def solving_function(self, array, inds):   
         covariance = self.covariance(inds.num_haplotypes)

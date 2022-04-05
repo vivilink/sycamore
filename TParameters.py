@@ -76,8 +76,8 @@ class TParameters:
                            help = "Use either Haseman-Elston or REML to test trees for association")
         assoc.add_argument('--test_only_tree_at', type=float, #choices = ["HE", "REML"],
                            help = "Only test tree that is overlapping the given position for association")
-        assoc.add_argument('--scale_covariance', type=bool, default=True,
-                           help = "scale the variance-covariance matrix by N/trace")
+        assoc.add_argument('--covariance_type', type=str, choices=["scaled", "eGRM"],
+                           help = "Use scaled variance-covariance matrix calculated as the covariance scaled by N/trace, or use the eGRM calculated by egrm (Fan et al. 2022)")
         
         #limit data
         parser.add_argument('--min_allele_freq', type=float, default = 0,

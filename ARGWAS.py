@@ -236,11 +236,11 @@ if args.task == "associate":
                 tGWAS = gwas.HE_tGWAS(trees, pheno)
                            
                 if args.test_only_tree_at is None:    
-                    tGWAS.run_association(trees, inds, args.out, logger, args.covariance_scaled)
+                    tGWAS.run_association(trees, inds, args.out, logger, args.covariance_type)
                 else:
                     pheno.write_to_file_gcta(args.out, logger)        
                     tree = trees.at(args.test_only_tree_at)
-                    tGWAS.run_association_one_tree(tree, inds, args.out, logger, args.covariance_scaled)
+                    tGWAS.run_association_one_tree(tree, inds, args.out, logger, args.covariance_type)
 
                 tGWAS.write_to_file(trees, args.out, logger)
                 
@@ -254,11 +254,11 @@ if args.task == "associate":
                 tGWAS = gwas.REML_tGWAS(trees, pheno)
                 
                 if args.test_only_tree_at is None:    
-                    tGWAS.run_association(trees, inds, args.out, logger, args.covariance_scaled)
+                    tGWAS.run_association(trees, inds, args.out, logger, args.covariance_type)
                 else:
                     pheno.write_to_file_gcta(args.out, logger)        
                     tree = trees.at(args.test_only_tree_at)
-                    tGWAS.run_association_one_tree(tree, inds, args.out, logger, args.covariance_scaled)
+                    tGWAS.run_association_one_tree(tree, inds, args.out, logger, args.covariance_type)
                     
                 tGWAS.write_to_file(trees, args.out, logger)         
                 

@@ -12,11 +12,11 @@ import TTree as tt
 # from limix_lmm.lmm_core import LMMCore
 import utils as ut
 import time
-import subprocess
 import pandas as pd
+import matplotlib.pyplot as plt
+import subprocess
 import os
 import sys
-import matplotlib.pyplot as plt
 
 
 class TGWAS:
@@ -246,11 +246,13 @@ class TtGWAS(TGWAS):
         
         subprocess.call([os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])    
     
-    def calculate_covariance_matrix(self, tree_obj, inds, covariance_scaled, logfile):
-        if covariance_scaled == True:
-            covariance = tree_obj.covariance_scaled(inds, logfile)
+    def calculate_covariance_matrix(self, tree_obj, inds, covariance_type, logfile):
+        if covariance_type == "scaled":
+            covariance = tree_obj.get_covariance_scaled(inds, logfile)
+        elif covariance_type == "eGRM":
+            covariance = tree_obj.get_eGRM(inds) 
         else:
-            covariance = tree_obj.covariance(inds)   
+            raise ValueError("Did not recognize " + covariance_type + " as a covariance type")
         return covariance
 
 
@@ -279,14 +281,14 @@ class HE_tGWAS(TtGWAS):
         self.V_G_over_Vp_SE_Jackknife_HECP = np.empty(self.num_associations)
         self.V_G_over_Vp_SE_Jackknife_HESD = np.empty(self.num_associations)
 
-    def run_association(self, ts_object, inds, out, logfile, covariance_scaled):        
+    def run_association(self, ts_object, inds, out, logfile, covariance_type):        
         self.phenotypes.write_to_file_gcta(out, logfile)        
 
         #log progress
         start = time.time()
         
         for tree in ts_object.trees():
-            self.run_association_one_tree(tree, inds, out, logfile, covariance_scaled)  
+            self.run_association_one_tree(tree, inds, out, logfile, covariance_type)  
             #log progress
             if tree.index % 100 == 0:
                 end = time.time()
@@ -295,13 +297,13 @@ class HE_tGWAS(TtGWAS):
             
         logfile.info("- done running associations")
         
-    def run_association_one_tree(self, tree, inds, out, logfile, covariance_scaled):              
+    def run_association_one_tree(self, tree, inds, out, logfile, covariance_type):              
         # logfile.info("- running association test on tree with interval: " + str(tree.interval.left) + "," + str(tree.interval.right))
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, inds.num_haplotypes)  
         
         if tree_obj.height != -1:
-            covariance = self.calculate_covariance_matrix(tree_obj, inds, covariance_scaled, logfile)
+            covariance = self.calculate_covariance_matrix(tree_obj, inds, covariance_type, logfile)
             self.write_covariance_matrix(covariance, out)
             self.run_association_one_tree_gcta(tree, out)
     
@@ -409,13 +411,12 @@ class REML_tGWAS(TtGWAS):
         
 
 
-    def run_association_one_tree(self, tree, inds, out, logfile, covariance_scaled):  
+    def run_association_one_tree(self, tree, inds, out, logfile, covariance_type):  
         # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, inds.num_haplotypes)      
-        
         if tree_obj.height != -1:
-            covariance = self.calculate_covariance_matrix(tree_obj, inds, covariance_scaled, logfile)        
+            covariance = self.calculate_covariance_matrix(tree_obj, inds, covariance_type, logfile)            
             self.write_covariance_matrix(covariance, out)            
             self.run_association_one_tree_gcta(tree, out)
                     
@@ -451,12 +452,12 @@ class REML_tGWAS(TtGWAS):
 
 
 
-    def run_association(self, ts_object, inds, out, logfile, covariance_scaled):        
+    def run_association(self, ts_object, inds, out, logfile, covariance_type):        
         self.phenotypes.write_to_file_gcta(out, logfile)        
         
         start = time.time()        
         for tree in ts_object.trees():
-            self.run_association_one_tree(tree, inds, out, logfile, covariance_scaled)  
+            self.run_association_one_tree(tree, inds, out, logfile, covariance_type)  
             # if tree.index == 0:
             #     raise ValueError("stop!!!")
             if tree.index % 100 == 0:
@@ -467,9 +468,8 @@ class REML_tGWAS(TtGWAS):
     def write_to_file(self, ts_object, name, logfile):
         table = pd.DataFrame()
         table['start'] = ts_object.breakpoints(as_array=True)[0:self.num_associations] #otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
-        table['end'] = table['start']
-        table['p_values'] = self.p_values
-        
+        table['end'] = ts_object.breakpoints(as_array=True)[1:]
+        table['p_values'] = self.p_values        
         table['V_G'] = self.V_G
         table['V_e'] = self.V_e
         table['Vp'] = self.Vp
