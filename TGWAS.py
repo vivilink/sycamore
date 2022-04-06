@@ -303,7 +303,7 @@ class HE_tGWAS(TtGWAS):
         tree_obj = tt.TTree(tree, inds.num_haplotypes)  
         
         if tree_obj.height != -1:
-            covariance = self.calculate_covariance_matrix(tree_obj, inds, covariance_type, out, logfile)
+            covariance = self.calculate_covariance_matrix(ts_object, tree_obj, inds, covariance_type, out, logfile)
             self.write_covariance_matrix(covariance, out)
             self.run_association_one_tree_gcta(tree, out)
     
