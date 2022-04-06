@@ -214,7 +214,7 @@ class TTree:
             #run egrm
             if inds.ploidy == 2:
                 logfile.warning("Individual assignment cannot be passed to eGRM calculation yet")
-                # exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out + "_focal.trees", out])
+                exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out + "_focal.trees", out])
             else:
                 exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out + "_focal.trees", out, "--haploid"])
 
