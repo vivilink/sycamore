@@ -218,6 +218,8 @@ if args.task == "associate":
         
         if args.AIM_method is None:
             raise ValueError("ERROR: No method for tree association provided. Use '--AIM_method' to set method.")
+        if args.covariance_type is None:
+            raise ValueError("ERROR: No method for covariance calculation provided. Use '--covariance_type' to set method.")
             
         logger.info("- Reading tree estimations for tree-based association from " + args.tree_file)
         
@@ -232,11 +234,17 @@ if args.task == "associate":
                 logger.add()
 
                 tGWAS = gwas.HE_tGWAS(trees, pheno)
-                           
+                
+                #write phenotypes in gcta format
+                if args.covariance_type == "eGRM":
+                    pheno.write_to_file_gcta_eGRM(args.out, logger)     
+                else:
+                    pheno.write_to_file_gcta_scaled(args.out, logger)     
+                
+                #run association
                 if args.test_only_tree_at is None:    
                     tGWAS.run_association(trees, inds, args.out, logger, args.covariance_type)
                 else:
-                    pheno.write_to_file_gcta(args.out, logger)        
                     tree = trees.at(args.test_only_tree_at)
                     tGWAS.run_association_one_tree(trees, tree, inds, args.out, logger, args.covariance_type)
 
@@ -251,10 +259,16 @@ if args.task == "associate":
 
                 tGWAS = gwas.REML_tGWAS(trees, pheno)
                 
+                #write phenotypes in gcta format
+                if args.covariance_type == "eGRM":
+                    pheno.write_to_file_gcta_eGRM(args.out, logger)     
+                else:
+                    pheno.write_to_file_gcta_scaled(args.out, logger)  
+                
+                #run association
                 if args.test_only_tree_at is None:    
                     tGWAS.run_association(trees, inds, args.out, logger, args.covariance_type)
                 else:
-                    pheno.write_to_file_gcta(args.out, logger)        
                     tree = trees.at(args.test_only_tree_at)
                     tGWAS.run_association_one_tree(trees, tree, inds, args.out, logger, args.covariance_type)
                     
@@ -265,5 +279,7 @@ if args.task == "associate":
             logger.sub()
      
         logger.sub()
+        
+        logger.info("- Done running AIM")
 
 

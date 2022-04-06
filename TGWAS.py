@@ -166,6 +166,10 @@ class TpGWAS(TGWAS):
         fig.set_size_inches(30, 30)
         fig.savefig(plots_dir + 'OLS_GWAS.png', bbox_inches='tight')    
     
+    
+
+# TODO: add abstraction level for gcta methods. Currently all TgGWAS are gcta methods but maybe in the future there will be others
+
 class TtGWAS(TGWAS):
     """
     base class for all tree-based association tests
@@ -246,15 +250,39 @@ class TtGWAS(TGWAS):
         
         subprocess.call([os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])    
     
-    def calculate_covariance_matrix(self, ts_object, tree_obj, inds, covariance_type, out, logfile):
+    def calculate_and_write_covariance_matrix_to_gcta_file(self, ts_object, tree_obj, inds, covariance_type, out, logfile):
+        """
+        Writes covariance and other files necessary to run gcta. The program egrm does that automatically, the scaled
+
+        Parameters
+        ----------
+        ts_object : tskit.treeSequence
+        tree_obj : TTree
+            The tree for which the association test is run.
+        inds : TInds
+        covariance_type : str
+            The method used to calculate the covariance matrix.
+        out : str
+            Out file prefix.
+        logfile : logger
+
+        Raises
+        ------
+        ValueError
+            If the covariance_type is not a recognized method.
+
+        Returns
+        -------
+        None.
+
+        """
         if covariance_type == "scaled":
             covariance = tree_obj.get_covariance_scaled(inds, logfile)
+            self.write_covariance_matrix(covariance, out)
         elif covariance_type == "eGRM":
             covariance = tree_obj.get_eGRM(ts_object, inds, out, logfile) 
         else:
-            raise ValueError("Did not recognize " + covariance_type + " as a covariance type")
-        return covariance
-
+            raise ValueError("Did not recognize " + str(covariance_type) + " as a covariance type")
 
 
 class HE_tGWAS(TtGWAS):
@@ -282,8 +310,6 @@ class HE_tGWAS(TtGWAS):
         self.V_G_over_Vp_SE_Jackknife_HESD = np.empty(self.num_associations)
 
     def run_association(self, ts_object, inds, out, logfile, covariance_type):        
-        self.phenotypes.write_to_file_gcta(out, logfile)        
-
         #log progress
         start = time.time()
         
@@ -303,10 +329,7 @@ class HE_tGWAS(TtGWAS):
         tree_obj = tt.TTree(tree, inds.num_haplotypes)  
         
         if tree_obj.height != -1:
-            covariance = self.calculate_covariance_matrix(ts_object, tree_obj, inds, covariance_type, out, logfile)
-            #TODO: this is not good that we need to make this decision here
-            if covariance_type == "scaled":
-                self.write_covariance_matrix(covariance, out)
+            self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object, tree_obj, inds, covariance_type, out, logfile)
             self.run_association_one_tree_gcta(tree, out)
     
             
@@ -418,10 +441,7 @@ class REML_tGWAS(TtGWAS):
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, inds.num_haplotypes)      
         if tree_obj.height != -1:
-            covariance = self.calculate_covariance_matrix(ts_object, tree_obj, inds, covariance_type, out, logfile)    
-            #TODO: this is not good that we need to make this decision here
-            if covariance_type == "scaled":
-                self.write_covariance_matrix(covariance, out)            
+            self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object, tree_obj, inds, covariance_type, out, logfile)
             self.run_association_one_tree_gcta(tree, out)
                     
     
@@ -456,14 +476,10 @@ class REML_tGWAS(TtGWAS):
 
 
 
-    def run_association(self, ts_object, inds, out, logfile, covariance_type):        
-        self.phenotypes.write_to_file_gcta(out, logfile)        
-        
+    def run_association(self, ts_object, inds, out, logfile, covariance_type):             
         start = time.time()        
         for tree in ts_object.trees():
             self.run_association_one_tree(ts_object, tree, inds, out, logfile, covariance_type)  
-            # if tree.index == 0:
-            #     raise ValueError("stop!!!")
             if tree.index % 100 == 0:
                 end = time.time()
                 logfile.info("- Ran REML for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")

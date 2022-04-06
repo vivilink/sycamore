@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 class Phenotypes:
     def __init__(self, name, variants, inds, logfile):
         self.name = name
-        self.N = inds.num_inds
-        self.y = np.zeros(self.N)
+        self.num_inds = inds.num_inds
+        self.y = np.zeros(self.num_inds)
         self.betas = [0] * variants.number
         self.causal_variants = []
         self.causal_betas = []
@@ -171,7 +171,7 @@ class Phenotypes:
         -------
         None.
         """
-        self.y += random.random.normal(loc=0, scale=sd_environmental_noise, size=self.N)
+        self.y += random.random.normal(loc=0, scale=sd_environmental_noise, size=self.num_inds)
         self.filled = True
 
     def simulateFixed(self, variants, inds, causal_variant_indeces, betas, logfile):
@@ -302,7 +302,7 @@ class Phenotypes:
             self.causal_tree_indeces.append(causal_tree.get_index())
         
     def diffs(self):
-        cols = np.tile(self.y, (self.N, 1))
+        cols = np.tile(self.y, (self.num_inds, 1))
         rows = cols.T
         buffer = cols - rows
         return np.abs(buffer)
@@ -311,9 +311,9 @@ class Phenotypes:
         logger.info("- Standardizing phenotypes")
         self.y = (self.y - np.mean(self.y)) / np.std(self.y)
     
-    def write_to_file_gcta(self, out, logfile):
+    def write_to_file_gcta_eGRM(self, out, logfile):
         """
-        write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value)
+        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format will match the binary output created with plinkFile R package.
 
         Returns
         -------
@@ -321,9 +321,27 @@ class Phenotypes:
 
         """
         logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
-
+                
         tmp_pheno = pd.DataFrame()
-        tmp_pheno['1'] = np.arange(1,self.N+1)
+        tmp_pheno['1'] = np.repeat(0, self.num_inds)
+        tmp_pheno['2'] = ["id_" + str(i) for i in np.arange(0,self.num_inds)]
+        tmp_pheno['3'] = self.y     
+        
+        tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
+        
+    def write_to_file_gcta_scaled(self, out, logfile):
+        """
+        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format will match the binary output created with egrm.
+
+        Returns
+        -------
+        None.
+
+        """
+        logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
+                
+        tmp_pheno = pd.DataFrame()
+        tmp_pheno['1'] = np.arange(1,self.num_inds+1)
         tmp_pheno['2'] = tmp_pheno['1']
         tmp_pheno['3'] = self.y        
         
