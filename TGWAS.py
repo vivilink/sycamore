@@ -248,7 +248,7 @@ class TtGWAS(TGWAS):
             np.savetxt(f, covariance)
         f.close()
         
-        subprocess.call([os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])    
+        subprocess.call(["Rscript", os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])    
     
     def calculate_and_write_covariance_matrix_to_gcta_file(self, ts_object, tree_obj, inds, covariance_type, out, logfile):
         """
