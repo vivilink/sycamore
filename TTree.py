@@ -17,20 +17,34 @@ class TTrees:
         # self.trees = ts_object.trees()
         self.number = ts_object.num_trees
         
-    def writeStats(self, ts_object, name, logfile):
+    def writeStats(self, ts_object, out, logfile):
+        """
+        Parameters
+        ----------
+        ts_object : tskit.treeSequence
+            A tskit tree sequence of interest.
+        out : str
+            Output prefix.
+        logfile : logger
+
+        Returns
+        -------
+        None.
+
+        """
         info = pd.DataFrame(index=range(self.number),columns=['index', 'start', 'end', 'length', 'num_mutations']) 
         for tree in ts_object.trees():
             info.iloc[tree.index] = [tree.index, tree.interval.left, tree.interval.right, tree.interval.right - tree.interval.left, len(list(tree.mutations()))]
 
-        logfile.info("- Writing tree info to file '" + name + "_trees_statistics.csv'")
-        info.to_csv(name + "_trees_statistics.csv", header=True, index=False)
-        
-    def extract_single_tree(self, ts_object, out, logfile, position):
+        logfile.info("- Writing tree info to file '" + out + "_trees_statistics.csv'")
+        info.to_csv(out + "_trees_statistics.csv", header=True, index=False)
+    
+    @staticmethod
+    def extract_single_tree(ts_object, out, logfile, position):
         focal_tree = ts_object.at(position)
         trees = ts_object.keep_intervals([np.array(focal_tree.interval)], simplify=True) 
         trees.dump(out + "_focal.trees")
-        logfile.info("- Wrote trees with " + str(focal_tree.interval) + " to " + out + ".trees")
-               
+        logfile.info("- Wrote trees with " + str(focal_tree.interval) + " to " + out + "_focal.trees")               
     
 
 class TTree:
@@ -172,10 +186,41 @@ class TTree:
             
             return(self.covariance_diploid)
                 
-    def get_eGRM(self, inds, out):
+    def get_eGRM(self, ts_object, inds, out, logfile):     
+        """       
+        Parameters
+        ----------
+        ts_object : tskit.treeSequence
+            the tskit tree sequence that contains the tested trees.
+        inds : TInds
+            Which haplotypes are assigned to the same individual.
+        out : str
+            output prefix.
+        logfile : logger
+
+        Returns
+        -------
+        local eGRM as calculated by egrm (Fan et al. 2022).
+
+        """        
+        
+        
+        # print("---------------------------------------------------")
+        # print("getting egrm for tree with start", self.start, "and end", self.end)
         if self.eGRM is None:
-            exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out])
-            e = self.read_eGRM(out)
+            #extract tree and write to file            
+            TTrees.extract_single_tree(ts_object=ts_object, out=out, logfile=logfile, position=self.start)     
+            
+            #run egrm
+            if inds.ploidy == 2:
+                raise ValueError("Individual assignment cannot be passed to eGRM calculation yet")
+                # exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out + "_focal.trees", out])
+            else:
+                exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out + "_focal.trees", out, "--haploid"])
+
+            #read result
+            e = np.load(out + ".npy")
+            mu = np.load(out + "_mu.npy")
             self.eGRM = e
         return(e)
 

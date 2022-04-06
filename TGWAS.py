@@ -246,11 +246,11 @@ class TtGWAS(TGWAS):
         
         subprocess.call([os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])    
     
-    def calculate_covariance_matrix(self, tree_obj, inds, covariance_type, logfile):
+    def calculate_covariance_matrix(self, ts_object, tree_obj, inds, covariance_type, out, logfile):
         if covariance_type == "scaled":
             covariance = tree_obj.get_covariance_scaled(inds, logfile)
         elif covariance_type == "eGRM":
-            covariance = tree_obj.get_eGRM(inds) 
+            covariance = tree_obj.get_eGRM(ts_object, inds, out, logfile) 
         else:
             raise ValueError("Did not recognize " + covariance_type + " as a covariance type")
         return covariance
@@ -297,13 +297,13 @@ class HE_tGWAS(TtGWAS):
             
         logfile.info("- done running associations")
         
-    def run_association_one_tree(self, tree, inds, out, logfile, covariance_type):              
+    def run_association_one_tree(self, ts_object, tree, inds, out, logfile, covariance_type):              
         # logfile.info("- running association test on tree with interval: " + str(tree.interval.left) + "," + str(tree.interval.right))
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, inds.num_haplotypes)  
         
         if tree_obj.height != -1:
-            covariance = self.calculate_covariance_matrix(tree_obj, inds, covariance_type, logfile)
+            covariance = self.calculate_covariance_matrix(tree_obj, inds, covariance_type, out, logfile)
             self.write_covariance_matrix(covariance, out)
             self.run_association_one_tree_gcta(tree, out)
     
@@ -411,12 +411,12 @@ class REML_tGWAS(TtGWAS):
         
 
 
-    def run_association_one_tree(self, tree, inds, out, logfile, covariance_type):  
+    def run_association_one_tree(self, ts_object, tree, inds, out, logfile, covariance_type):  
         # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, inds.num_haplotypes)      
         if tree_obj.height != -1:
-            covariance = self.calculate_covariance_matrix(tree_obj, inds, covariance_type, logfile)            
+            covariance = self.calculate_covariance_matrix(ts_object, tree_obj, inds, covariance_type, out, logfile)            
             self.write_covariance_matrix(covariance, out)            
             self.run_association_one_tree_gcta(tree, out)
                     
@@ -457,7 +457,7 @@ class REML_tGWAS(TtGWAS):
         
         start = time.time()        
         for tree in ts_object.trees():
-            self.run_association_one_tree(tree, inds, out, logfile, covariance_type)  
+            self.run_association_one_tree(ts_object, tree, inds, out, logfile, covariance_type)  
             # if tree.index == 0:
             #     raise ValueError("stop!!!")
             if tree.index % 100 == 0:

@@ -49,8 +49,6 @@ logging.basicConfig(
 logger = IndentedLoggerAdapter(logger)
 logger.setLevel(logging.INFO)
 
-
-
 #-----------------------------
 # Header
 #-----------------------------
