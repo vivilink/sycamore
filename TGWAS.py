@@ -304,7 +304,9 @@ class HE_tGWAS(TtGWAS):
         
         if tree_obj.height != -1:
             covariance = self.calculate_covariance_matrix(ts_object, tree_obj, inds, covariance_type, out, logfile)
-            self.write_covariance_matrix(covariance, out)
+            #TODO: this is not good that we need to make this decision here
+            if covariance_type == "scaled":
+                self.write_covariance_matrix(covariance, out)
             self.run_association_one_tree_gcta(tree, out)
     
             
@@ -416,8 +418,10 @@ class REML_tGWAS(TtGWAS):
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, inds.num_haplotypes)      
         if tree_obj.height != -1:
-            covariance = self.calculate_covariance_matrix(ts_object, tree_obj, inds, covariance_type, out, logfile)            
-            self.write_covariance_matrix(covariance, out)            
+            covariance = self.calculate_covariance_matrix(ts_object, tree_obj, inds, covariance_type, out, logfile)    
+            #TODO: this is not good that we need to make this decision here
+            if covariance_type == "scaled":
+                self.write_covariance_matrix(covariance, out)            
             self.run_association_one_tree_gcta(tree, out)
                     
     
