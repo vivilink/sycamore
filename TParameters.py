@@ -45,7 +45,7 @@ class TParameters:
         pty = parser.add_argument_group('phenotypes')
         parser.add_argument('--name', default = "default",
                             help = "Name of phenotype and GWAS object, will be used for headers in plots")
-        parser.add_argument('--ploidy', required=True, type=int, choices=[1,2],
+        parser.add_argument('--ploidy', type=int, choices=[1,2],
                             help = "Ploidy of individuals. Haplotypes will be assigned to individuals in increasing order")
         pty.add_argument('--pty_sd_envNoise', type=float, default = 0, 
                             help = "Std. dev. for environmental noise. If set to 0, no noise will be simulated.")

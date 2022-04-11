@@ -12,6 +12,10 @@ import numpy as np
 
 class Individuals:
     def __init__(self, ploidy, N):
+        
+        if ploidy is None:
+            raise ValueError("Must provide ploidy with --ploidy")
+        
         self.ploidy = ploidy
         self.num_haplotypes = N
         self.num_inds = int(self.num_haplotypes / ploidy)
@@ -42,7 +46,7 @@ class Individuals:
         table['haploid_genotypes'] = haploid_genotypes
         
         table = table.groupby('individual').agg(
-            diploid_genotypes=pd.NamedAgg(column='haploid_genotypes', aggfunc=sum)
+            diploid_genotypes = pd.NamedAgg(column='haploid_genotypes', aggfunc=sum)
         )
         return(table['diploid_genotypes'])
         

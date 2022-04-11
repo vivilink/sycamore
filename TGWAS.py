@@ -440,7 +440,8 @@ class REML_tGWAS(TtGWAS):
         # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, inds.num_haplotypes)      
-        if tree_obj.height != -1:
+       
+        if tree_obj.height != -1 and tree_obj.start != 0:
             self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object, tree_obj, inds, covariance_type, out, logfile)
             self.run_association_one_tree_gcta(tree, out)
                     

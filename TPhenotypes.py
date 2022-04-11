@@ -78,11 +78,14 @@ class Phenotypes:
                 raise ValueError("Must provide file with untyped variants to simulate phenotype with 'singleUntyped' model")
             self.simulateFixed(variants_orig, inds, [var_index], args.pty_fixed_betas, logger)
             
-        elif args.pty_sim_method == 'oneTree':
+        elif args.pty_sim_method == 'oneTree':            
+            if args.causal_tree_pos == None:
+                raise ValueError("Must provide causal tree position for phenotype 'oneTree' using '--causal_tree_pos'")
+            if args.pty_sd_beta_causal_mutations is None:
+                raise ValueError("Must provide effect size sd for phenotype 'oneTree' using --pty_sd_beta_causal_mutations")
+                
             causal_tree = trees.at(args.causal_tree_pos)
             logger.info("- Simulating phenotypes based on all variants of the tree covering postion " + str(args.causal_tree_pos))
-            if args.pty_sd_beta_causal_mutations is None:
-                raise ValueError("pty_sd_beta_causal_mutations must be set to simulate phenotype with method 'oneTree'")
             self.simulateCausalRegion(variants_orig, inds, left_bound = causal_tree.interval.left, right_bound = causal_tree.interval.right, sd_beta_causal_mutations = args.pty_sd_beta_causal_mutations, random = r, logfile = logger)
 
         elif args.pty_sim_method == 'allelicHetero':
@@ -207,13 +210,13 @@ class Phenotypes:
             else:
                 genotypes = inds.get_diploid_genotypes(var.genotypes)
                 self.y[genotypes == 1] += betas[v]
-                self.y[genotypes == 2] += 2 * betas[v]
+                self.y[genotypes == 2] += 2.0 * betas[v]
             
             #save causal position
             self.causal_variants.append(var)
             self.causal_betas.append(betas[v])
             allele_freq = sum(var.genotypes) / len(var.genotypes)
-            self.causal_power.append(betas[v]**2 * allele_freq * (1-allele_freq))            
+            self.causal_power.append(betas[v]**2.0 * allele_freq * (1.0 - allele_freq))            
             self.causal_variant_indeces.append(causal_variant_indeces[v])
             
             logfile.info("- Simulated causal variant at position " + str(causal_pos[v]) + " at index " + str(causal_variant_indeces[v]) + " with beta " + str(round(betas[v], 3)) + " and allele freq " + str(allele_freq) + " resulting in a power of " + str(round(betas[v]**2 * allele_freq * (1-allele_freq), 3)))
@@ -251,11 +254,11 @@ class Phenotypes:
                     #simulate phenotype
                     if inds.ploidy == 1:
                         self.y[var.genotypes == 1] += beta
-                        self.y[var.genotypes == 2] += 2 * beta
+                        self.y[var.genotypes == 2] += 2.0 * beta
                     else:
                         genotypes = inds.get_diploid_genotypes(var.genotypes)
                         self.y[genotypes == 1] += beta
-                        self.y[genotypes == 2] += 2 * beta
+                        self.y[genotypes == 2] += 2.0 * beta
     
                     #save causal position
                     self.causal_variants.append(var)
@@ -280,11 +283,11 @@ class Phenotypes:
                 #simulate phenotype
                 if inds.ploidy == 1:
                     self.y[var.genotypes == 1] += beta
-                    self.y[var.genotypes == 2] += 2 * beta
+                    self.y[var.genotypes == 2] += 2.0 * beta
                 else:
                     genotypes = inds.get_diploid_genotypes(var.genotypes)
                     self.y[genotypes == 1] += beta
-                    self.y[genotypes == 2] += 2 * beta
+                    self.y[genotypes == 2] += 2.0 * beta
 
                 #save causal position
                 self.causal_variants.append(var)

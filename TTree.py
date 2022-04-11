@@ -32,9 +32,9 @@ class TTrees:
         None.
 
         """
-        info = pd.DataFrame(index=range(self.number),columns=['index', 'start', 'end', 'length', 'num_mutations']) 
+        info = pd.DataFrame(index=range(self.number),columns=['index', 'start', 'end', 'length', 'num_mutations',  "total_branch_length", "num_roots"]) 
         for tree in ts_object.trees():
-            info.iloc[tree.index] = [tree.index, tree.interval.left, tree.interval.right, tree.interval.right - tree.interval.left, len(list(tree.mutations()))]
+            info.iloc[tree.index] = [tree.index, tree.interval.left, tree.interval.right, tree.interval.right - tree.interval.left, len(list(tree.mutations())), tree.total_branch_length, len(tree.roots)]
 
         logfile.info("- Writing tree info to file '" + out + "_trees_statistics.csv'")
         info.to_csv(out + "_trees_statistics.csv", header=True, index=False)
@@ -203,10 +203,7 @@ class TTree:
         local eGRM as calculated by egrm (Fan et al. 2022).
 
         """        
-        
-        
-        # print("---------------------------------------------------")
-        # print("getting egrm for tree with start", self.start, "and end", self.end)
+
         if self.eGRM is None:
             #extract tree and write to file            
             TTrees.extract_single_tree(ts_object=ts_object, out=out, logfile=logfile, position=self.start)     
@@ -223,6 +220,12 @@ class TTree:
             mu = np.load(out + "_mu.npy")
             self.eGRM = e
         return(e)
+    
+    def get_GRM(self, inds, out, logfile):
+        self.tree.sites()
+        
+        
+        # return(GRM)
 
                 
     def solving_function(self, array, inds):   

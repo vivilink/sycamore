@@ -149,8 +149,6 @@ if args.task == "downsampleVariants":
     variants.writeVariantInfo(args.out, logger)
     variants.writeShapeit2(args.out, inds, logger)
 
-
-
 #----------------------------------------------------------------
 # Read simulation to simulate phenotypes and perform association
 #----------------------------------------------------------------
@@ -182,12 +180,12 @@ if args.task == "associate":
     #The causal mutation should not be affected by a freq filter
     variants_orig = tvar.TVariantsFiltered(trees_orig, samp_ids, 0, 1, 1, args.pos_int, r, logger, args.variants_file)
     
-    
     #--------------------------------
     # create phenotypes
     #--------------------------------    
 
     pheno = pt.Phenotypes(args.name, variants_orig, inds, logger)
+    
     pheno.simulate(args, r, logger, variants_orig, inds, trees, plots_dir)
 
     #--------------------------------
