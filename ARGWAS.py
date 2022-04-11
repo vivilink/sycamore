@@ -244,7 +244,7 @@ if args.task == "associate":
                     tGWAS.run_association(trees, inds, args.out, logger, args.covariance_type)
                 else:
                     tree = trees.at(args.test_only_tree_at)
-                    tGWAS.run_association_one_tree(trees, tree, inds, args.out, logger, args.covariance_type)
+                    tGWAS.run_association_one_tree(trees, variants, tree, inds, args.out, logger, args.covariance_type)
 
                 tGWAS.write_to_file(trees, args.out, logger)
                 
@@ -265,10 +265,10 @@ if args.task == "associate":
                 
                 #run association
                 if args.test_only_tree_at is None:    
-                    tGWAS.run_association(trees, inds, args.out, logger, args.covariance_type)
+                    tGWAS.run_association(trees, variants, inds, args.out, logger, args.covariance_type)
                 else:
                     tree = trees.at(args.test_only_tree_at)
-                    tGWAS.run_association_one_tree(trees, tree, inds, args.out, logger, args.covariance_type)
+                    tGWAS.run_association_one_tree(trees, variants, tree, inds, args.out, logger, args.covariance_type)
                     
                 tGWAS.write_to_file(trees, args.out, logger)         
                 

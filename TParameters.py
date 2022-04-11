@@ -75,7 +75,7 @@ class TParameters:
                            help = "Either run only GWAS, AIM or both")
         assoc.add_argument('--AIM_method', nargs='+', #choices = ["HE", "REML"],
                            help = "Use either Haseman-Elston or REML to test trees for association")
-        assoc.add_argument('--covariance_type', type=str, choices=["scaled", "eGRM"],
+        assoc.add_argument('--covariance_type', type=str, choices=["scaled", "eGRM", "GRM"],
                            help = "Use scaled variance-covariance matrix calculated as the covariance scaled by N/trace, or use the eGRM calculated by egrm (Fan et al. 2022)")
         assoc.add_argument('--test_only_tree_at', type=float, #choices = ["HE", "REML"],
                            help = "Only test tree that is overlapping the given position for association")

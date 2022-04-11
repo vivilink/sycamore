@@ -10,7 +10,7 @@ import pandas as pd
 
 class TVariants:
     def __init__(self, ts_object, samp_ids):
-        self.number = len(list(ts_object.variants(samples=samp_ids)))
+        self.number = len(np.array(ts_object.variants(samples=samp_ids)))
         self.positions = np.empty(self.number)
         self.alleleFreq = np.empty(self.number)
         
@@ -20,11 +20,10 @@ class TVariants:
             
             self.positions[v] = var.site.position
             self.alleleFreq[v] = af
-
         
     def writeVariantInfo(self, ts_object, samp_ids, name):
         table = pd.DataFrame()
-        table['variant_index'] = np.arange(self.number)
+        table['var_index'] = np.arange(self.number)
         table['position'] = self.positions
         table['allele_freq'] = self.alleleFreq
         
@@ -39,7 +38,7 @@ class TVariantsFiltered(TVariants):
         Also they may also already be filtered for min and max freq. However, they may not match the tree file?
         """
         
-        # TODO: I don't understand if I should use the variants as a list or not. I don't know how to save them if not as a list (self.variants = trees.variants() or trees.variants does not work)
+        # TODO: I don't understand if I should use the variants as a list or not. I don't know how to save them if not as a list (self.variants = trees.variants() or trees.variants does not work. maybe as np.array? but then enumerate in TPhenotypes does not work
         self.variants = list(ts_object.variants(samples=samp_ids))
         self.number = -1
         self.number_typed = -1
@@ -54,7 +53,7 @@ class TVariantsFiltered(TVariants):
             
             #initialize
             self.number = len(list(ts_object.variants(samples=samp_ids)))
-            self.info = pd.DataFrame(index=range(self.number),columns=['index', 'position', 'allele_freq', 'typed'])  
+            self.info = pd.DataFrame(index=range(self.number),columns=['var_index', 'position', 'allele_freq', 'typed'])  
            
             #fill by filtering, can't directly fill into info table because number of variants is unknown
             for v, var in enumerate(ts_object.variants(samples=samp_ids)):
@@ -86,19 +85,25 @@ class TVariantsFiltered(TVariants):
                     
                 #add to table
                 self.info.iloc[v] = [v, pos, af, typed]
-
-            
         
         #variants are already filtered -> read from file!
         else:
             logfile.info("- Reading variant information from " + filtered_variants_file)
             self.info = pd.read_csv(filtered_variants_file)
+            
+            #rename if variant file is in old format
+            if 'index' in self.info.columns:
+                self.info.rename(columns={'index': 'var_index'}, inplace = True)         
           
         #set number typed
         self.number = len(self.info['typed'])
         self.number_typed = self.info['typed'].value_counts()[True]
-        if len(self.info['index']) != self.number != len(self.variants):
-            raise ValueError("Variant file " + filtered_variants_file + " contains " + str(len(self.info['index'])) + " variants, expected " + str(self.number))
+        if len(self.info['var_index']) != self.number != len(self.variants):
+            raise ValueError("Variant file " + filtered_variants_file + " contains " + str(len(self.info['var_index'])) + " variants, expected " + str(self.number))
+            
+        #set indeces of trees the variants belong to
+        self.info['tree_index'] = np.digitize(self.info['position'], ts_object.breakpoints(as_array=True))
+
                  
     def print_genotypes(self, index):        
         file = "genotypes_variant" + str(index) + ".txt"
@@ -243,4 +248,4 @@ class TVariantsFiltered(TVariants):
 
 
         # logfile.info("--> Found variant with freq " + str(freq) + " within the following interval: " + str(interval))
-        return info.iloc[0]['index'], info.iloc[0]['position']
+        return info.iloc[0]['var_index'], info.iloc[0]['position']
