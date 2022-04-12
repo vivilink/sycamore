@@ -248,7 +248,7 @@ class gcta_tGWAS(TtGWAS):
         start = time.time()
         
         for tree in ts_object.trees():
-            self.run_association_one_tree(ts_object, variants, tree, inds, out, logfile, covariance_type)  
+            self.run_association_one_tree(ts_object=ts_object, variants=variants, tree=tree, inds=inds, out=out, logfile=logfile, covariance_type=covariance_type, skip_first_tree=skip_first_tree)  
             #log progress
             if tree.index % 100 == 0:
                 end = time.time()
