@@ -22,7 +22,6 @@ import struct
 class TGWAS:
     
     def __init__(self, phenotypes):
-        self.name = phenotypes.name
         self.phenotypes = phenotypes
         self.num_associations = -1
         self.p_values = np.empty(0)
@@ -74,7 +73,7 @@ class TpGWAS(TGWAS):
                 PVALUE = sm.OLS(self.phenotypes.y, genotypes_test).fit().pvalues[1] 
                 self.p_values[i] = PVALUE
                 i += 1
-        logfile.info("- Ran OLS for all " + str(variants.number_typed) + " variants of " + self.name)     
+        logfile.info("- Ran OLS for " + str(variants.number_typed) + " variants")     
 
     def writeToFile(self, variants, name, logfile):        
         #results for each variant
@@ -139,7 +138,7 @@ class TpGWAS(TGWAS):
         q_values = -np.log10(p_values)
 
         subplot.scatter(variant_positions[index_min:index_max], q_values[index_min:index_max], s=size, *args)
-        subplot.set(xlabel='variant position', ylabel='q-value', title=self.phenotypes.name)
+        subplot.set(xlabel='variant position', ylabel='q-value', title="GWAS")
         for v, var in enumerate(self.phenotypes.causal_variants):
             # print("power " + str(self.phenotypes.causal_power[v]) + " pos " + str(var.site.position))
             colscale = self.phenotypes.causal_power[v] 
@@ -341,7 +340,7 @@ class gcta_tGWAS(TtGWAS):
             covariance = tree_obj.get_eGRM(ts_object, inds, out, logfile) 
         elif covariance_type == "GRM":
             covariance = tree_obj.get_GRM(variants, inds, out, logfile) 
-            if np.count_nonzero(covariance) == 0:
+            if covariance is None:
                 return None
             self.write_covariance_matrix_bin(covariance=covariance, mu=1, inds=inds, out=out)
         else:

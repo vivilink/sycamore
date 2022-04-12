@@ -223,26 +223,42 @@ class TTree:
             self.eGRM = e
         return(e)
     
+    
     def get_GRM(self, variants, inds, out, logfile):        
-        tree_variant_info = variants.info[variants.info['tree_index'] == self.index]
-        tree_variants = np.array(variants.variants)[variants.info['tree_index'] == self.index]
-        # tree_variants_i = tree_variant_info['var_index'][tree_variant_info['tree_index'] == self.index]
-        # af = tree_variants['allele_freq'][tree_variants['tree_index'] == self.index]
-        
-        M_sum = np.zeros(shape=(inds.num_inds, inds.num_inds))  
+        """
+        Calculate GRM matrix based on variants as in Fan et al. 2022
+
+        Parameters
+        ----------
+        variants : TVariantsFiltered
+        inds : TInds
+        out : str
+        logfile : logger
+
+        Returns
+        -------
+        np.array if there are variants that are typed and have allele freq > 0. Otherwise None.
+
+        """
+        tree_variant_info = variants.info[(variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (variants.info['allele_freq'] > 0.0)]
+        tree_variants = np.array(variants.variants)[(variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (variants.info['allele_freq'] > 0.0)]
+      
         num_vars = tree_variants.shape[0]
+        if num_vars == 0:
+            return None
+
+        M_sum = np.zeros(shape=(inds.num_inds, inds.num_inds))  
         for v_i in range(num_vars):
-            if tree_variant_info.iloc[v_i]['typed'] == True:
-                af = tree_variant_info.iloc[v_i]['allele_freq']
-                gt_haploid = tree_variants[v_i].genotypes
-                if inds.ploidy == 1:
-                    gt = gt_haploid
-                else:
-                    gt = inds.get_diploid_genotypes(gt_haploid)            
-                first = np.array([gt - af]).T
-                second = np.array([gt - (1 - af)])
-                M = np.dot(first, second)
-                M_sum += M / (af * (1 - af))  
+            af = tree_variant_info.iloc[v_i]['allele_freq']
+            gt_haploid = tree_variants[v_i].genotypes
+            if inds.ploidy == 1:
+                gt = gt_haploid
+            else:
+                gt = inds.get_diploid_genotypes(gt_haploid)            
+            first = np.array([gt - af]).T
+            second = np.array([gt - (1 - af)])
+            M = np.dot(first, second)
+            M_sum += M / (af * (1 - af))  
         M = M_sum / float(num_vars)
         return(M)
 

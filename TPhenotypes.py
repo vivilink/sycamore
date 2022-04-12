@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 
 class Phenotypes:
     def __init__(self, name, variants, inds, logfile):
-        self.name = name
         self.num_inds = inds.num_inds
         self.y = np.zeros(self.num_inds)
         self.betas = [0] * variants.number
@@ -26,10 +25,34 @@ class Phenotypes:
         self.causal_tree_indeces = []
         self.filled = False        
         
-        logfile.info("- Created '" + self.name + "' phenotype object")
-        
-        
     def simulate(self, args, r, logger, variants_orig, inds, trees, plots_dir):
+        """
+        Simulate phenotypes with different genetic architecture
+
+        Parameters
+        ----------
+        args : TYPE
+            DESCRIPTION.
+        r : TRandomGenerator
+        logger : logger
+        variants_orig : TVariantsFiltered
+            The variants from the original tree containing also untyped variants
+        inds : TInds
+        trees : tskit.TreeSequence
+            The trees on which the association tests should be run (?).
+        plots_dir : str
+            Location where plots helpful for diagnostics should be written to.
+
+        Raises
+        ------
+        ValueError
+            Many errors are raised when parameters provided are not compatible.
+
+        Returns
+        -------
+        None.
+
+        """
         
         if args.pty_sim_method is None:
             raise ValueError("Must provide a phenotype simulation method with --pty_sim_method")
@@ -79,6 +102,7 @@ class Phenotypes:
             self.simulateFixed(variants_orig, inds, [var_index], args.pty_fixed_betas, logger)
             
         elif args.pty_sim_method == 'oneTree':            
+            #TODO: This should be the tree from the original simulated trees, so that at different propTyped the experiments are comparable
             if args.causal_tree_pos == None:
                 raise ValueError("Must provide causal tree position for phenotype 'oneTree' using '--causal_tree_pos'")
             if args.pty_sd_beta_causal_mutations is None:
@@ -163,7 +187,7 @@ class Phenotypes:
         
     def simulateEnvNoise(self, sd_environmental_noise, random):
         """       
-        simulate random noise around zero
+        Simulate random noise around zero
         
         Parameters
         ----------
@@ -223,13 +247,15 @@ class Phenotypes:
         
     def simulateUniform(self, variants, inds, prop_causal_mutations, sd_beta_causal_mutations, random, logfile, mean_beta_causal_mutation = 0):
         """
+        Simulate phenotypes based on uniformly distributed causal variant positions and normally distributed effect sizes
+
         Parameters
         ----------
         ts_object_variants : TreeSequence.variants
             variants iterator from tskit.
         prop_causal_mutations : float
             proportion of variants that should be causal.
-        sd_beta_causal_mutations : TYPE
+        sd_beta_causal_mutations : float
             sd of normal distribution for betas.
 
         Returns
