@@ -58,10 +58,10 @@ class TpGWAS(TGWAS):
         self.num_associations = self.num_typed_variants
         # self._check_compatibility(ts_object, phenotypes)
         self.p_values = np.empty(self.num_associations)
-        # self.q_values = np.empty(self.num_associations)
         
     def OLS(self, variants, inds, logfile):
-        # i = 0
+        #counter respective to typed variants
+        i = 0
         for v, variant in enumerate(variants.variants):
             if variants.info.iloc[v]['typed'] == True:
                 if inds.ploidy == 2:
@@ -71,16 +71,11 @@ class TpGWAS(TGWAS):
                 
                 #add intercept
                 genotypes_test = sm.tools.add_constant(genotypes)
-                
-                # print("self.phenotypes.y", self.phenotypes.y)
                 PVALUE = sm.OLS(self.phenotypes.y, genotypes_test).fit().pvalues[1] 
-                # print("PVALUE", PVALUE)
-                self.p_values[v] = PVALUE
-                # i += 1
-        logfile.info("- Ran OLS for all " + str(variants.number_typed) + " variants of " + self.name)
-        
+                self.p_values[i] = PVALUE
+                i += 1
+        logfile.info("- Ran OLS for all " + str(variants.number_typed) + " variants of " + self.name)     
 
-        
     def writeToFile(self, variants, name, logfile):        
         #results for each variant
         info_typed = variants.info.loc[variants.info['typed'] == True]
@@ -103,8 +98,7 @@ class TpGWAS(TGWAS):
         stats['min_p_value'] = min(self.p_values)
         stats['max_p_value'] = max(self.p_values) 
         logfile.info("- Writing stats from OLS to '" + name + "_variants_stats.csv'")           
-        stats.to_csv(name + "_variants_stats.csv", index = False, header = True)        
-        
+        stats.to_csv(name + "_variants_stats.csv", index = False, header = True)                
             
     def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, logfile, size=1, n_snps_lowess = 0, *args):
         """

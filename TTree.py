@@ -232,20 +232,17 @@ class TTree:
         M_sum = np.zeros(shape=(inds.num_inds, inds.num_inds))  
         num_vars = tree_variants.shape[0]
         for v_i in range(num_vars):
-            af = tree_variant_info.iloc[v_i]['allele_freq']
-            if af == 0:
-                print(tree_variant_info)
-                raise ValueError("allele frequency is 0")
-            gt_haploid = tree_variants[v_i].genotypes
-            if inds.ploidy == 1:
-                gt = gt_haploid
-            else:
-                gt = inds.get_diploid_genotypes(gt_haploid)            
-            first = np.array([gt - af]).T
-            second = np.array([gt - (1 - af)])
-            M = np.dot(first, second)
-            M_sum += M / (af * (1 - af))
-        
+            if tree_variant_info.iloc[v_i]['typed'] == True:
+                af = tree_variant_info.iloc[v_i]['allele_freq']
+                gt_haploid = tree_variants[v_i].genotypes
+                if inds.ploidy == 1:
+                    gt = gt_haploid
+                else:
+                    gt = inds.get_diploid_genotypes(gt_haploid)            
+                first = np.array([gt - af]).T
+                second = np.array([gt - (1 - af)])
+                M = np.dot(first, second)
+                M_sum += M / (af * (1 - af))        
         M = M_sum / float(num_vars)
         return(M)
 

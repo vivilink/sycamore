@@ -82,7 +82,7 @@ class TParameters:
 
         
         #limit data
-        parser.add_argument('--min_allele_freq', type=float, default = 0,
+        parser.add_argument('--min_allele_freq', type=float, default = 0.01,
                             help = "Minimum frequency an allele needs to have to be typed")
         parser.add_argument('--max_allele_freq', type=float, default = 1,
                             help = "Maximum frequency an allele needs to have to be typed")

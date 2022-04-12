@@ -39,6 +39,7 @@ class TVariantsFiltered(TVariants):
         """
         
         # TODO: I don't understand if I should use the variants as a list or not. I don't know how to save them if not as a list (self.variants = trees.variants() or trees.variants does not work. maybe as np.array? but then enumerate in TPhenotypes does not work
+        # TODO: develop an iterator for variants that only goes over the typed ones
         self.variants = list(ts_object.variants(samples=samp_ids))
         self.number = -1
         self.number_typed = -1
@@ -91,6 +92,10 @@ class TVariantsFiltered(TVariants):
             logfile.info("- Reading variant information from " + filtered_variants_file)
             self.info = pd.read_csv(filtered_variants_file)
             
+            #remove variants that now do not pass the frequency filter
+            self.info['typed'].iloc[self.info['allele_freq'] < min_allele_freq] = False
+            self.info['typed'].iloc[self.info['allele_freq'] > max_allele_freq] = False
+
             #rename if variant file is in old format
             if 'index' in self.info.columns:
                 self.info.rename(columns={'index': 'var_index'}, inplace = True)         
