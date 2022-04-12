@@ -243,12 +243,12 @@ class TTree:
 
         """
         tree_variant_info = variants.info[(variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (variants.info['allele_freq'] > 0.0)]
-        tree_variants = np.array(variants.variants)[(variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (variants.info['allele_freq'] > 0.0)]
-      
+        tree_variants = np.array(variants.variants)[(variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (variants.info['allele_freq'] > 0.0)]   
         num_vars = tree_variants.shape[0]
         if num_vars == 0:
             return None
-
+        
+        #loop over variants
         M_sum = np.zeros(shape=(inds.num_inds, inds.num_inds))  
         for v_i in range(num_vars):
             af = tree_variant_info.iloc[v_i]['allele_freq']

@@ -259,7 +259,7 @@ class gcta_tGWAS(TtGWAS):
     def run_association_one_tree(self, ts_object, variants, tree, inds, out, logfile, covariance_type, skip_first_tree):  
         # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
         #calculate covariance and write to file
-        tree_obj = tt.TTree(tree, inds.num_haplotypes)      
+        tree_obj = tt.TTree(tree, inds.num_haplotypes)    
        
         #TODO: this length condition is because if you extract a region from tskit sequence, the first tree goes from zero to the first tree. This causes problems with eGRM. Needs to be investigated what the problem is and a better condition needs to be found!
         if tree_obj.height != -1 or not (skip_first_tree and tree_obj.index == 0):

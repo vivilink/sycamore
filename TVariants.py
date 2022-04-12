@@ -106,8 +106,8 @@ class TVariantsFiltered(TVariants):
         if len(self.info['var_index']) != self.number != len(self.variants):
             raise ValueError("Variant file " + filtered_variants_file + " contains " + str(len(self.info['var_index'])) + " variants, expected " + str(self.number))
             
-        #set indeces of trees the variants belong to
-        self.info['tree_index'] = np.digitize(self.info['position'], ts_object.breakpoints(as_array=True))
+        #set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
+        self.info['tree_index'] = np.digitize(self.info['position'], ts_object.breakpoints(as_array=True)) - 1
 
                  
     def print_genotypes(self, index):        
