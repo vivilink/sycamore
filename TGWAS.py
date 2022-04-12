@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import subprocess
 import os
 import sys
-
+import struct
 
 class TGWAS:
     
@@ -161,9 +161,6 @@ class TpGWAS(TGWAS):
         fig.savefig(plots_dir + 'OLS_GWAS.png', bbox_inches='tight')    
     
     
-
-# TODO: add abstraction level for gcta methods. Currently all TgGWAS are gcta methods but maybe in the future there will be others
-
 class TtGWAS(TGWAS):
     """
     base class for all tree-based association tests
@@ -243,6 +240,39 @@ class TtGWAS(TGWAS):
         f.close()
         
         subprocess.call(["Rscript", os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])    
+        
+    def write_covariance_matrix_bin(self, covariance, mu, inds, out):
+        """
+        Write out eGRM in GCTA binary format.
+        :param: covariance numpy.ndarray of expected relatedness
+        :param: mu floating point number of expected mutations
+        :param: numpy.ndarray/list of individual IDs
+        :param: str of output
+        :returns: None
+        """
+        # todo: write out 3 files in GCTA format
+        # K = prefix_path.grm.bin; relatedness diagonal + lower diagonal
+        # mu = prefix_path.grm.N.bin; number of shared mutations between individuals on diagonal + lower diagonal
+        # samples = prefix_path.grm.id; 2 column text = family_id individual_id
+        n, n = covariance.shape
+        with open("{}.grm.bin".format(out), "wb") as grmfile:
+            for idx in range(n):
+                for jdx in range(idx + 1):
+                    val = struct.pack("f", covariance[idx, jdx])
+                    grmfile.write(val)
+    
+        with open("{}.grm.N.bin".format(out), "wb") as grmfile:
+            for idx in range(n):
+                for jdx in range(idx + 1):
+                    val = struct.pack("f", mu)
+                    grmfile.write(val)
+    
+        with open("{}.grm.id".format(out), "w") as grmfile:
+            for idx in range(n):
+                fid = 0
+                iid = inds.names[idx]
+                grmfile.write("\t".join([str(fid), str(iid)]) + os.linesep)
+         
     
     def calculate_and_write_covariance_matrix_to_gcta_file(self, ts_object, variants, tree_obj, inds, covariance_type, out, logfile):
         """
@@ -277,11 +307,42 @@ class TtGWAS(TGWAS):
             covariance = tree_obj.get_eGRM(ts_object, inds, out, logfile) 
         elif covariance_type == "GRM":
             covariance = tree_obj.get_GRM(variants, inds, out, logfile) 
+            self.write_covariance_matrix_bin(covariance=covariance, mu=1, inds=inds, out=out)
         else:
             raise ValueError("Did not recognize " + str(covariance_type) + " as a covariance type")
 
+class gcta_tGWAS(TtGWAS):
+    """
+    tree-based asssociation testing using GCTA 
+    """        
+    
+    def __init__(self, ts_object, phenotypes):    
+        super().__init__(ts_object, phenotypes)
+    
+    def run_association(self, ts_object, variants, inds, out, logfile, covariance_type):        
+        #log progress
+        start = time.time()
+        
+        for tree in ts_object.trees():
+            self.run_association_one_tree(ts_object, variants, tree, inds, out, logfile, covariance_type)  
+            #log progress
+            if tree.index % 100 == 0:
+                end = time.time()
+                logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
+            
+        logfile.info("- done running associations")                    
+            
+    def run_association_one_tree(self, ts_object, variants, tree, inds, out, logfile, covariance_type):  
+        # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
+        #calculate covariance and write to file
+        tree_obj = tt.TTree(tree, inds.num_haplotypes)      
+       
+        if tree_obj.height != -1 and tree_obj.start != 0:
+            self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object, variants, tree_obj, inds, covariance_type, out, logfile)
+            self.run_association_one_tree_gcta(tree, out)
+            
 
-class HE_tGWAS(TtGWAS):
+class HE_tGWAS(gcta_tGWAS):
     """
     tree-based asssociation testing using GCTA Haseman-Elston algorithm
     """
@@ -305,29 +366,7 @@ class HE_tGWAS(TtGWAS):
         self.V_G_over_Vp_SE_Jackknife_HECP = np.empty(self.num_associations)
         self.V_G_over_Vp_SE_Jackknife_HESD = np.empty(self.num_associations)
 
-    def run_association(self, ts_object, variants, inds, out, logfile, covariance_type):        
-        #log progress
-        start = time.time()
-        
-        for tree in ts_object.trees():
-            self.run_association_one_tree(ts_object, variants, tree, inds, out, logfile, covariance_type)  
-            #log progress
-            if tree.index % 100 == 0:
-                end = time.time()
-                logfile.info("- Ran HE for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
-
-            
-        logfile.info("- done running associations")
-        
-    def run_association_one_tree(self, ts_object, variants, tree, inds, out, logfile, covariance_type):              
-        # logfile.info("- running association test on tree with interval: " + str(tree.interval.left) + "," + str(tree.interval.right))
-        #calculate covariance and write to file
-        tree_obj = tt.TTree(tree, inds.num_haplotypes)  
-        
-        if tree_obj.height != -1:
-            self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object, variants, tree_obj, inds, covariance_type, out, logfile)
-            self.run_association_one_tree_gcta(tree, out)
-    
+   
             
     def run_association_one_tree_gcta(self, tree, out):
         # create gcta input files, run gcta and parse output
@@ -406,7 +445,7 @@ class HE_tGWAS(TtGWAS):
         logfile.info("- Wrote stats from HE to '" + name + "_trees_HE_stats.csv'")   
 
 
-class REML_tGWAS(TtGWAS):
+class REML_tGWAS(gcta_tGWAS):
     """
     tree-based association testing using CGTA REML algorithm
     """
@@ -429,18 +468,7 @@ class REML_tGWAS(TtGWAS):
         self.V_e_SE = np.empty(self.num_associations)
         self.Vp_SE = np.empty(self.num_associations)
         self.V_G_over_Vp_SE = np.empty(self.num_associations)
-        
-
-
-    def run_association_one_tree(self, ts_object, variants, tree, inds, out, logfile, covariance_type):  
-        # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
-        #calculate covariance and write to file
-        tree_obj = tt.TTree(tree, inds.num_haplotypes)      
-       
-        if tree_obj.height != -1 and tree_obj.start != 0:
-            self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object, variants, tree_obj, inds, covariance_type, out, logfile)
-            self.run_association_one_tree_gcta(tree, out)
-                    
+                            
     
     def run_association_one_tree_gcta(self, tree, out):
         # create gcta input files, run gcta and parse output

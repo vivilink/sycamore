@@ -234,8 +234,8 @@ if args.task == "associate":
                 tGWAS = gwas.HE_tGWAS(trees, pheno)
                 
                 #write phenotypes in gcta format
-                if args.covariance_type == "eGRM":
-                    pheno.write_to_file_gcta_eGRM(args.out, logger)     
+                if args.covariance_type == "eGRM" or args.covariance_type == "GRM":
+                    pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)     
                 else:
                     pheno.write_to_file_gcta_scaled(args.out, logger)     
                 
@@ -258,10 +258,10 @@ if args.task == "associate":
                 tGWAS = gwas.REML_tGWAS(trees, pheno)
                 
                 #write phenotypes in gcta format
-                if args.covariance_type == "eGRM":
-                    pheno.write_to_file_gcta_eGRM(args.out, logger)     
+                if args.covariance_type == "eGRM" or args.covariance_type == "GRM":
+                    pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)     
                 else:
-                    pheno.write_to_file_gcta_scaled(args.out, logger)  
+                    pheno.write_to_file_gcta_scaled(inds=inds, out=args.out, logfile=logger)  
                 
                 #run association
                 if args.test_only_tree_at is None:    

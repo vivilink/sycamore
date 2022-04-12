@@ -314,7 +314,7 @@ class Phenotypes:
         logger.info("- Standardizing phenotypes")
         self.y = (self.y - np.mean(self.y)) / np.std(self.y)
     
-    def write_to_file_gcta_eGRM(self, out, logfile):
+    def write_to_file_gcta_eGRM(self, inds, out, logfile):
         """
         Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format will match the binary output created with plinkFile R package.
 
@@ -327,7 +327,7 @@ class Phenotypes:
                 
         tmp_pheno = pd.DataFrame()
         tmp_pheno['1'] = np.repeat(0, self.num_inds)
-        tmp_pheno['2'] = ["id_" + str(i) for i in np.arange(0,self.num_inds)]
+        tmp_pheno['2'] = inds.names
         tmp_pheno['3'] = self.y     
         
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)

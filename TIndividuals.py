@@ -27,6 +27,8 @@ class Individuals:
             if i % 2 == 0:
                 assignment += 1
             self.ind_assignment['individual'][i] = assignment
+        self.names = ["id_" + str(i) for i in np.arange(0,self.num_inds)]
+
                         
     def get_individual(self, haplotype):
         if haplotype > max(self.ind_assignment['haplotype']) or haplotype < min(self.ind_assignment['haplotype']):
