@@ -246,10 +246,10 @@ if args.task == "associate":
                 
                 #run association
                 if args.test_only_tree_at is None:    
-                    tGWAS.run_association(trees, inds, args.out, logger, args.covariance_type, args.skip_first_tree)
+                    tGWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=args.out, logfile=logger, covariance_type=args.covariance_type, skip_first_tree=args.skip_first_tree)
                 else:
                     tree = trees.at(args.test_only_tree_at)
-                    tGWAS.run_association_one_tree(trees, variants, tree, inds, args.out, logger, args.covariance_type, args.skip_first_tree)
+                    tGWAS.run_association_one_tree(ts_object=trees, variants=variants, tree=tree, inds=inds, out=args.out, logfile=logger, covariance_type=args.covariance_type, skip_first_tree=args.skip_first_tree)
 
                 tGWAS.write_to_file(trees, args.out, logger)
                 
@@ -270,10 +270,10 @@ if args.task == "associate":
                 
                 #run association
                 if args.test_only_tree_at is None:    
-                    tGWAS.run_association(trees, variants, inds, args.out, logger, args.covariance_type, args.skip_first_tree)
+                    tGWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=args.out, logfile=logger, covariance_type=args.covariance_type, skip_first_tree=args.skip_first_tree)
                 else:
                     tree = trees.at(args.test_only_tree_at)
-                    tGWAS.run_association_one_tree(trees, variants, tree, inds, args.out, logger, args.covariance_type, args.skip_first_tree)
+                    tGWAS.run_association_one_tree(ts_object=trees, variants=variants, tree=tree, inds=inds, out=args.out, logfile=logger, covariance_type=args.covariance_type, skip_first_tree=args.skip_first_tree)
                     
                 tGWAS.write_to_file(trees, args.out, logger)         
                 
