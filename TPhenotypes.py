@@ -56,6 +56,10 @@ class Phenotypes:
         
         if args.pty_sim_method is None:
             raise ValueError("Must provide a phenotype simulation method with --pty_sim_method")
+            
+        if args.pty_sim_method == "null":
+            logger.info("- Simulating null phenotypes based only on random noise") 
+            self.simulateNull(self)
 
         if args.pty_sim_method == 'uniform':
             logger.info("- Simulating phenotypes based on uniformly chosen variants with prop_causal_mutations: " + str(args.pty_prop_causal_mutations) + " and sd_beta_causal_mutations: " + str(args.pty_sd_beta_causal_mutations)) 
@@ -200,6 +204,17 @@ class Phenotypes:
         """
         self.y += random.random.normal(loc=0, scale=sd_environmental_noise, size=self.num_inds)
         self.filled = True
+        
+    def simulateNull(self):
+        """
+        Do nothing, phenotype will only contain random effect
+
+        Returns
+        -------
+        None.
+
+        """
+        return
 
     def simulateFixed(self, variants, inds, causal_variant_indeces, betas, logfile):
         """
@@ -261,7 +276,6 @@ class Phenotypes:
         Returns
         -------
         None.
-
         """        
 
         #add phenotypic effect to mutations that are uniformly distributed

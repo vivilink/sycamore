@@ -17,7 +17,8 @@ class TTrees:
         # self.trees = ts_object.trees()
         self.number = ts_object.num_trees
         
-    def writeStats(self, ts_object, out, logfile):
+    @staticmethod
+    def writeStats(ts_object, out, logfile):
         """
         Parameters
         ----------
@@ -32,7 +33,7 @@ class TTrees:
         None.
 
         """
-        info = pd.DataFrame(index=range(self.number),columns=['index', 'start', 'end', 'length', 'num_mutations',  "total_branch_length", "num_roots"]) 
+        info = pd.DataFrame(index=range(ts_object.num_trees),columns=['index', 'start', 'end', 'length', 'num_mutations',  "total_branch_length", "num_roots"]) 
         for tree in ts_object.trees():
             info.iloc[tree.index] = [tree.index, tree.interval.left, tree.interval.right, tree.interval.right - tree.interval.left, len(list(tree.mutations())), tree.total_branch_length, len(tree.roots)]
 
@@ -52,6 +53,7 @@ class TTree:
         self.tree: tskit.TreeIterator = tree_iterator
         self.start: float = tree_iterator.interval.left
         self.end: float = tree_iterator.interval.right
+        self.length: float = tree_iterator.length
         self.index: int = tree_iterator.index
         self.height: float = -1.0
         #the first marginal tree has no root and no height in ARG simulated with stdpopsim

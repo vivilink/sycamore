@@ -243,7 +243,7 @@ class gcta_tGWAS(TtGWAS):
     def __init__(self, ts_object, phenotypes):    
         super().__init__(ts_object, phenotypes)
     
-    def run_association(self, ts_object, variants, inds, out, logfile, covariance_type):        
+    def run_association(self, ts_object, variants, inds, out, logfile, covariance_type, skip_first_tree):        
         #log progress
         start = time.time()
         
@@ -256,12 +256,13 @@ class gcta_tGWAS(TtGWAS):
             
         logfile.info("- done running associations")                    
             
-    def run_association_one_tree(self, ts_object, variants, tree, inds, out, logfile, covariance_type):  
+    def run_association_one_tree(self, ts_object, variants, tree, inds, out, logfile, covariance_type, skip_first_tree):  
         # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
         #calculate covariance and write to file
         tree_obj = tt.TTree(tree, inds.num_haplotypes)      
        
-        if tree_obj.height != -1 and tree_obj.start != 0:
+        #TODO: this length condition is because if you extract a region from tskit sequence, the first tree goes from zero to the first tree. This causes problems with eGRM. Needs to be investigated what the problem is and a better condition needs to be found!
+        if tree_obj.height != -1 or not (skip_first_tree and tree_obj.index == 0):
             # TODO: calculating and writing should be separate functions, only write if tree is valid and matrix is not empty. Only possible to do this when eGRM functionality runs internally
             covariance = self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object, variants, tree_obj, inds, covariance_type, out, logfile)
             if covariance is not None:

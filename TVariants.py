@@ -10,7 +10,7 @@ import pandas as pd
 
 class TVariants:
     def __init__(self, ts_object, samp_ids):
-        self.number = len(np.array(ts_object.variants(samples=samp_ids)))
+        self.number = len(list(ts_object.variants(samples=samp_ids)))
         self.positions = np.empty(self.number)
         self.alleleFreq = np.empty(self.number)
         

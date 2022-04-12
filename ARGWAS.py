@@ -92,18 +92,23 @@ if args.task == "simulate":
 
     if args.sim_tree_simulator == "stdPopsim":
         simulator = tsim.TSimulatorStdPopsim()
-        trees = simulator.run_simulation(args.N, args.out, r, logger)
-        samp_ids = trees.samples()
-        N = len(samp_ids)
-        if args.N != N:
-            logger.warning("Number of samples in tree does not match number of samples in arguments")
-        inds = tind.Individuals(args.ploidy, N)
-        variants = tvar.TVariants(trees, samp_ids)
-        variants.writeVariantInfo(trees, samp_ids, args.out)
-        
+    elif args.sim_tree_simulator == "msprime":
+        simulator = tsim.TSimulatorMSPrime()
     else:
         logger.error("use of any simulator besides stdPopSim not tested")
         raise ValueError("use of any simulator besides stdPopSim not tested")
+    
+    trees = simulator.run_simulation(arguments=args, randomGenerator=r, logfile=logger)   
+
+    samp_ids = trees.samples()
+    N = len(samp_ids)
+    if args.N != N:
+        logger.warning("Number of samples in tree does not match number of samples in arguments")
+    inds = tind.Individuals(args.ploidy, N)
+    variants = tvar.TVariants(trees, samp_ids)
+    variants.writeVariantInfo(trees, samp_ids, args.out)
+
+    tt.TTrees.writeStats(ts_object=trees, out=args.out, logfile=logger)
         
 #-----------------------
 # ARG statistics
@@ -113,8 +118,8 @@ if args.task == "ARGStatistics":
     logger.info("- TASK: ARGStatistics")    
     logger.info("- Reading tree from " + args.tree_file)
     trees = tskit.load(args.tree_file)
-    trees_class = tt.TTrees(trees)
-    trees_class.writeStats(trees, args.out, logger)
+    trees_class = tt.TTrees(ts_object=trees)
+    trees_class.writeStats(ts_object=trees, out=args.out, logfile=logger)
 
 #-----------------------
 # Output single tree
@@ -241,10 +246,10 @@ if args.task == "associate":
                 
                 #run association
                 if args.test_only_tree_at is None:    
-                    tGWAS.run_association(trees, inds, args.out, logger, args.covariance_type)
+                    tGWAS.run_association(trees, inds, args.out, logger, args.covariance_type, args.skip_first_tree)
                 else:
                     tree = trees.at(args.test_only_tree_at)
-                    tGWAS.run_association_one_tree(trees, variants, tree, inds, args.out, logger, args.covariance_type)
+                    tGWAS.run_association_one_tree(trees, variants, tree, inds, args.out, logger, args.covariance_type, args.skip_first_tree)
 
                 tGWAS.write_to_file(trees, args.out, logger)
                 
@@ -265,10 +270,10 @@ if args.task == "associate":
                 
                 #run association
                 if args.test_only_tree_at is None:    
-                    tGWAS.run_association(trees, variants, inds, args.out, logger, args.covariance_type)
+                    tGWAS.run_association(trees, variants, inds, args.out, logger, args.covariance_type, args.skip_first_tree)
                 else:
                     tree = trees.at(args.test_only_tree_at)
-                    tGWAS.run_association_one_tree(trees, variants, tree, inds, args.out, logger, args.covariance_type)
+                    tGWAS.run_association_one_tree(trees, variants, tree, inds, args.out, logger, args.covariance_type, args.skip_first_tree)
                     
                 tGWAS.write_to_file(trees, args.out, logger)         
                 
