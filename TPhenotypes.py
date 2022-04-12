@@ -59,7 +59,7 @@ class Phenotypes:
             
         if args.pty_sim_method == "null":
             logger.info("- Simulating null phenotypes based only on random noise") 
-            self.simulateNull(self)
+            self.simulateNull()
 
         if args.pty_sim_method == 'uniform':
             logger.info("- Simulating phenotypes based on uniformly chosen variants with prop_causal_mutations: " + str(args.pty_prop_causal_mutations) + " and sd_beta_causal_mutations: " + str(args.pty_sd_beta_causal_mutations)) 
