@@ -234,6 +234,40 @@ class TtGWAS(TGWAS):
             
         subplot.axhline(y=8, color="red", lw=0.5)
         
+
+
+class gcta_tGWAS(TtGWAS):
+    """
+    tree-based asssociation testing using GCTA 
+    """        
+    
+    def __init__(self, ts_object, phenotypes):    
+        super().__init__(ts_object, phenotypes)
+    
+    def run_association(self, ts_object, variants, inds, out, logfile, covariance_type):        
+        #log progress
+        start = time.time()
+        
+        for tree in ts_object.trees():
+            self.run_association_one_tree(ts_object, variants, tree, inds, out, logfile, covariance_type)  
+            #log progress
+            if tree.index % 100 == 0:
+                end = time.time()
+                logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
+            
+        logfile.info("- done running associations")                    
+            
+    def run_association_one_tree(self, ts_object, variants, tree, inds, out, logfile, covariance_type):  
+        # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
+        #calculate covariance and write to file
+        tree_obj = tt.TTree(tree, inds.num_haplotypes)      
+       
+        if tree_obj.height != -1 and tree_obj.start != 0:
+            # TODO: calculating and writing should be separate functions, only write if tree is valid and matrix is not empty. Only possible to do this when eGRM functionality runs internally
+            covariance = self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object, variants, tree_obj, inds, covariance_type, out, logfile)
+            if covariance is not None:
+                self.run_association_one_tree_gcta(tree, out)
+
     def write_covariance_matrix(self, covariance, out):
         with open(out + '_GRM_covariance.txt', 'w') as f:
             np.savetxt(f, covariance)
@@ -307,40 +341,13 @@ class TtGWAS(TGWAS):
             covariance = tree_obj.get_eGRM(ts_object, inds, out, logfile) 
         elif covariance_type == "GRM":
             covariance = tree_obj.get_GRM(variants, inds, out, logfile) 
+            if np.count_nonzero(covariance) == 0:
+                return None
             self.write_covariance_matrix_bin(covariance=covariance, mu=1, inds=inds, out=out)
         else:
             raise ValueError("Did not recognize " + str(covariance_type) + " as a covariance type")
-
-class gcta_tGWAS(TtGWAS):
-    """
-    tree-based asssociation testing using GCTA 
-    """        
-    
-    def __init__(self, ts_object, phenotypes):    
-        super().__init__(ts_object, phenotypes)
-    
-    def run_association(self, ts_object, variants, inds, out, logfile, covariance_type):        
-        #log progress
-        start = time.time()
         
-        for tree in ts_object.trees():
-            self.run_association_one_tree(ts_object, variants, tree, inds, out, logfile, covariance_type)  
-            #log progress
-            if tree.index % 100 == 0:
-                end = time.time()
-                logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
-            
-        logfile.info("- done running associations")                    
-            
-    def run_association_one_tree(self, ts_object, variants, tree, inds, out, logfile, covariance_type):  
-        # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
-        #calculate covariance and write to file
-        tree_obj = tt.TTree(tree, inds.num_haplotypes)      
-       
-        if tree_obj.height != -1 and tree_obj.start != 0:
-            self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object, variants, tree_obj, inds, covariance_type, out, logfile)
-            self.run_association_one_tree_gcta(tree, out)
-            
+        return covariance
 
 class HE_tGWAS(gcta_tGWAS):
     """

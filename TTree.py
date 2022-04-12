@@ -243,8 +243,6 @@ class TTree:
                 second = np.array([gt - (1 - af)])
                 M = np.dot(first, second)
                 M_sum += M / (af * (1 - af))  
-                
-                print(M_sum)
         M = M_sum / float(num_vars)
         return(M)
 
