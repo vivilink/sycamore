@@ -39,6 +39,8 @@ class TParameters:
                             help =  "Number of haploid individuals to simulate")
         parser.add_argument('--mu', type=float, 
                             help =  "Mutation rate for simulating with msprime (does not work for stdPopsim")
+        parser.add_argument('--recomb_rate', type=float, 
+                            help = "Recombination rate for simulating with msprime (does not work for stdPopsim")
         parser.add_argument('--sequence_length', type=float, 
                             help =  "Sequence length for simulating with msprime (does not work for stdPopsim")
         parser.add_argument('--pos_int', type=float, default = True,
