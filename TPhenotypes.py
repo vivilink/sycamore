@@ -170,7 +170,7 @@ class Phenotypes:
             
             logger.info("- Simulating phenotypes:")
             logger.add()
-            self.simulateFixed(variants_orig, inds, variant_indeces, fixed_betas, logger)
+            self.simulateFixed(variants=variants_orig, inds=inds, causal_variant_indeces=variant_indeces, betas=fixed_betas, logfile=logger)
             logger.sub()
         
         

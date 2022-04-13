@@ -242,7 +242,7 @@ class gcta_tGWAS(TtGWAS):
     
     def __init__(self, ts_object, phenotypes):    
         super().__init__(ts_object, phenotypes)
-    
+
     def run_association(self, ts_object, variants, inds, out, logfile, covariance_type, skip_first_tree):        
         #log progress
         start = time.time()
@@ -505,16 +505,6 @@ class REML_tGWAS(gcta_tGWAS):
         self.V_e_SE[tree.index] = float(result['SE'][result['Source'] == 'V(e)'])
         self.Vp_SE[tree.index] = float(result['SE'][result['Source'] == 'Vp'])
         self.V_G_over_Vp_SE[tree.index] = float(result['SE'][result['Source'] == 'V(G)/Vp'])        
-
-
-
-    def run_association(self, ts_object, variants, inds, out, logfile, covariance_type):             
-        start = time.time()        
-        for tree in ts_object.trees():
-            self.run_association_one_tree(ts_object, variants, tree, inds, out, logfile, covariance_type)  
-            if tree.index % 100 == 0:
-                end = time.time()
-                logfile.info("- Ran REML for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
 
 
     def write_to_file(self, ts_object, name, logfile):
