@@ -188,7 +188,7 @@ class TTree:
             
             return(self.covariance_diploid)
                 
-    def get_eGRM(self, ts_object, inds, out, logfile):     
+    def get_eGRM(self, ts_object, inds, out, skip_first_tree, logfile):     
         """       
         Parameters
         ----------
@@ -213,11 +213,19 @@ class TTree:
             TTrees.extract_single_tree(ts_object=ts_object, out=out, logfile=logfile, position=self.start)     
             
             #run egrm
+            #TODO: include eGRM in argwas and remove all this complexity
             if inds.ploidy == 2:
                 logfile.warning("WARNING: Individual assignment cannot be passed to eGRM calculation yet, only simulate random phenotypes!")
-                exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out + "_focal.trees", out])
+                if skip_first_tree:
+                    exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm_skipFirstTree.sh", out + "_focal.trees", out])
+                else:
+                    exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out + "_focal.trees", out])
             else:
-                exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out + "_focal.trees", out, "--haploid"])
+                if skip_first_tree:                    
+                    exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm_skipFirstTree.sh", out + "_focal.trees", out, "--haploid"])
+                else:
+                    exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out + "_focal.trees", out, "--haploid"])
+
 
             #read result
             e = np.load(out + ".npy")

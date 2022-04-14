@@ -264,7 +264,7 @@ class gcta_tGWAS(TtGWAS):
         #TODO: this length condition is because if you extract a region from tskit sequence, the first tree goes from zero to the first tree. This causes problems with eGRM. Needs to be investigated what the problem is and a better condition needs to be found!
         if tree_obj.height != -1 or not (skip_first_tree and tree_obj.index == 0):
             # TODO: calculating and writing should be separate functions, only write if tree is valid and matrix is not empty. Only possible to do this when eGRM functionality runs internally
-            covariance = self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object, variants, tree_obj, inds, covariance_type, out, logfile)
+            covariance = self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object=ts_object, variants=variants, tree_obj=tree_obj, inds=inds, covariance_type=covariance_type, out=out, logfile=logfile, skip_first_tree=skip_first_tree)
             if covariance is not None:
                 self.run_association_one_tree_gcta(tree, out)
 
@@ -308,7 +308,7 @@ class gcta_tGWAS(TtGWAS):
                 grmfile.write("\t".join([str(fid), str(iid)]) + os.linesep)
          
     
-    def calculate_and_write_covariance_matrix_to_gcta_file(self, ts_object, variants, tree_obj, inds, covariance_type, out, logfile):
+    def calculate_and_write_covariance_matrix_to_gcta_file(self, ts_object, variants, tree_obj, inds, covariance_type, out, skip_first_tree, logfile):
         """
         Writes covariance and other files necessary to run gcta. The program egrm does that automatically, the scaled
 
@@ -335,12 +335,12 @@ class gcta_tGWAS(TtGWAS):
 
         """
         if covariance_type == "scaled":
-            covariance = tree_obj.get_covariance_scaled(inds, logfile)
-            self.write_covariance_matrix(covariance, out)
+            covariance = tree_obj.get_covariance_scaled(inds=inds, logfile=logfile)
+            self.write_covariance_matrix(covariance=covariance, out=out)
         elif covariance_type == "eGRM":
-            covariance = tree_obj.get_eGRM(ts_object, inds, out, logfile) 
+            covariance = tree_obj.get_eGRM(ts_object=ts_object, inds=inds, out=out, logfile=logfile, skip_first_tree=skip_first_tree) 
         elif covariance_type == "GRM":
-            covariance = tree_obj.get_GRM(variants, inds, out, logfile) 
+            covariance = tree_obj.get_GRM(variants=variants, inds=inds, out=out, logfile=logfile) 
             if covariance is None:
                 return None
             self.write_covariance_matrix_bin(covariance=covariance, mu=1, inds=inds, out=out)
