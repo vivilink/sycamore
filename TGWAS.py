@@ -340,10 +340,10 @@ class gcta_tGWAS(TtGWAS):
         elif covariance_type == "eGRM":
             covariance = tree_obj.get_eGRM(ts_object=ts_object, inds=inds, out=out, logfile=logfile, skip_first_tree=skip_first_tree) 
         elif covariance_type == "GRM":
-            covariance = tree_obj.get_GRM(variants=variants, inds=inds, out=out, logfile=logfile) 
+            covariance, mu = tree_obj.get_GRM(variants=variants, inds=inds, out=out, logfile=logfile) 
             if covariance is None:
                 return None
-            self.write_covariance_matrix_bin(covariance=covariance, mu=1, inds=inds, out=out)
+            self.write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
         else:
             raise ValueError("Did not recognize " + str(covariance_type) + " as a covariance type")
         

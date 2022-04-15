@@ -270,7 +270,7 @@ class TTree:
             M = np.dot(first, second)
             M_sum += M / (af * (1 - af))  
         M = M_sum / float(num_vars)
-        return(M)
+        return(M, num_vars)
 
                 
     def solving_function(self, array, inds):   
