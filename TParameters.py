@@ -32,26 +32,35 @@ class TParameters:
         parser.add_argument('--tree_file_simulated',
                             help = "File of simulated trees to be used for phenotype simulation in tskit format")
         
+        #limit data
+        parser.add_argument('--min_allele_freq', type=float, default = 0.01,
+                            help = "Minimum frequency an allele needs to have to be typed")
+        parser.add_argument('--max_allele_freq', type=float, default = 1,
+                            help = "Maximum frequency an allele needs to have to be typed")
+        parser.add_argument('--prop_typed_variants', type=float, default = 1,
+                            help = "Proportion of variants that are typed (out of the ones that pass the frequency filter).")
+        
         #simulating trees
-        parser.add_argument('--sim_tree_simulator', dest = "sim_tree_simulator", default = "stdPopsim", choices=["stdPopsim", "msprime"],
+        sim = parser.add_argument_group('simulating trees')
+        sim.add_argument('--sim_tree_simulator', dest = "sim_tree_simulator", default = "stdPopsim", choices=["stdPopsim", "msprime"],
                             help = "Method used for simulating. stdPopsim is real human chromosome")
-        parser.add_argument('--N', type=int, 
+        sim.add_argument('--N', type=int, 
                             help =  "Number of haploid individuals to simulate")
-        parser.add_argument('--mu', type=float, 
+        sim.add_argument('--mu', type=float, 
                             help =  "Mutation rate for simulating with msprime (does not work for stdPopsim")
-        parser.add_argument('--recomb_rate', type=float, 
+        sim.add_argument('--AH_tree_pos', type=int, 
+                            help =  "Add mutations only to the local tree covering this genomic position")
+        sim.add_argument('--recomb_rate', type=float, 
                             help = "Recombination rate for simulating with msprime (does not work for stdPopsim")
-        parser.add_argument('--sequence_length', type=float, 
+        sim.add_argument('--sequence_length', type=float, 
                             help =  "Sequence length for simulating with msprime (does not work for stdPopsim")
-        parser.add_argument('--pos_int', type=float, default = True,
+        sim.add_argument('--pos_int', type=float, default = True,
                             help = "Should the positions of the variants be transformed into integers. Msprime simulates a continuous genome, so if pos_int is true, the simulated positions are rounded and if one position overlaps the previous, it is moved to the next position in the genome.")
         
         
         #simulating phenotypes
-        pty = parser.add_argument_group('phenotypes')
-        parser.add_argument('--name', default = "default",
-                            help = "Name of phenotype and GWAS object, will be used for headers in plots")
-        parser.add_argument('--ploidy', type=int, choices=[1,2],
+        pty = parser.add_argument_group('simulating phenotypes')
+        pty.add_argument('--ploidy', type=int, choices=[1,2],
                             help = "Ploidy of individuals. Haplotypes will be assigned to individuals in increasing order")
         pty.add_argument('--pty_sd_envNoise', type=float, default = 0, 
                             help = "Std. dev. for environmental noise. If set to 0, no noise will be simulated.")
@@ -72,32 +81,25 @@ class TParameters:
         pty.add_argument('--allelic_hetero_file',
                              help = "txt file with columns 'freq', 'typed', 'beta'")
         pty.add_argument('--causal_tree_pos', type=int,
-                             help = "genomic position of causal tree")
+                             help = "Simulate phenotype with allelic heterogeneity by making all mutations of the local tree covering this genomic position causal")
         
         #run associations
-        assoc = parser.add_argument_group('associations')
+        assoc = parser.add_argument_group('running association tests')
         # TODO: ass method aim method and covariance type should be given in one parameter, maybe a file. Some combinations should be made impossible
         assoc.add_argument('--ass_method', choices = ["GWAS", "AIM", "both"], 
                            help = "Either run only GWAS, AIM or both")
-        assoc.add_argument('--AIM_method', nargs='+', #choices = ["HE", "REML"],
+        assoc.add_argument('--AIM_method', nargs='+', 
                            help = "Use either Haseman-Elston or REML to test trees for association")
         assoc.add_argument('--covariance_type', type = str, choices=["scaled", "eGRM", "GRM"],
                            help = "Use scaled variance-covariance matrix calculated as the covariance scaled by N/trace, or use the eGRM calculated by egrm (Fan et al. 2022)")
-        assoc.add_argument('--test_only_tree_at', type = float, #choices = ["HE", "REML"],
+        assoc.add_argument('--test_only_tree_at', type = float, 
                            help = "Only test tree that is overlapping the given position for association")
         assoc.add_argument('--skip_first_tree', type = bool, default = False,
                            help = 'Do not run association test on first tree')
 
         
-        #limit data
-        parser.add_argument('--min_allele_freq', type=float, default = 0.01,
-                            help = "Minimum frequency an allele needs to have to be typed")
-        parser.add_argument('--max_allele_freq', type=float, default = 1,
-                            help = "Maximum frequency an allele needs to have to be typed")
-        parser.add_argument('--prop_typed_variants', type=float, default = 1,
-                            help = "Proportion of variants that are typed (out of the ones that pass the frequency filter).")
-        # parser.add_argument('--tree_interval', nargs='+',
-        #                     help = "Indeces of variants that should be simulated as causal if pty_sim_method is set to 'fixed'.")
+
+
         
         
         args = parser.parse_args()

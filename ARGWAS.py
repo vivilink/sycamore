@@ -113,7 +113,7 @@ if args.task == "simulate":
 if args.task == "simulateMoreMutations":
     logger.info("- TASK: simulateMoreMutations")
     tsim.TSimulator.simulate_more_mutations(arguments = args, randomGenerator = r, logfile = logger)
-        
+            
 #-----------------------
 # ARG statistics
 #-----------------------   
@@ -198,9 +198,9 @@ if args.task == "associate":
     # create phenotypes
     #--------------------------------    
 
-    pheno = pt.Phenotypes(args.name, variants_orig, inds, logger)
+    pheno = pt.Phenotypes(variants = variants_orig, inds = inds, logfile = logger)
     
-    pheno.simulate(args, r, logger, variants_orig, inds, trees, plots_dir)
+    pheno.simulate(args = args, r = r, logfile = logger, variants_orig = variants_orig, inds = inds, trees = trees, plots_dir = plots_dir)
 
     #--------------------------------
     # run association tests and plot

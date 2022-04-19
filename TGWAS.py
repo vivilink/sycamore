@@ -337,19 +337,23 @@ class gcta_tGWAS(TtGWAS):
         if covariance_type == "scaled":
             covariance = tree_obj.get_covariance_scaled(inds=inds, logfile=logfile)
             self.write_covariance_matrix(covariance=covariance, out=out)
+
         elif covariance_type == "eGRM":
             covariance = tree_obj.get_eGRM(ts_object=ts_object, inds=inds, out=out, logfile=logfile, skip_first_tree=skip_first_tree) 
             if np.trace(covariance) != inds.num_inds:
                 # raise ValueError("Trace of matrix is not equal to the number of individuals. Was expecting " + str(inds.num_inds) + " but obtained " + str(np.trace(covariance)))
                 logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(inds.num_inds) + " but obtained " + str(np.trace(covariance)))
-
+ 
         elif covariance_type == "GRM":
+            if inds.ploidy == 2:
+                raise ValueError("GRM not implemented for diploids")
             covariance, mu = tree_obj.get_GRM(variants=variants, inds=inds, out=out, logfile=logfile) 
             if covariance is None:
                 return None
             if np.trace(covariance) != inds.num_inds:
                 raise ValueError("Trace of matrix is not equal to the number of individuals. Was expecting " + str(inds.num_inds) + " but obtained " + str(np.trace(covariance)))
             self.write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
+
         else:
             raise ValueError("Did not recognize " + str(covariance_type) + " as a covariance type")
         
@@ -372,14 +376,11 @@ class HE_tGWAS(gcta_tGWAS):
         
         #other statistics
         self.V_G_over_Vp_HECP = np.empty(self.num_associations)
-        self.V_G_over_Vp_HESD = np.empty(self.num_associations)
-        
+        self.V_G_over_Vp_HESD = np.empty(self.num_associations)        
         self.V_G_over_Vp_SE_OLS_HECP = np.empty(self.num_associations)
         self.V_G_over_Vp_SE_OLS_HESD = np.empty(self.num_associations)
         self.V_G_over_Vp_SE_Jackknife_HECP = np.empty(self.num_associations)
-        self.V_G_over_Vp_SE_Jackknife_HESD = np.empty(self.num_associations)
-
-   
+        self.V_G_over_Vp_SE_Jackknife_HESD = np.empty(self.num_associations)   
             
     def run_association_one_tree_gcta(self, tree, out):
         # create gcta input files, run gcta and parse output

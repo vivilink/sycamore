@@ -9,6 +9,7 @@ Created on Thu Oct 21 16:50:32 2021
 import stdpopsim
 import tskit
 import msprime
+import TTree as tt
 
 
 class TSimulator:
@@ -34,13 +35,26 @@ class TSimulator:
         tskit.TreeSequence
 
         """
-        logfile.info("- Adding more mutations to trees read from " + arguments.tree_file)
         logfile.add()
         trees = tskit.load(arguments.tree_file)
-        trees = msprime.sim_mutations(trees, rate = arguments.mu, random_seed = arguments.seed)
+        
+        rate = arguments.mu
+        if arguments.AH_tree_pos is not None:
+            focal_tree = trees.at(arguments.AH_tree_pos)            
+            rate = msprime.RateMap(
+                position=[0, focal_tree.interval.left, focal_tree.interval.right, trees.sequence_length],
+                rate=[0, arguments.mu, 0]
+            )        
+            logfile.info("- Adding more mutations to tree covering " + str(arguments.AH_tree_pos) + " in tree sequence read from " + arguments.tree_file + " with rate " + str(arguments.mu))
+        else:
+            logfile.info("- Adding more mutations to trees read from " + arguments.tree_file + " with rate " + str(arguments.mu) + " across the whole tree sequence")
+
+        trees = msprime.sim_mutations(trees, rate = rate, random_seed = arguments.seed)
         trees.dump(arguments.out + "_moreMutations.trees")
         logfile.info("- Wrote new tree file to " + arguments.out + "_moreMutations.trees")
         logfile.sub()
+        
+        tt.TTrees.writeStats(ts_object = trees, out = arguments.out + "_moreMutations", logfile = logfile)
 
 class TSimulatorStdPopsim(TSimulator):
     
