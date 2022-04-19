@@ -13,13 +13,35 @@ import msprime
 
 class TSimulator:
     def __init__(self):
-        self.trees = None
-        
+        self.trees = None        
     
     def read_simulation(self, file):
         self.trees = tskit.load(file)
-
         
+    @staticmethod
+    def simulate_more_mutations(arguments, randomGenerator, logfile):
+        """
+        Add more mutations to existing tskit object
+
+        Parameters
+        ----------
+        arguments : TParams
+        randomGenerator : randomGenerator
+        logfile : logging
+        
+        Returns
+        -------
+        tskit.TreeSequence
+
+        """
+        logfile.info("- Adding more mutations to trees read from " + arguments.tree_file)
+        logfile.add()
+        trees = tskit.load(arguments.tree_file)
+        trees = msprime.sim_mutations(trees, rate = arguments.mu, random_seed = arguments.seed)
+        trees.dump(arguments.out + "_moreMutations.trees")
+        logfile.info("- Wrote new tree file to " + arguments.out + "_moreMutations.trees")
+        logfile.sub()
+
 class TSimulatorStdPopsim(TSimulator):
     
     def __init__(self):
@@ -74,10 +96,12 @@ class TSimulatorMSPrime(TSimulator):
         logfile.add()
 
         trees_msprime = msprime.sim_ancestry(samples=arguments.N, ploidy=arguments.ploidy, sequence_length=arguments.sequence_length, recombination_rate=arguments.recomb_rate)
-        self.trees = msprime.sim_mutations(trees_msprime, rate=arguments.mu)
+        self.trees = msprime.sim_mutations(trees_msprime, rate = arguments.mu, random_seed = arguments.seed)
         self.trees.dump(arguments.out + ".trees")
         
         logfile.info("Writing trees to " + arguments.out + ".trees")
         logfile.sub()
 
         return(self.trees)
+    
+        

@@ -264,12 +264,14 @@ class TTree:
             if inds.ploidy == 1:
                 gt = gt_haploid
             else:
-                gt = inds.get_diploid_genotypes(gt_haploid)            
+                gt = inds.get_diploid_genotypes(gt_haploid)    
             first = np.array([gt - af]).T
-            second = np.array([gt - (1 - af)])
+            second = np.array([gt - af])
             M = np.dot(first, second)
-            M_sum += M / (af * (1 - af))  
+            M = M / (af * (1 - af))          
+            M_sum += M
         M = M_sum / float(num_vars)
+        
         return(M, num_vars)
 
                 

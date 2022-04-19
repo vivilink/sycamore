@@ -109,6 +109,10 @@ if args.task == "simulate":
     variants.writeVariantInfo(trees, samp_ids, args.out)
 
     tt.TTrees.writeStats(ts_object=trees, out=args.out, logfile=logger)
+    
+if args.task == "simulateMoreMutations":
+    logger.info("- TASK: simulateMoreMutations")
+    tsim.TSimulator.simulate_more_mutations(arguments = args, randomGenerator = r, logfile = logger)
         
 #-----------------------
 # ARG statistics
@@ -168,6 +172,10 @@ if args.task == "associate":
     trees_orig = tskit.load(args.tree_file_simulated)
     logger.info("- Reading tree used for Aim's association testing, and for defining variants to be tested by GWAS, from " + args.tree_file)
     trees = tskit.load(args.tree_file)
+    
+    if trees_orig.num_samples != trees.num_samples:
+        raise ValueError("The trees provided with params 'tree_file_simulated' and 'tree_file' must have the same number of samples")
+    
     samp_ids = trees.samples()
     N = len(samp_ids)
 
@@ -177,6 +185,7 @@ if args.task == "associate":
     
     inds = tind.Individuals(args.ploidy, N)
  
+    # TODO: trees_orig and variants_orig should be initialized at the same time, e.g. together in one function. We should not have 2 tree files and 2 variant files just floating around separately
     # TODO: find way to save variants in their tskit format without needing to read the original tree. I only need original tree in association task for this. It would be nice if the only tree that needs to be read would be estimated tree
     # do not provide variant file here but have it estimated from tree, otherwise variants and tree won't match (tree only contains typed variants). The variant file is only useful for simulating phenotypes to be able to keep track of untyped variants
     variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq, args.prop_typed_variants, args.pos_int, r, logger)

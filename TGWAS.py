@@ -339,10 +339,16 @@ class gcta_tGWAS(TtGWAS):
             self.write_covariance_matrix(covariance=covariance, out=out)
         elif covariance_type == "eGRM":
             covariance = tree_obj.get_eGRM(ts_object=ts_object, inds=inds, out=out, logfile=logfile, skip_first_tree=skip_first_tree) 
+            if np.trace(covariance) != inds.num_inds:
+                # raise ValueError("Trace of matrix is not equal to the number of individuals. Was expecting " + str(inds.num_inds) + " but obtained " + str(np.trace(covariance)))
+                logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(inds.num_inds) + " but obtained " + str(np.trace(covariance)))
+
         elif covariance_type == "GRM":
             covariance, mu = tree_obj.get_GRM(variants=variants, inds=inds, out=out, logfile=logfile) 
             if covariance is None:
                 return None
+            if np.trace(covariance) != inds.num_inds:
+                raise ValueError("Trace of matrix is not equal to the number of individuals. Was expecting " + str(inds.num_inds) + " but obtained " + str(np.trace(covariance)))
             self.write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
         else:
             raise ValueError("Did not recognize " + str(covariance_type) + " as a covariance type")

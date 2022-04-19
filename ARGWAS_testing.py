@@ -19,7 +19,7 @@ import argparse
 import logging
 import os
 import sys
-import numpy 
+import numpy as np
 
 os.chdir(os.path.dirname(sys.argv[0]))
 
@@ -108,6 +108,18 @@ variants_relate = tvar.TVariantsFiltered(trees_relate, samp_ids, 0.01, 1, prop_t
 len(list(trees_relate.variants(samples=samp_ids)))
 variants_relate.number_typed
 #-----------------------
+# GRM
+#------------------------
+
+gt = np.array([1,1,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,0])
+af = np.sum(gt) / len(gt)   
+first = np.array([gt - af]).T
+second = np.array([gt - af])
+M = np.dot(first, second)
+M = M / (af * (1 - af))
+np.trace(M)
+
+#--------------------------
 # create phenotypes
 #-----------------------
 
