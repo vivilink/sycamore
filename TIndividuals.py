@@ -28,7 +28,22 @@ class Individuals:
                 assignment += 1
             self.ind_assignment['individual'][i] = assignment
         self.names = ["id_" + str(i) for i in np.arange(0,self.num_inds)]
+    
+    @property
+    def ploidy(self):
+        return self.ploidy
+    
+    @property
+    def num_haplotypes(self):
+        return self.num_haplotypes
+    
+    @property
+    def num_inds(self):
+        return self.num_inds
 
+    @property
+    def names(self):
+        return self.names
                         
     def get_individual(self, haplotype):
         if haplotype > max(self.ind_assignment['haplotype']) or haplotype < min(self.ind_assignment['haplotype']):

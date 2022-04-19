@@ -9,10 +9,16 @@ import numpy as np
 import pandas as pd
 
 class TVariants:
+    """
+    A class containing all variants of a tree, all variants are typed
+    """
     def __init__(self, ts_object, samp_ids):
-        self.number = len(list(ts_object.variants(samples=samp_ids)))
+        self.variants = list(ts_object.variants(samples=samp_ids))
+        self.number = len(self.variants)
+        self.number_typed = self.number
         self.positions = np.empty(self.number)
         self.alleleFreq = np.empty(self.number)
+        self.info_columns = ['var_index', 'position', 'allele_freq', 'typed']
         
         for v, var in enumerate(list(ts_object.variants(samples=samp_ids))):  
             tmp = sum(var.genotypes) / len(var.genotypes)
@@ -20,24 +26,67 @@ class TVariants:
             
             self.positions[v] = var.site.position
             self.alleleFreq[v] = af
+            
+        self.info = pd.DataFrame(index=range(self.number),columns=self.info_columns)
+        self.info['var_index'] = np.arange(self.number)
+        self.info['position'] = self.positions
+        self.info['allele_freq'] = self.alleleFreq
+        self.info['typed'] = "True"
+
         
-    def writeVariantInfo(self, ts_object, samp_ids, name):
-        table = pd.DataFrame()
-        table['var_index'] = np.arange(self.number)
-        table['position'] = self.positions
-        table['allele_freq'] = self.alleleFreq
+    @property
+    def variants(self):
+        return self.variants
+    
+    @property
+    def number(self):
+        return self.number
+    
+    @property
+    def positions(self):
+        return self.positions
+    
+    @property
+    def alleleFreq(self):
+        return self.alleleFreq
+    
+    @property
+    def number_typed(self):
+        return self.number_typed
+
+    @property
+    def info(self):
+        return self.info
         
-        table.to_csv(name + "_simulated_sample_variants.csv", header=True, index=False)
+    def writeVariantInfo(self, ts_object, samp_ids, name, logfile):        
+        logfile.info("- Writing variant info to file '" + name + "_sample_variants.csv'")
+        self.info.to_csv(name + "_sample_variants.csv", header=True, index=False)
         
 class TVariantsFiltered(TVariants):
-    
+    """
+    A class containing all variants of a tree, typed status depends on either what is given by the filtered_variants_file, or if none given it depends on the allele frequency filteres and prop_typed_variants filters
+    """    
     def __init__(self, ts_object, samp_ids, min_allele_freq, max_allele_freq, prop_typed_variants, pos_int, random, logfile, filtered_variants_file = None):
-        
         """
-        When should the filtered_variants_file be provided? If it is provided, the allele frequencies will be the original allele frequencies and the typed status will be predefined
-        Also they may also already be filtered for min and max freq. However, they may not match the tree file?
+        Parameters
+        ----------
+        ts_object : TreeSequence
+            This tree sequence must match the file provided with filtered_variants_file, if provided.
+        samp_ids : numpy.ndarray (dtype=np.int32)
+            Samples given by ts_object.samples()
+        min_allele_freq : float
+        max_allele_freq : float
+        prop_typed_variants : float
+        pos_int : bool
+            Defines if positions of variants are to be saved as integers.
+        random : TRandomGenerator
+        logfile : logger
+        filtered_variants_file : str, optional
+            If provided, it determines the typed status of the variants. Must match ts_object. 
         """
-        
+
+        # TODO: When should the filtered_variants_file be provided? If it is provided, the allele frequencies will be the original allele frequencies and the typed status will be predefined
+        # TODO: Also they may also already be filtered for min and max freq. However, they may not match the tree file?
         # TODO: I don't understand if I should use the variants as a list or not. I don't know how to save them if not as a list (self.variants = trees.variants() or trees.variants does not work. maybe as np.array? but then enumerate in TPhenotypes does not work
         # TODO: develop an iterator for variants that only goes over the typed ones
         self.variants = list(ts_object.variants(samples=samp_ids))
@@ -54,7 +103,7 @@ class TVariantsFiltered(TVariants):
             
             #initialize
             self.number = len(list(ts_object.variants(samples=samp_ids)))
-            self.info = pd.DataFrame(index=range(self.number),columns=['var_index', 'position', 'allele_freq', 'typed'])  
+            self.info = pd.DataFrame(index=range(self.number),columns=self.info_columns)  
            
             #fill by filtering, can't directly fill into info table because number of variants is unknown
             for v, var in enumerate(ts_object.variants(samples=samp_ids)):
@@ -98,7 +147,10 @@ class TVariantsFiltered(TVariants):
 
             #rename if variant file is in old format
             if 'index' in self.info.columns:
-                self.info.rename(columns={'index': 'var_index'}, inplace = True)         
+                self.info.rename(columns={'index': 'var_index'}, inplace = True)     
+            
+            if self.info.columns != self.info_columns:
+                raise ValueError("Columns of variants file do not match the current standard")
           
         #set number typed
         self.number = len(self.info['typed'])
@@ -108,15 +160,14 @@ class TVariantsFiltered(TVariants):
             
         #set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
         self.info['tree_index'] = np.digitize(self.info['position'], ts_object.breakpoints(as_array=True)) - 1
-
-                 
+                        
     def print_genotypes(self, index):        
         file = "genotypes_variant" + str(index) + ".txt"
         self.info['variant'][index].genotypes.tofile(file=file)
         
-    def fill_diploidGenotypes(self, individuals):
-        for v in self.info['variant']:
-            v.site.metadata = []
+    # def fill_diploidGenotypes(self, individuals):
+    #     for v in self.info['variant']:
+    #         v.site.metadata = []
                         
     def writeVariantInfo(self, name, logfile):    
         logfile.info("- Writing variant info to file '" + name + "_filtered_sample_variants.csv'")

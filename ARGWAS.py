@@ -106,9 +106,9 @@ if args.task == "simulate":
         logger.warning("Number of samples in tree does not match number of samples in arguments")
     inds = tind.Individuals(args.ploidy, N)
     variants = tvar.TVariants(trees, samp_ids)
-    variants.writeVariantInfo(trees, samp_ids, args.out)
+    variants.writeVariantInfo(ts_object = trees, samp_ids = samp_ids, out = args.out, logfile = logger)
 
-    tt.TTrees.writeStats(ts_object=trees, out=args.out, logfile=logger)
+    tt.TTrees.writeStats(ts_object = trees, out = args.out, logfile = logger)
     
 if args.task == "simulateMoreMutations":
     logger.info("- TASK: simulateMoreMutations")
