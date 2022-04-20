@@ -254,7 +254,7 @@ class gcta_tGWAS(TtGWAS):
                 end = time.time()
                 logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end-start)) + " s")
             
-        logfile.info("- done running associations")                    
+        logfile.info("- Done running associations")                    
             
     def run_association_one_tree(self, ts_object, variants, tree, inds, out, logfile, covariance_type, skip_first_tree):  
         # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ","  + str(tree.interval.right))
@@ -331,7 +331,7 @@ class gcta_tGWAS(TtGWAS):
 
         Returns
         -------
-        None.
+        Covariance: ndarray(inds.num_inds, inds.num_inds).
 
         """
         if covariance_type == "scaled":

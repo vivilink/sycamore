@@ -242,9 +242,6 @@ if args.task == "associate":
             logger.add()
 
             if m == "HE":
-                logger.info("- Using GCTA Haseman-Elston to test for association between trees and phenotypes")                
-                logger.add()
-
                 tGWAS = gwas.HE_tGWAS(trees, pheno)
                 
                 #write phenotypes in gcta format
@@ -255,20 +252,20 @@ if args.task == "associate":
                 
                 #run association
                 if args.test_only_tree_at is None:    
+                    logger.info("- Running associations test using GCTA Haseman-Elston for a sequence of trees")
+                    logger.add()
                     tGWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=args.out, logfile=logger, covariance_type=args.covariance_type, skip_first_tree=args.skip_first_tree)
+                    logger.sub()
                 else:
+                    logger.info("- Running associations test using GCTA Haseman-Elston for a single tree")
                     tree = trees.at(args.test_only_tree_at)
+                    logger.add()
                     tGWAS.run_association_one_tree(ts_object=trees, variants=variants, tree=tree, inds=inds, out=args.out, logfile=logger, covariance_type=args.covariance_type, skip_first_tree=args.skip_first_tree)
+                    logger.sub()
 
-                tGWAS.write_to_file(trees, args.out, logger)
-                
-                logger.sub()
-
+                tGWAS.write_to_file(trees, args.out, logger)            
                 
             if m == "REML":
-                logger.info("- Using GCTA REML to test for association between trees and phenotypes")                
-                logger.add()
-
                 tGWAS = gwas.REML_tGWAS(trees, pheno)
                 
                 #write phenotypes in gcta format
@@ -279,10 +276,16 @@ if args.task == "associate":
                 
                 #run association
                 if args.test_only_tree_at is None:    
+                    logger.info("- Running associations test using GCTA REML for a sequence of trees")
+                    logger.add()
                     tGWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=args.out, logfile=logger, covariance_type=args.covariance_type, skip_first_tree=args.skip_first_tree)
+                    logger.sub()
                 else:
+                    logger.info("- Running associations test using GCTA REML for a single tree")
                     tree = trees.at(args.test_only_tree_at)
+                    logger.add()
                     tGWAS.run_association_one_tree(ts_object=trees, variants=variants, tree=tree, inds=inds, out=args.out, logfile=logger, covariance_type=args.covariance_type, skip_first_tree=args.skip_first_tree)
+                    logger.sub()
                     
                 tGWAS.write_to_file(trees, args.out, logger)         
                 
