@@ -226,7 +226,7 @@ if args.task == "associate":
 
         pGWAS.OLS(variants, inds, logger)
         pGWAS.write_to_file(variants, args.out, logger)
-        pGWAS.manhattan_plot(variants.info['position'], logger, plots_dir)
+        pGWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
 
         logger.sub()
 

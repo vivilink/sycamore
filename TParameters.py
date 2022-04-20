@@ -14,7 +14,7 @@ class TParameters:
         pass
 
     @staticmethod
-    def initialize(self):
+    def initialize():
         parser = argparse.ArgumentParser(description='Running association tests on variants and trees.')
 
         # general arguments

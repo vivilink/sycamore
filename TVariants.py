@@ -28,9 +28,10 @@ class TVariants:
 
             if len(np.bincount(var.genotypes)) > 2:
                 print(var.genotypes)
+                print(var.alleles)
                 print("af is: ", tmp, "expected homo alt: ", tmp * tmp)
-                print("Invalid genotypes encountered at variant index ", v, ". Currently we cannot accept simulated "
-                                                                            "individuals to be diploid. Genotype counts are ",
+                print("Invalid genotypes encountered at variant index ", v,
+                      ". Currently we cannot accept simulated individuals to be diploid. Genotype counts are ",
                       np.bincount(var.genotypes))
             af = min(tmp, 1 - tmp)
 
@@ -94,7 +95,8 @@ class TVariants:
 
 class TVariantsFiltered(TVariants):
     """
-    A class containing all variants of a tree, typed status depends on either what is given by the filtered_variants_file, or if none given it depends on the allele frequency filteres and prop_typed_variants filters
+    A class containing all variants of a tree, typed status depends on either what is given by the
+    filtered_variants_file, or if none given it depends on the allele frequency filteres and prop_typed_variants filters
     """
 
     def __init__(self, ts_object, samp_ids, min_allele_freq, max_allele_freq, prop_typed_variants, pos_int, random,
@@ -117,9 +119,12 @@ class TVariantsFiltered(TVariants):
             If provided, it determines the typed status of the variants. Must match ts_object. 
         """
 
-        # TODO: When should the filtered_variants_file be provided? If it is provided, the allele frequencies will be the original allele frequencies and the typed status will be predefined
+        # TODO: When should the filtered_variants_file be provided? If it is provided, the allele frequencies will be
+        #  the original allele frequencies and the typed status will be predefined
         # TODO: Also they may also already be filtered for min and max freq. However, they may not match the tree file?
-        # TODO: I don't understand if I should use the variants as a list or not. I don't know how to save them if not as a list (self._variants = trees._variants() or trees._variants does not work. maybe as np.array? but then enumerate in TPhenotypes does not work
+        # TODO: I don't understand if I should use the variants as a list or not. I don't know how to save them if not
+        #  as a list (self._variants = trees._variants() or trees._variants does not work. maybe as np.array? but then
+        #  enumerate in TPhenotypes does not work
         # TODO: develop an iterator for variants that only goes over the typed ones
 
         # build variant object from tree file -> filter!

@@ -155,9 +155,9 @@ class TAssociationTesting_GWAS(TAssociationTesting):
 
         subplot.axhline(y=8, color="red", lw=0.5)
 
-    def manhattan_plot(self, variant_positions, logfile, plots_dir, *args):
+    def manhattan_plot(self, variant_positions, plots_dir, *args):
         fig, ax = plt.subplots(1, figsize=(10, 10))
-        self.manhattan_plot_subset(variant_positions, ax, 0, len(self.p_values), logfile, *args)
+        self.manhattan_plot_subset(variant_positions=variant_positions, subplot=ax, index_min=0, index_max=len(self.p_values), *args)
         fig.tight_layout()
         fig.set_size_inches(30, 30)
         fig.savefig(plots_dir + 'OLS_GWAS.png', bbox_inches='tight')
@@ -176,15 +176,15 @@ class TAssociationTesting_trees(TAssociationTesting):
         # self._check_compatibility(ts_object, phenotypes)
 
     def manhattan_plot(self, variant_positions, subplot, logfile, *args):
-        self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values=self.p_values,
+        self.manhattan_plot_subset(variant_positions=variant_positions, subplot=subplot, index_min=0, index_max=self.num_associations, p_values=self.p_values,
                                    logfile=logfile)
 
     def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, logfile, title_supplement="", *args):
         logfile.info("Plotting " + str(self.num_associations) + " associations")
-        self.manhattan_plot_subset(variant_positions, subplot, 0, self.num_associations, p_values=p_values,
+        self.manhattan_plot_subset(variant_positions=variant_positions, subplot=subplot, index_min=0, index_max=self.num_associations, p_values=p_values,
                                    logfile=logfile, title_supplement=title_supplement)
 
-    def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, p_values, logfile,
+    def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, p_values,
                               title_supplement="", size=1, n_snps_lowess=0, *args):
         """
         Parameters
@@ -254,7 +254,7 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
         start = time.time()
 
         for tree in ts_object.trees():
-            tree_obj = tt.TTree(tree, inds.num_haplotypes)
+            tree_obj = tt.TTree(tree)
 
             self.run_association_one_tree(ts_object=ts_object, variants=variants, tree_obj=tree_obj, inds=inds, out=out,
                                           logfile=logfile, covariance_type=covariance_type,

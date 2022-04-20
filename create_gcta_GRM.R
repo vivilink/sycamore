@@ -1,5 +1,5 @@
 #! /usr/bin/Rscript
-.libPaths("~/R/x86_64-pc-linux-gnu-library/4.0/")
+#.libPaths("~/R/x86_64-pc-linux-gnu-library/4.0/")
 
 library("plinkFile")
 args = commandArgs(trailingOnly=TRUE)
