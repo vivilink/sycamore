@@ -20,15 +20,14 @@ class TSimulator:
         self.trees = tskit.load(file)
         
     @staticmethod
-    def simulate_more_mutations(arguments, randomGenerator, logfile):
+    def simulate_more_mutations(arguments, logfile):
         """
         Add more mutations to existing tskit object
 
         Parameters
         ----------
         arguments : TParams
-        randomGenerator : randomGenerator
-        logfile : logging
+        logfile : IndentedLoggerAdapter
         
         Returns
         -------

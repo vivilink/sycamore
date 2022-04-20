@@ -10,7 +10,7 @@ Created on Mon Aug  9 16:57:18 2021
 import tskit
 import matplotlib.pyplot as plt
 import TPhenotypes as pt
-import TGWAS as gwas
+import TAssociationTesting as gwas
 import TVariants as tvar
 import TIndividuals as tind
 import TSimulator as tsim
@@ -134,35 +134,35 @@ sd_environmental_noise = 1
 prop_causal_mutations = 0.002 #this is only for variants found in sampled haplotypes
 sd_beta_causal_mutations = 1
 pheno_unif = pt.Phenotypes("uniform distr. of causal SNPs", variants, N)
-pheno_unif.simulateEnvNoise(sd_environmental_noise, r)
-pheno_unif.simulateUniform(variants, prop_causal_mutations=prop_causal_mutations, sd_beta_causal_mutations=sd_beta_causal_mutations, random=r)
+pheno_unif.simulate_env_noise(sd_environmental_noise, r)
+pheno_unif.simulate_uniform(variants, prop_causal_mutations=prop_causal_mutations, sd_beta_causal_mutations=sd_beta_causal_mutations, random=r)
 
 # phenotypes with genetic influence, no noise
 pheno_unif_noNoise = pt.Phenotypes("uniform distr., no noise", variants, N)
-pheno_unif_noNoise.simulateFixed(pheno_unif.causal_variants, pheno_unif.causal_variant_indeces, pheno_unif.causal_betas)
-pheno_unif_noNoise.findCausalTrees(trees)
+pheno_unif_noNoise.simulate_fixed(pheno_unif.causal_variants, pheno_unif.causal_variant_indeces, pheno_unif.causal_betas)
+pheno_unif_noNoise.find_causal_trees(trees)
 
 # random phenotypes
 sd_environmental_noise = 1
 pheno_random = pt.Phenotypes("random", variants, N)
-pheno_random.simulateEnvNoise(sd_environmental_noise, r)
+pheno_random.simulate_env_noise(sd_environmental_noise, r)
 
 # fixed causal variant
 sd_environmental_noise = 0
 pheno_fixed = pt.Phenotypes("fixed beta -0.67, no noise", variants, N)
-pheno_fixed.simulateFixed([pheno_unif.causal_variants[2]], pheno_unif.causal_variant_indeces[2], [-0.67])
+pheno_fixed.simulate_fixed([pheno_unif.causal_variants[2]], pheno_unif.causal_variant_indeces[2], [-0.67])
 
 # fixed causal variant with high allele freq
 sd_environmental_noise = 0
 index = np.where(variants.allele_frequencies > 0.4)[0][int(np.floor(len(np.where(variants.allele_frequencies > 0.4)[0]) / 2))]
 pheno_fixed_hp = pt.Phenotypes("fixed high freq beta -0.67, no noise", variants, N)
-pheno_fixed_hp.simulateFixed([variants.variants[index]], index, [-0.67])
+pheno_fixed_hp.simulate_fixed([variants.variants[index]], index, [-0.67])
 
 # fixed causal variant with high allele freq with noise
 sd_environmental_noise = 1
 pheno_fixed_hp_wn = pt.Phenotypes("fixed high freq beta -0.67, with noise", variants, N)
-pheno_fixed_hp_wn.simulateEnvNoise(sd_environmental_noise, r)
-pheno_fixed_hp_wn.simulateFixed([variants.variants[index]], index, [-0.67])
+pheno_fixed_hp_wn.simulate_env_noise(sd_environmental_noise, r)
+pheno_fixed_hp_wn.simulate_fixed([variants.variants[index]], index, [-0.67])
 
 
 
@@ -172,20 +172,20 @@ pheno_fixed_hp_wn.simulateFixed([variants.variants[index]], index, [-0.67])
 # run association tests and plot
 #-----------------------
 
-pGWAS_unif = gwas.TpGWAS(phenotypes=pheno_unif)
+pGWAS_unif = gwas.TAssociationTesting_GWAS(phenotypes=pheno_unif)
 pGWAS_unif.OLS(variants)
-pGWAS_unif_noNoise = gwas.TpGWAS(phenotypes=pheno_unif_noNoise)
+pGWAS_unif_noNoise = gwas.TAssociationTesting_GWAS(phenotypes=pheno_unif_noNoise)
 pGWAS_unif_noNoise.OLS(variants)
 
-pGWAS_random = gwas.TpGWAS(phenotypes=pheno_random)
+pGWAS_random = gwas.TAssociationTesting_GWAS(phenotypes=pheno_random)
 pGWAS_random.OLS(variants)
 
-pGWAS_fixed = gwas.TpGWAS(phenotypes=pheno_fixed)
+pGWAS_fixed = gwas.TAssociationTesting_GWAS(phenotypes=pheno_fixed)
 pGWAS_fixed.OLS(variants)
 
-pGWAS_fixed_hp = gwas.TpGWAS(phenotypes=pheno_fixed_hp)
+pGWAS_fixed_hp = gwas.TAssociationTesting_GWAS(phenotypes=pheno_fixed_hp)
 pGWAS_fixed_hp.OLS(variants)
-pGWAS_fixed_hp_wn = gwas.TpGWAS(phenotypes=pheno_fixed_hp_wn)
+pGWAS_fixed_hp_wn = gwas.TAssociationTesting_GWAS(phenotypes=pheno_fixed_hp_wn)
 pGWAS_fixed_hp_wn.OLS(variants)
 
 
@@ -213,8 +213,8 @@ fig.savefig('sims/sims_13_africans.png', bbox_inches='tight')#
 #-----------------------
 # Mantel
 #-----------------------
-pheno_fixed_hp.findCausalTrees(trees)
-tGWAS_fixed_hp = gwas.TtGWAS(trees, pheno_fixed_hp)
+pheno_fixed_hp.find_causal_trees(trees)
+tGWAS_fixed_hp = gwas.TAssociationTesting_trees(trees, pheno_fixed_hp)
 tGWAS_fixed_hp.runMantel(trees, pheno_fixed, N)
 
 fig, ax = plt.subplots(2,figsize=(30,30))
@@ -230,8 +230,8 @@ fig.savefig('sims/sims_13_randomSeq.png', bbox_inches='tight')#
 # GCTA HE
 #-----------------------
 
-pheno_fixed_hp.findCausalTrees(trees)
-tGWAS_fixed_hp = gwas.TtGWAS(trees, pheno_fixed_hp)
+pheno_fixed_hp.find_causal_trees(trees)
+tGWAS_fixed_hp = gwas.TAssociationTesting_trees(trees, pheno_fixed_hp)
 tGWAS_fixed_hp.runCGTA_HE(trees, N)
 
 fig, ax = plt.subplots(5,figsize=(30,30))
@@ -269,8 +269,8 @@ fig.savefig('sims/sims_16_HE.png', bbox_inches='tight')#
 # GCTA REML
 #-----------------------
 
-pheno_fixed_hp.findCausalTrees(trees)
-tGWAS_fixed_hp_reml = gwas.TtGWAS(trees, pheno_fixed_hp)
+pheno_fixed_hp.find_causal_trees(trees)
+tGWAS_fixed_hp_reml = gwas.TAssociationTesting_trees(trees, pheno_fixed_hp)
 tGWAS_fixed_hp_reml.runGCTA_REML(trees, N)
 
 fig, ax = plt.subplots(5,figsize=(30,30))
