@@ -110,14 +110,20 @@ variants_relate.number_typed
 #-----------------------
 # GRM
 #------------------------
+M_sum = np.zeros(shape=(10000, 10000))  
 
-gt = np.array([1,1,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,0])
-af = np.sum(gt) / len(gt)   
-first = np.array([gt - af]).T
-second = np.array([gt - af])
-M = np.dot(first, second)
-M = M / (af * (1 - af))
-np.trace(M)
+for v in range(100):
+    # gt = np.array([1,1,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,0,1,1,0,1,1,1,1,0,0,0])
+    gt = np.random.binomial(1, 0.1, size=10000)
+    af = np.sum(gt) / len(gt)   
+    first = np.array([gt - af]).T
+    second = np.array([gt - af])
+    M = np.dot(first, second)
+    M = M / (af * (1 - af))
+    len(gt)
+    M_sum += (M / (100))
+np.trace(M_sum)
+
 
 #--------------------------
 # create phenotypes

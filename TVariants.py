@@ -12,26 +12,44 @@ class TVariants:
     """
     A class containing all variants of a tree, all variants are typed
     """
-    def __init__(self, ts_object, samp_ids):
+    def __init__(self, ts_object, samp_ids, pos_int):
         self._variants = list(ts_object.variants(samples=samp_ids))
         self._number = len(self._variants)
         self._number_typed = self._number
         self._positions = np.empty(self._number)
         self._alleleFreq = np.empty(self._number)
-        self._info_columns = ['var_index', 'position', 'allele_freq', 'typed']
+        self._info_columns = ['var_index', 'position', 'allele_freq', 'typed', 'tree_index']
+        self._info = pd.DataFrame(index=range(self._number),columns=self._info_columns)
         
         for v, var in enumerate(list(ts_object.variants(samples=samp_ids))):  
             tmp = sum(var.genotypes) / len(var.genotypes)
+
+            if len(np.bincount(var.genotypes)) > 2:
+                print(var.genotypes)
+                print("af is: ",tmp, "expected homo alt: ", tmp * tmp)
+                print("Invalid genotypes encountered at variant index ", v,". Currently we cannot accept simulated individuals to be diploid. Genotype counts are ", np.bincount(var.genotypes))
             af = min(tmp, 1-tmp)
             
-            self._positions[v] = var.site.position
+            # determine position
+            pos = -1
+            if pos_int == True:
+                pos = round(var.site.position)
+                if v > 0 and pos == self._info['position'][v-1]:
+                    # print("am in special case for v", v)
+                    pos += 1
+            else:
+                pos = var.site.position
+                    
+            self._positions[v] = pos    
             self._alleleFreq[v] = af
             
-        self._info = pd.DataFrame(index=range(self._number),columns=self._info_columns)
         self._info['var_index'] = np.arange(self._number)
         self._info['position'] = self._positions
         self._info['allele_freq'] = self._alleleFreq
         self._info['typed'] = "True"
+        
+        #set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
+        self._info['tree_index'] = np.digitize(self._info['position'], ts_object.breakpoints(as_array=True)) - 1
         
     @property
     def variants(self):
@@ -50,22 +68,6 @@ class TVariants:
         self._number = number
     
     @property
-    def positions(self):
-        return self._positions
-    
-    @positions.setter
-    def positions(self, positions):
-        self._positions = positions
-    
-    @property
-    def alleleFreq(self):
-        return self._alleleFreq
-    
-    @alleleFreq.setter
-    def alleleFreq(self, alleleFreq):
-        self._alleleFreq = alleleFreq
-    
-    @property
     def number_typed(self):
         return self._number_typed
     
@@ -81,9 +83,9 @@ class TVariants:
     def info(self, info):
         self._info = info
         
-    def writeVariantInfo(self, ts_object, samp_ids, name, logfile):        
-        logfile.info("- Writing variant info to file '" + name + "_sample_variants.csv'")
-        self._info.to_csv(name + "_sample_variants.csv", header=True, index=False)
+    def writeVariantInfo(self, ts_object, samp_ids, out, logfile):        
+        logfile.info("- Writing variant info to file '" + out + "_sample_variants.csv'")
+        self._info.to_csv(out + "_sample_variants.csv", header=True, index=False)
         
 class TVariantsFiltered(TVariants):
     """
@@ -112,39 +114,24 @@ class TVariantsFiltered(TVariants):
         # TODO: Also they may also already be filtered for min and max freq. However, they may not match the tree file?
         # TODO: I don't understand if I should use the variants as a list or not. I don't know how to save them if not as a list (self._variants = trees._variants() or trees._variants does not work. maybe as np.array? but then enumerate in TPhenotypes does not work
         # TODO: develop an iterator for variants that only goes over the typed ones
-        super().__init__(ts_object, samp_ids)    
-    
-        self._number = -1
-        self._number_typed = -1
+
         
         #build variant object from tree file -> filter!
         if filtered_variants_file is None:
+            
+            super().__init__(ts_object = ts_object, samp_ids = samp_ids, pos_int = pos_int)    
+        
+            self._number_typed = -1
 
             logfile.info("- Building variant information from scratch based on simulated trees")
 
             if min_allele_freq < 0 or max_allele_freq < 0 or min_allele_freq > 1 or max_allele_freq > 1 or min_allele_freq > max_allele_freq:
                 raise ValueError("allele frequency filters are nonsensical")
-            
-            #initialize
-            self._number = len(list(ts_object.variants(samples=samp_ids)))
-            self._info = pd.DataFrame(index=range(self._number),columns=self._info_columns)  
-           
-            #fill by filtering, can't directly fill into info table because number of variants is unknown
+                     
+            #determine typed status for each variant
             for v, var in enumerate(ts_object.variants(samples=samp_ids)):
-                tmp = sum(var.genotypes) / len(var.genotypes)
-                af = min(tmp, 1-tmp)
-                
-                # determine position
-                pos = -1
-                if pos_int == True:
-                    pos = round(var.site.position)
-                    if v > 0 and pos == self._info['position'][v-1]:
-                        # print("am in special case for v", v)
-                        pos += 1
-                else:
-                    pos = var.site.position
-                
                 #is variant typed? Depends on freq filter and proportion typed
+                af = self._info['allele_freq'].iloc[v]
                 if af >= min_allele_freq and af <= max_allele_freq:
                     if prop_typed_variants == 1:
                         typed = True                        
@@ -157,8 +144,8 @@ class TVariantsFiltered(TVariants):
                 else:
                     typed = False
                     
-                #add to table
-                self._info.iloc[v] = [v, pos, af, typed]
+                #change in table
+                self._info["typed"].iloc[v] = typed
         
         #variants are already filtered -> read from file!
         else:
@@ -177,6 +164,9 @@ class TVariantsFiltered(TVariants):
                 raise ValueError("Columns of variants file do not match the current standard")            
             if len(self._info['var_index']) != self._number != len(self._variants):
                 raise ValueError("Variant file " + filtered_variants_file + " contains " + str(len(self._info['var_index'])) + " variants, expected " + str(self._number))
+            if 'tree_index' not in self._info.columns:
+                #set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
+                self._info['tree_index'] = np.digitize(self._info['position'], ts_object.breakpoints(as_array=True)) - 1
 
             #remove variants that now do not pass the frequency filter
             self._info['typed'].iloc[self._info['allele_freq'] < min_allele_freq] = False
@@ -184,9 +174,6 @@ class TVariantsFiltered(TVariants):
 
         #set number typed for both cases (built from scratch or file)
         self._number_typed = self._info['typed'].value_counts()[True]
-
-        #set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
-        self._info['tree_index'] = np.digitize(self._info['position'], ts_object.breakpoints(as_array=True)) - 1
                         
     def print_genotypes(self, index):        
         file = "genotypes_variant" + str(index) + ".txt"

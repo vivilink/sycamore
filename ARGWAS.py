@@ -105,7 +105,7 @@ if args.task == "simulate":
     if args.N != N:
         logger.warning("Number of samples in tree does not match number of samples in arguments")
     inds = tind.Individuals(args.ploidy, N)
-    variants = tvar.TVariants(trees, samp_ids)
+    variants = tvar.TVariants(ts_object = trees, samp_ids = samp_ids, pos_int = args.pos_int)
     variants.writeVariantInfo(ts_object = trees, samp_ids = samp_ids, out = args.out, logfile = logger)
 
     tt.TTrees.writeStats(ts_object = trees, out = args.out, logfile = logger)
@@ -188,11 +188,11 @@ if args.task == "associate":
     # TODO: trees_orig and variants_orig should be initialized at the same time, e.g. together in one function. We should not have 2 tree files and 2 variant files just floating around separately
     # TODO: find way to save variants in their tskit format without needing to read the original tree. I only need original tree in association task for this. It would be nice if the only tree that needs to be read would be estimated tree
     # do not provide variant file here but have it estimated from tree, otherwise variants and tree won't match (tree only contains typed variants). The variant file is only useful for simulating phenotypes to be able to keep track of untyped variants
-    variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq, args.prop_typed_variants, args.pos_int, r, logger)
-    
+    variants = tvar.TVariantsFiltered(ts_object = trees, samp_ids = samp_ids, min_allele_freq = args.min_allele_freq, max_allele_freq = args.max_allele_freq, prop_typed_variants = args.prop_typed_variants, pos_int = args.pos_int, random = r, logfile = logger)
+
     #variants_orig are used to simulate phenotypes. They need to be consistent with original tree and the typed status that might have been defined earlier with a variants file. 
     #The causal mutation should not be affected by a freq filter
-    variants_orig = tvar.TVariantsFiltered(trees_orig, samp_ids, 0, 1, 1, args.pos_int, r, logger, args.variants_file)
+    variants_orig = tvar.TVariantsFiltered(ts_object = trees_orig, samp_ids = samp_ids, min_allele_freq = 0, max_allele_freq = 1, prop_typed_variants = 1, pos_int = args.pos_int, random = r, logfile = logger, filtered_variants_file = args.variants_file)
     
     #--------------------------------
     # create phenotypes
@@ -200,7 +200,7 @@ if args.task == "associate":
 
     pheno = pt.Phenotypes(variants = variants_orig, inds = inds, logfile = logger)
     
-    pheno.simulate(args = args, r = r, logfile = logger, variants_orig = variants_orig, inds = inds, trees = trees, plots_dir = plots_dir)
+    pheno.simulate(args = args, r = r, logfile = logger, variants_orig = variants_orig, trees = trees, inds = inds, plots_dir = plots_dir)
 
     #--------------------------------
     # run association tests and plot
@@ -248,7 +248,7 @@ if args.task == "associate":
                 if args.covariance_type == "eGRM" or args.covariance_type == "GRM":
                     pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)     
                 else:
-                    pheno.write_to_file_gcta_scaled(args.out, logger)     
+                    pheno.write_to_file_gcta_scaled(out = args.out, logfile = logger)     
                 
                 #run association
                 if args.test_only_tree_at is None:    
@@ -270,9 +270,9 @@ if args.task == "associate":
                 
                 #write phenotypes in gcta format
                 if args.covariance_type == "eGRM" or args.covariance_type == "GRM":
-                    pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)     
+                    pheno.write_to_file_gcta_eGRM(inds = inds, out = args.out, logfile = logger)     
                 else:
-                    pheno.write_to_file_gcta_scaled(inds=inds, out=args.out, logfile=logger)  
+                    pheno.write_to_file_gcta_scaled(out = args.out, logfile = logger)  
                 
                 #run association
                 if args.test_only_tree_at is None:    

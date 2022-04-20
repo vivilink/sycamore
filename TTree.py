@@ -250,7 +250,7 @@ class TTree:
         np.array if there are variants that are typed and have allele freq > 0. Otherwise None.
 
         """
-        tree_variant_info = variants.info[(variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (variants.info['allele_freq'] > 0.0)]
+        # tree_variant_info = variants.info[(variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (variants.info['allele_freq'] > 0.0)]
         tree_variants = np.array(variants.variants)[(variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (variants.info['allele_freq'] > 0.0)]   
         num_vars = tree_variants.shape[0]
         if num_vars == 0:
@@ -258,21 +258,21 @@ class TTree:
         
         #loop over variants
         M_sum = np.zeros(shape=(inds.num_inds, inds.num_inds))  
-        for v_i in range(num_vars):
-            af = tree_variant_info.iloc[v_i]['allele_freq']
+        for v_i in range(num_vars): #range(num_vars)
             gt_haploid = tree_variants[v_i].genotypes
             if inds.ploidy == 1:
                 gt = gt_haploid
             else:
                 gt = inds.get_diploid_genotypes(gt_haploid)    
+            #need unmirrored allele freq
+            af = np.sum(gt) / len(gt)   
             first = np.array([gt - af]).T
             second = np.array([gt - af])
             M = np.dot(first, second)
-            M = M / (af * (1 - af))          
+            M = M / (af * (1 - af))     
             M_sum += M
-        M = M_sum / float(num_vars)
-        
-        return(M, num_vars)
+        M_tree = M_sum / float(num_vars)
+        return(M_tree, num_vars)
 
                 
     def solving_function(self, array, inds):   
