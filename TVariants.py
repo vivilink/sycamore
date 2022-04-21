@@ -20,7 +20,7 @@ class TVariants:
         self._number_typed = self._number
         self._positions = np.empty(self._number)
         self._alleleFreq = np.empty(self._number)
-        self._info_columns = ['var_index', 'position', 'allele_freq', 'typed', 'tree_index']
+        self._info_columns = ['var_index', 'position', 'allele_freq', 'num_alleles', 'typed', 'tree_index']
         self._info = pd.DataFrame(index=range(self._number), columns=self._info_columns)
 
         for v, var in enumerate(list(ts_object.variants(samples=samp_ids))):

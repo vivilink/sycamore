@@ -27,12 +27,15 @@ class TAssociationTesting:
         self.p_values = np.empty(0)
         # self.p_values_init = False
 
-    # def _check_compatibility(self, ts_object, phenotypes): #check if ts_object is compatible with phenotype if
-    # phenotypes.num_variants != self.num_associations: raise ValueError("Phenotype object must contain same number
-    # of sampled variants as ts_object to create a GWAS object. Phenotype: " + str(phenotypes.num_variants) + " and
-    # ts_object: " + str(self.num_associations)) if phenotypes.N != ts_object.num_samples: raise ValueError(
-    # "Phenotype object must contain same number of samples as ts_object to create a GWAS object. Phenotype: " + str(
-    # phenotypes.N) + " and ts_object: " + str(ts_object.num_samples))
+    # def _check_compatibility(self, ts_object, phenotypes):
+    # #check if ts_object is compatible with phenotype
+    # if phenotypes.num_variants != self.num_associations:
+    #   raise ValueError("Phenotype object must contain same number
+    #                      of sampled variants as ts_object to create a GWAS object. Phenotype: " +
+    #                      str(phenotypes.num_variants) + " and ts_object: " + str(self.num_associations))
+    # if phenotypes.N != ts_object.num_samples:
+    #   raise ValueError( "Phenotype object must contain same number of samples as ts_object to create a GWAS object.
+    #                       Phenotype: " + str(phenotypes.N) + " and ts_object: " + str(ts_object.num_samples))
 
     def p_value_dist(self, subplot, num_bins):
         subplot.hist(self.p_values, bins=num_bins)
@@ -176,13 +179,13 @@ class TAssociationTesting_trees(TAssociationTesting):
         # self._check_compatibility(ts_object, phenotypes)
 
     def manhattan_plot(self, variant_positions, subplot, logfile, *args):
-        self.manhattan_plot_subset(variant_positions=variant_positions, subplot=subplot, index_min=0, index_max=self.num_associations, p_values=self.p_values,
-                                   logfile=logfile)
+        self.manhattan_plot_subset(variant_positions=variant_positions, subplot=subplot, index_min=0,
+                                   index_max=self.num_associations, p_values=self.p_values)
 
     def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, logfile, title_supplement="", *args):
         logfile.info("Plotting " + str(self.num_associations) + " associations")
-        self.manhattan_plot_subset(variant_positions=variant_positions, subplot=subplot, index_min=0, index_max=self.num_associations, p_values=p_values,
-                                   logfile=logfile, title_supplement=title_supplement)
+        self.manhattan_plot_subset(variant_positions=variant_positions, subplot=subplot, index_min=0,
+                                   index_max=self.num_associations, p_values=p_values, title_supplement=title_supplement)
 
     def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, p_values,
                               title_supplement="", size=1, n_snps_lowess=0, *args):
@@ -197,6 +200,10 @@ class TAssociationTesting_trees(TAssociationTesting):
             Min index of variants that should be plotted. Refers to index within TVariants object.
         index_max : int
             Max index of variants that should be plotted. Refers to index within TVariants object.
+        p_values: np.array
+            p-values to be plotted
+        title_supplement: str
+            Supplementary text to print in plot title
         size : int, optional
             Size of the points in scatter plot. The default is 1.
         n_snps_lowess : int, optional
@@ -296,14 +303,16 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
             if covariance is not None:
                 self.run_association_one_tree_gcta(tree_obj, out)
 
-    def write_covariance_matrix(self, covariance, out):
+    @staticmethod
+    def write_covariance_matrix_R(covariance, out):
         with open(out + '_GRM_covariance.txt', 'w') as f:
             np.savetxt(f, covariance)
         f.close()
 
         subprocess.call(["Rscript", os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])
 
-    def write_covariance_matrix_bin(self, covariance, mu, inds, out):
+    @staticmethod
+    def write_covariance_matrix_bin(covariance, mu, inds, out):
         """
         Write out eGRM in GCTA binary format.
         :param: covariance numpy.ndarray of expected relatedness
@@ -312,7 +321,6 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
         :param: str of output
         :returns: None
         """
-        # todo: write out 3 files in GCTA format
         # K = prefix_path.grm.bin; relatedness diagonal + lower diagonal
         # mu = prefix_path.grm.N.bin; number of shared mutations between individuals on diagonal + lower diagonal
         # samples = prefix_path.grm.id; 2 column text = family_id individual_id
@@ -343,13 +351,12 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
         Parameters
         ----------
         ts_object : tskit.treeSequence
+        variants : TVariants
         tree_obj : TTree.py
-            The tree for which the association test is run.
         inds : TInds
         covariance_type : str
-            The method used to calculate the covariance matrix.
         out : str
-            Out file prefix.
+        skip_first_tree: bool
         logfile : IndentedLoggerAdapter
 
         Raises
@@ -364,7 +371,7 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
         """
         if covariance_type == "scaled":
             covariance = tree_obj.get_covariance_scaled(inds=inds)
-            self.write_covariance_matrix(covariance=covariance, out=out)
+            self.write_covariance_matrix_R(covariance=covariance, out=out)
 
         elif covariance_type == "eGRM":
             covariance = tree_obj.get_eGRM(ts_object=ts_object, inds=inds, out=out, logfile=logfile,
@@ -398,7 +405,7 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
 
 class TAssociationTesting_trees_gcta_HE(TAssociationTesting_trees_gcta):
     """
-    tree-based asssociation testing using GCTA Haseman-Elston algorithm
+    tree-based association testing using GCTA Haseman-Elston algorithm
     """
 
     def __init__(self, ts_object, phenotypes):
@@ -604,7 +611,7 @@ class TTreeAssociation_Mantel(TAssociationTesting_trees):
             tmrca = tree_obj.TMRCA(inds.num_haplotypes)
             # print("tmrca",tmrca)
             self.p_values[tree.index] = ut.mantel(tmrca, diffs)
-            if (self.p_values[tree.index] < 0):
+            if self.p_values[tree.index] < 0:
                 print(tmrca)
                 raise ValueError("p-value is negative")
 

@@ -182,9 +182,9 @@ if args.task == "associate":
 
     inds = tind.Individuals(args.ploidy, N)
 
-    # TODO: trees_orig and variants_orig should be initialized at the same time, e.g. together in one function. We
-    #  should not have 2 tree files and 2 variant files just floating around separately TODO: find way to save
-    #   variants in their tskit format without needing to read the original tree. I only need original tree in
+    # TODO: trees_orig and variants_orig should be initialized at the same time, e.g. together in one function. We should not have 2 tree files and 2 variant files just floating around separately
+
+    #  TODO: find way to save variants in their tskit format without needing to read the original tree. I only need original tree in
     #   association task for this. It would be nice if the only tree that needs to be read would be estimated tree do
     #   not provide variant file here but have it estimated from tree, otherwise variants and tree won't match (tree
     #   only contains typed variants). The variant file is only useful for simulating phenotypes to be able to keep
@@ -222,11 +222,11 @@ if args.task == "associate":
     if args.ass_method == "GWAS" or args.ass_method == "both":
         logger.info("- GWAS:")
         logger.add()
-        pGWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=variants.number_typed)
+        GWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=variants.number_typed)
 
-        pGWAS.OLS(variants, inds, logger)
-        pGWAS.write_to_file(variants, args.out, logger)
-        pGWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
+        GWAS.OLS(variants, inds, logger)
+        GWAS.write_to_file(variants, args.out, logger)
+        GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
 
         logger.sub()
 
@@ -250,7 +250,7 @@ if args.task == "associate":
             logger.add()
 
             if m == "HE":
-                tGWAS = gwas.TAssociationTesting_trees_gcta_HE(trees, pheno)
+                treeWAS = gwas.TAssociationTesting_trees_gcta_HE(trees, pheno)
 
                 # write phenotypes in gcta format
                 if args.covariance_type == "eGRM" or args.covariance_type == "GRM":
@@ -262,22 +262,23 @@ if args.task == "associate":
                 if args.test_only_tree_at is None:
                     logger.info("- Running associations test using GCTA Haseman-Elston for a sequence of trees")
                     logger.add()
-                    tGWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=args.out, logfile=logger,
-                                          covariance_type=args.covariance_type, skip_first_tree=args.skip_first_tree)
+                    treeWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=args.out, logfile=logger,
+                                            covariance_type=args.covariance_type, skip_first_tree=args.skip_first_tree)
                     logger.sub()
                 else:
                     logger.info("- Running associations test using GCTA Haseman-Elston for a single tree")
-                    tree = trees.at(args.test_only_tree_at)
                     logger.add()
-                    tGWAS.run_association_one_tree(ts_object=trees, variants=variants, tree=tree, inds=inds,
-                                                   out=args.out, logfile=logger, covariance_type=args.covariance_type,
-                                                   skip_first_tree=args.skip_first_tree)
+                    tree = trees.at(args.test_only_tree_at)
+                    tree_obj = tt.TTree(tree)
+                    treeWAS.run_association_one_tree(ts_object=trees, variants=variants, tree_obj=tree_obj, inds=inds,
+                                                     out=args.out, logfile=logger, covariance_type=args.covariance_type,
+                                                     skip_first_tree=args.skip_first_tree)
                     logger.sub()
 
-                tGWAS.write_to_file(trees, args.out, logger)
+                treeWAS.write_to_file(trees, args.out, logger)
 
             if m == "REML":
-                tGWAS = gwas.TAssociationTesting_trees_gcta_REML(trees, pheno)
+                treeWAS = gwas.TAssociationTesting_trees_gcta_REML(trees, pheno)
 
                 # write phenotypes in gcta format
                 if args.covariance_type == "eGRM" or args.covariance_type == "GRM":
@@ -289,19 +290,20 @@ if args.task == "associate":
                 if args.test_only_tree_at is None:
                     logger.info("- Running associations test using GCTA REML for a sequence of trees")
                     logger.add()
-                    tGWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=args.out, logfile=logger,
-                                          covariance_type=args.covariance_type, skip_first_tree=args.skip_first_tree)
+                    treeWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=args.out, logfile=logger,
+                                            covariance_type=args.covariance_type, skip_first_tree=args.skip_first_tree)
                     logger.sub()
                 else:
                     logger.info("- Running associations test using GCTA REML for a single tree")
-                    tree = trees.at(args.test_only_tree_at)
                     logger.add()
-                    tGWAS.run_association_one_tree(ts_object=trees, variants=variants, tree=tree, inds=inds,
-                                                   out=args.out, logfile=logger, covariance_type=args.covariance_type,
-                                                   skip_first_tree=args.skip_first_tree)
+                    tree = trees.at(args.test_only_tree_at)
+                    tree_obj = tt.TTree(tree)
+                    treeWAS.run_association_one_tree(ts_object=trees, variants=variants, tree_obj=tree_obj, inds=inds,
+                                                     out=args.out, logfile=logger, covariance_type=args.covariance_type,
+                                                     skip_first_tree=args.skip_first_tree)
                     logger.sub()
 
-                tGWAS.write_to_file(trees, args.out, logger)
+                treeWAS.write_to_file(trees, args.out, logger)
 
                 logger.sub()
 
