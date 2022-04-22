@@ -70,8 +70,11 @@ class TParameters:
         pty = parser.add_argument_group('simulating phenotypes')
         pty.add_argument('--ploidy', type=int, choices=[1, 2],
                          help="Ploidy of individuals. Haplotypes will be assigned to individuals in increasing order")
-        pty.add_argument('--pty_sd_envNoise', type=float, default=0,
+        pty.add_argument('--pty_sd_envNoise', type=float,
                          help="Std. dev. for environmental noise. If set to 0, no noise will be simulated.")
+        pty.add_argument('--pty_h_squared', type=float,
+                         help="Heritability (h^2) of simulated phenotype. The environmental noise will be simulated in "
+                              "order to satisfy the request.")
         pty.add_argument('--pty_sim_method',
                          choices=['null', 'uniform', 'fixed', 'singleTyped', 'singleUntyped', "allelicHetero",
                                   "oneTree"],

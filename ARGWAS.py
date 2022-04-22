@@ -66,13 +66,13 @@ logger.info("- Adding plots to the following directory '" + str(args.out) + "_pl
 # -----------------------------
 # initialize random generator
 # -----------------------------
-class RandomGenerator:
+class TRandomGenerator:
     def __init__(self, seed):
         self.seed = seed
         self.random = RandomState(seed)
 
 
-r = RandomGenerator(args.seed)
+r = TRandomGenerator(args.seed)
 
 logger.info("- randomGenerator seed is set to " + str(r.random.get_state()[1][0]))
 
@@ -204,11 +204,14 @@ if args.task == "associate":
     # --------------------------------
     # create phenotypes
     # --------------------------------
+    logger.info("- Phenotypes:")
+    logger.add()
 
     pheno = pt.Phenotypes(variants=variants_orig, inds=inds, logfile=logger)
 
     pheno.simulate(args=args, r=r, logfile=logger, variants_orig=variants_orig, trees=trees, inds=inds,
                    plots_dir=plots_dir)
+    logger.sub()
 
     # --------------------------------
     # run association tests and plot

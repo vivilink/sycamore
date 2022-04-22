@@ -10,13 +10,19 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
 # TODO: being typed or not should be an option for all causal variants
+import numpy as np
+
 
 class Phenotypes:
+    _y: np.ndarray
+    _genetic_variance: float
+
     def __init__(self, variants, inds, logfile):
         self.num_inds = inds.num_inds
-        self.y = np.zeros(self.num_inds)
+        self._y = np.zeros(self.num_inds)
+        self._random_noise = np.zeros(self.num_inds)
+        self._genetic_variance = -1.0
         self.betas = [0] * variants.number
         self.causal_variants = []
         self.causal_betas = []
@@ -26,33 +32,73 @@ class Phenotypes:
         self.causal_tree_indeces = []
         self.filled = False
 
+    @property
+    def y(self):
+        return self._y
+
+    @y.setter
+    def y(self, y: np.ndarray):
+        self._y = y
+
+    @property
+    def genetic_variance(self):
+        return self._genetic_variance
+
+    @genetic_variance.setter
+    def genetic_variance(self, genetic_variance: float):
+        self._genetic_variance = genetic_variance
+
     def simulate(self, args, r, logfile, variants_orig, inds, trees, plots_dir):
         """
-        Simulate phenotypes with different genetic architecture
+        Simulate phenotypes
+        :param args: TArgs
+        :param r: TRandomGenerator
+        :param logfile: IndentedLoggerAdapter
+        :param variants_orig: TVariants
+        :param inds: TInds
+        :param trees: tskit.TreeSequence
+        :param plots_dir: str
+        :return:
+        """
+        # simulate trait architecture
+        self.simulate_trait_architecture(args=args, r=r, logfile=logfile, variants_orig=variants_orig, inds=inds,
+                                         trees=trees, plots_dir=plots_dir)
 
-        Parameters
-        ----------
-        args : TYPE
-            DESCRIPTION.
-        r : TRandomGenerator
-        logfile : IndentedLoggerAdapter
-        variants_orig : TVariantsFiltered
-            The variants from the original tree containing also untyped variants
-        inds : TInds
-        trees : tskit.TreeSequence
-            The trees on which the association tests should be run (?).
-        plots_dir : str
-            Location where plots helpful for diagnostics should be written to.
+        # calculate genetic variance
+        self._genetic_variance = np.var(self._y)
+        logfile.info("- Simulated phenotypes with genetic variance " + str(self._genetic_variance))
 
-        Raises
-        ------
-        ValueError
-            Many errors are raised when parameters provided are not compatible.
+        # simulate noise
+        if args.pty_sd_envNoise is None and args.pty_h_squared is not None:
+            self._random_noise = self.simulate_env_noise_h(requested_hsquared=args.pty_h_squared, random=r)
+            logfile.info("- Simulated random noise to result in h^2 " + str(args.pty_h_squared))
+        elif args.pty_h_squared is None and args.pty_sd_envNoise is not None:
+            self._random_noise = self.simulate_env_noise_sd(sd_random_noise=args.pty_sd_envNoise, random=r)
+            logfile.info("- Simulated random noise with sd " + str(args.pty_sd_envNoise))
+        else:
+            raise ValueError("Must provide random noise distribution parameter. Either set noise sd with "
+                             "'pty_sd_envNoise' or heritability with 'pty_h_squared'")
 
-        Returns
-        -------
-        None.
+        self._y += self._random_noise
 
+        # self.standardize(logfile)
+
+        # write phenotypes to file
+        self.write_to_file(variants_orig, inds, args.out, logfile)
+
+        self.filled = True
+
+    def simulate_trait_architecture(self, args, r, logfile, variants_orig, inds, trees, plots_dir):
+        """
+        Simulate phenotype's genetic architecture
+        :param args: TArgs
+        :param r: TRandomGenerator
+        :param logfile: IndentedLoggerAdapter
+        :param variants_orig: TVariants
+        :param inds: TInds
+        :param trees: tskit.TreeSequence
+        :param plots_dir: str
+        :return:
         """
 
         if args.pty_sim_method is None:
@@ -71,7 +117,7 @@ class Phenotypes:
                                   sd_beta_causal_mutations=args.pty_sd_beta_causal_mutations, random=r, logfile=logfile)
 
         elif args.pty_sim_method == 'fixed':
-            if args.pty_fixed_betas == None:
+            if args.pty_fixed_betas is None:
                 raise ValueError("Must provide beta values provided for 'fixed' phenotype using '--pty_fixed_betas'")
 
             logfile.info("- Simulating phenotypes based on the following indeces: " + str(
@@ -206,45 +252,38 @@ class Phenotypes:
                                 betas=fixed_betas, logfile=logfile)
             logfile.sub()
 
-        # write phenotypes to file
-        logfile.info("- Simulating random noise with sd " + str(args.pty_sd_envNoise))
-
-        # count = (self.y == 0).sum()
-        # print("number of zeros in y", count)
-
-        self.simulate_env_noise(args.pty_sd_envNoise, r)
-        # self.standardize(logfile)
-        self.write_to_file(variants_orig, inds, args.out, logfile)
-
     @staticmethod
     def return_random_state(random):
         print(random.random.get_state()[1][0])
         print(random.random.uniform(0, 1, 1))
 
-    def simulate_env_noise(self, sd_environmental_noise, random):
-        """       
-        Simulate random noise around zero
-        
-        Parameters
-        ----------
-        sd_environmental_noise : float
-            sd of normal distribution for environmental noise.
-
-        Returns
-        -------
-        None.
+    def simulate_env_noise_sd(self, sd_random_noise, random):
         """
-        self.y += random.random.normal(loc=0, scale=sd_environmental_noise, size=self.num_inds)
-        self.filled = True
+        Simulate random noise according to N(0, sd_random_noise)
+        :param sd_random_noise: float
+        :param random: TRandomGenerator
+        :return noise: np.array
+        """
+        noise = random.random.normal(loc=0, scale=sd_random_noise, size=self.num_inds)
+        return noise
+
+    def simulate_env_noise_h(self, requested_hsquared, random):
+        """
+        Simulate random noise according to requested heritability and actual genetic variance
+        :param requested_hsquared: float
+        :param random: TRandomGenerator
+        :return noise: np.array
+        """
+        V_G = self._genetic_variance
+        V_E = V_G * (1 - requested_hsquared) / requested_hsquared
+        sd_random_noise = np.sqrt(V_E)
+        noise = random.random.normal(loc=0, scale=sd_random_noise, size=self.num_inds)
+        return noise
 
     def simulate_null(self):
         """
         Do nothing, phenotype will only contain random effect
-
-        Returns
-        -------
-        None.
-
+        :return:
         """
         return
 
@@ -272,11 +311,11 @@ class Phenotypes:
 
             # simulate phenotype
             if inds.ploidy == 1:
-                self.y[var.genotypes == 1] += betas[v]
+                self._y[var.genotypes == 1] += betas[v]
             else:
                 genotypes = inds.get_diploid_genotypes(var.genotypes)
-                self.y[genotypes == 1] += betas[v]
-                self.y[genotypes == 2] += 2.0 * betas[v]
+                self._y[genotypes == 1] += betas[v]
+                self._y[genotypes == 2] += 2.0 * betas[v]
 
             # save causal position
             self.causal_variants.append(var)
@@ -297,7 +336,7 @@ class Phenotypes:
 
         Parameters
         ----------
-        ts_object_variants : TreeSequence.variants
+        variants : TVariants.py
             variants iterator from tskit.
         prop_causal_mutations : float
             proportion of variants that should be causal.
@@ -320,17 +359,17 @@ class Phenotypes:
             if r < prop_causal_mutations:
 
                 # define beta
-                beta = random.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)[0]
+                beta = random.random.normal(loc=mean_beta_causal_mutation, scale=sd_beta_causal_mutations, size=1)[0]
                 self.betas[v] = beta
 
                 # simulate phenotype
                 if inds.ploidy == 1:
-                    self.y[var.genotypes == 1] += beta
-                    self.y[var.genotypes == 2] += 2.0 * beta
+                    self._y[var.genotypes == 1] += beta
+                    self._y[var.genotypes == 2] += 2.0 * beta
                 else:
                     genotypes = inds.get_diploid_genotypes(var.genotypes)
-                    self.y[genotypes == 1] += beta
-                    self.y[genotypes == 2] += 2.0 * beta
+                    self._y[genotypes == 1] += beta
+                    self._y[genotypes == 2] += 2.0 * beta
 
                 # save causal position
                 self.causal_variants.append(var)
@@ -343,7 +382,8 @@ class Phenotypes:
             len(self.causal_variants)) + " causal variants out of a total of " + str(variants.number) + ".")
         self.filled = True
 
-    def simulate_causal_region(self, variants, inds, left_bound, right_bound, sd_beta_causal_mutations, random, logfile):
+    def simulate_causal_region(self, variants, inds, left_bound, right_bound, sd_beta_causal_mutations, random,
+                               logfile):
         # add phenotypic effect to mutations that are uniformly distributed
         for v, var in enumerate(variants.variants):
             # is the variant in the tree
@@ -355,12 +395,12 @@ class Phenotypes:
 
                 # simulate phenotype
                 if inds.ploidy == 1:
-                    self.y[var.genotypes == 1] += beta
-                    self.y[var.genotypes == 2] += 2.0 * beta
+                    self._y[var.genotypes == 1] += beta
+                    self._y[var.genotypes == 2] += 2.0 * beta
                 else:
                     genotypes = inds.get_diploid_genotypes(var.genotypes)
-                    self.y[genotypes == 1] += beta
-                    self.y[genotypes == 2] += 2.0 * beta
+                    self._y[genotypes == 1] += beta
+                    self._y[genotypes == 2] += 2.0 * beta
 
                 # save causal position
                 self.causal_variants.append(var)
@@ -379,14 +419,14 @@ class Phenotypes:
             self.causal_tree_indeces.append(causal_tree.get_index())
 
     def diffs(self):
-        cols = np.tile(self.y, (self.num_inds, 1))
+        cols = np.tile(self._y, (self.num_inds, 1))
         rows = cols.T
         buffer = cols - rows
         return np.abs(buffer)
 
     def standardize(self, logfile):
         logfile.info("- Standardizing phenotypes")
-        self.y = (self.y - np.mean(self.y)) / np.std(self.y)
+        self._y = (self._y - np.mean(self._y)) / np.std(self._y)
 
     def write_to_file_gcta_eGRM(self, inds, out, logfile):
         """
@@ -402,37 +442,38 @@ class Phenotypes:
         tmp_pheno = pd.DataFrame()
         tmp_pheno['1'] = np.repeat(0, self.num_inds)
         tmp_pheno['2'] = inds.names
-        tmp_pheno['3'] = self.y
+        tmp_pheno['3'] = self._y
 
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 
     def write_to_file_gcta_scaled(self, out, logfile):
         """
-        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format will match the binary output created with egrm.
+        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
+        will match the binary output created with egrm.
 
         Returns
         -------
         None.
-
         """
         logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
 
         tmp_pheno = pd.DataFrame()
         tmp_pheno['1'] = np.arange(1, self.num_inds + 1)
         tmp_pheno['2'] = tmp_pheno['1']
-        tmp_pheno['3'] = self.y
+        tmp_pheno['3'] = self._y
 
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 
     def write_to_file(self, variants, inds, out, logfile):
         """
-        write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value)
+        Provide phenotypic variance partitioning information, and information related to each variant's phenotypic effect
 
         Returns
         -------
         None.
 
         """
+        logfile.info("- Writing phenotype data '" + out + "_pheno_causal_vars.csv'")
 
         # results for each variant
         table = pd.DataFrame()
@@ -445,10 +486,12 @@ class Phenotypes:
         table['betas'] = self.betas
         table['power'] = 0
         table.loc[self.causal_variant_indeces, 'power'] = self.causal_power
-        table['genotypic_var'] = np.repeat(float(inds.ploidy), variants.number) * np.array(self.betas) * np.array(
-            self.betas) * np.array(table['allele_freq']) * (
-                                         np.repeat(1.0, variants.number) - np.array(table['allele_freq']))
-        table['phenotypic_var'] = np.var(self.y)
+        table['var_genotypic_from_betas'] = np.repeat(float(inds.ploidy), variants.number) * np.array(
+            self.betas) * np.array(
+            self.betas) * np.array(table['allele_freq']) * (np.repeat(1.0, variants.number) - np.array(
+            table['allele_freq']))
+        table['var_genotypic_empiric'] = np.repeat(self._genetic_variance, variants.number)
+        table['var_random'] = np.repeat(np.var(self._random_noise), variants.number)
+        table['var_phenotypic'] = np.var(self._y)
 
-        logfile.info("- Writing phenotype data '" + out + "_pheno_causal_vars.csv'")
         table.to_csv(out + "_pheno_causal_vars.csv", index=False, header=True)

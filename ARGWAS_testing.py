@@ -134,7 +134,7 @@ sd_environmental_noise = 1
 prop_causal_mutations = 0.002 #this is only for variants found in sampled haplotypes
 sd_beta_causal_mutations = 1
 pheno_unif = pt.Phenotypes("uniform distr. of causal SNPs", variants, N)
-pheno_unif.simulate_env_noise(sd_environmental_noise, r)
+pheno_unif.simulate_env_noise_sd(sd_environmental_noise, r)
 pheno_unif.simulate_uniform(variants, prop_causal_mutations=prop_causal_mutations, sd_beta_causal_mutations=sd_beta_causal_mutations, random=r)
 
 # phenotypes with genetic influence, no noise
@@ -145,7 +145,7 @@ pheno_unif_noNoise.find_causal_trees(trees)
 # random phenotypes
 sd_environmental_noise = 1
 pheno_random = pt.Phenotypes("random", variants, N)
-pheno_random.simulate_env_noise(sd_environmental_noise, r)
+pheno_random.simulate_env_noise_sd(sd_environmental_noise, r)
 
 # fixed causal variant
 sd_environmental_noise = 0
@@ -161,7 +161,7 @@ pheno_fixed_hp.simulate_fixed([variants.variants[index]], index, [-0.67])
 # fixed causal variant with high allele freq with noise
 sd_environmental_noise = 1
 pheno_fixed_hp_wn = pt.Phenotypes("fixed high freq beta -0.67, with noise", variants, N)
-pheno_fixed_hp_wn.simulate_env_noise(sd_environmental_noise, r)
+pheno_fixed_hp_wn.simulate_env_noise_sd(sd_environmental_noise, r)
 pheno_fixed_hp_wn.simulate_fixed([variants.variants[index]], index, [-0.67])
 
 
