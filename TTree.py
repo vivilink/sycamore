@@ -224,9 +224,9 @@ class TTree:
             # run egrm
             # TODO: include eGRM in argwas and remove all this complexity
             if inds.ploidy == 2:
-                logfile.warning(
-                    "WARNING: Individual assignment cannot be passed to eGRM calculation yet, only simulate random "
-                    "phenotypes!")
+                # logfile.warning(
+                #     "WARNING: Individual assignment cannot be passed to eGRM calculation yet, only simulate random "
+                #     "phenotypes!")
                 if skip_first_tree:
                     exit_code = subprocess.call(
                         [os.path.dirname(sys.argv[0]) + "/run_egrm_skipFirstTree.sh", out + "_focal.trees", out])
@@ -246,7 +246,7 @@ class TTree:
             e = np.load(out + ".npy")
             mu = np.load(out + "_mu.npy")
             self.eGRM = e
-        return (e)
+        return self.eGRM
 
     def get_GRM(self, variants, inds, out, logfile):
         """

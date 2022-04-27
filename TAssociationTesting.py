@@ -377,11 +377,11 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
             covariance = tree_obj.get_eGRM(ts_object=ts_object, inds=inds, out=out, logfile=logfile,
                                            skip_first_tree=skip_first_tree)
 
-            if np.trace(covariance) != inds.num_inds:
+            # if np.trace(covariance) != inds.num_inds:
                 # raise ValueError("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
                 # inds.num_inds) + " but obtained " + str(np.trace(covariance)))
-                logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
-                    inds.num_inds) + " but obtained " + str(np.trace(covariance)))
+                # logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
+                #     inds.num_inds) + " but obtained " + str(np.trace(covariance)))
 
         elif covariance_type == "GRM":
             if inds.ploidy == 2:
