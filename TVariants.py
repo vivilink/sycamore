@@ -226,14 +226,14 @@ class TVariantsFiltered(TVariants):
 
         logfile.info("- Building haplotypes for typed variants")
 
+        # can't use v for index because it loops over all variants, not only typed ones
         index = 0
         for v, var in enumerate(self._variants):
             # print(v, self._info.iloc[v]['typed'])
             if self._info.iloc[v]['typed']:
                 # if self._info.iloc[v]['position'] == None :
                 #     print(self._info.iloc[v])
-                haps.iloc[index,
-                5:] = var.genotypes  # can't use v for index because it loops over all variants, not only typed ones
+                haps.iloc[index, 5:] = var.genotypes
                 # if index in [9,10, 11, 12]:
                 #     print("v", v, "positions\n", self._info.iloc[v])
                 index += 1

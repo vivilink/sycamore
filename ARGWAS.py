@@ -93,7 +93,7 @@ if args.task == "simulate":
     else:
         logger.error("use of any simulator besides stdPopSim not tested")
         raise ValueError("use of any simulator besides stdPopSim not tested")
-
+    # TODO: trees should be put in a wrapper class, only this class should import tskit
     trees = simulator.run_simulation(arguments=args, randomGenerator=r, logfile=logger)
 
     samp_ids = trees.samples()
@@ -139,6 +139,9 @@ if args.task == "downsampleVariants":
     logger.info("- TASK: Downsampling variants")
     logger.info("- Reading tree simulations from " + args.tree_file)
     trees = tskit.load(args.tree_file)
+    if args.trees_interval is not None:
+        logger.info("- Running association only on the trees overlapping the following interval: " + str(args.trees_interval))
+        trees = trees.keep_intervals([args.trees_interval], simplify=True)
     samp_ids = trees.samples()
 
     # --------------------------------
@@ -182,13 +185,16 @@ if args.task == "associate":
 
     inds = tind.Individuals(args.ploidy, N)
 
-    # TODO: trees_orig and variants_orig should be initialized at the same time, e.g. together in one function. We should not have 2 tree files and 2 variant files just floating around separately
+    # TODO: trees_orig and variants_orig should be initialized at the same time, e.g. together in one function. We
+    #  should not have 2 tree files and 2 variant files just floating around separately
 
-    #  TODO: find way to save variants in their tskit format without needing to read the original tree. I only need original tree in
-    #   association task for this. It would be nice if the only tree that needs to be read would be estimated tree do
-    #   not provide variant file here but have it estimated from tree, otherwise variants and tree won't match (tree
-    #   only contains typed variants). The variant file is only useful for simulating phenotypes to be able to keep
-    #   track of untyped variants
+    # TODO: find way to save variants in their tskit format without needing to read the original tree. I only need
+    #  original tree in association task for this. It would be nice if the only tree that needs to be read would be
+    #  estimated tree
+
+    #  do not provide variant file here but have it estimated from tree, otherwise variants and tree
+    #  won't match (tree only contains typed variants). The variant file is only useful for simulating phenotypes to
+    #  be able to keep track of untyped variants
     variants = tvar.TVariantsFiltered(ts_object=trees, samp_ids=samp_ids, min_allele_freq=args.min_allele_freq,
                                       max_allele_freq=args.max_allele_freq,
                                       prop_typed_variants=args.prop_typed_variants, pos_int=args.pos_int, random=r,

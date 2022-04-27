@@ -45,7 +45,9 @@ class TParameters:
         parser.add_argument('--prop_typed_variants', type=float, default=1,
                             help="Proportion of variants that are typed (out of the ones that pass the frequency "
                                  "filter).")
-
+        parser.add_argument('--trees_interval', type=int, default=[49e6, 50e6],
+                            help="Proportion of variants that are typed (out of the ones that pass the frequency "
+                                 "filter).")
         # simulating trees
         sim = parser.add_argument_group('simulating trees')
         sim.add_argument('--sim_tree_simulator', dest="sim_tree_simulator", default="stdPopsim",
