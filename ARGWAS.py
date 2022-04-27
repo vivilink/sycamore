@@ -139,9 +139,6 @@ if args.task == "downsampleVariants":
     logger.info("- TASK: Downsampling variants")
     logger.info("- Reading tree simulations from " + args.tree_file)
     trees = tskit.load(args.tree_file)
-    if args.trees_interval is not None:
-        logger.info("- Running association only on the trees overlapping the following interval: " + str(args.trees_interval))
-        trees = trees.keep_intervals([args.trees_interval], simplify=True)
     samp_ids = trees.samples()
 
     # --------------------------------
@@ -168,9 +165,13 @@ if args.task == "associate":
     logger.info("- TASK: Associate")
     logger.info("- Reading simulated tree used for simulating phenotypes from " + args.tree_file_simulated)
     trees_orig = tskit.load(args.tree_file_simulated)
+
     logger.info(
         "- Reading tree used for Aim's association testing, and for defining variants to be tested by GWAS, from " + args.tree_file)
     trees = tskit.load(args.tree_file)
+    if args.trees_interval is not None:
+        logger.info("- Running association only on the trees overlapping the following interval: " + str(args.trees_interval))
+        trees = trees.keep_intervals([args.trees_interval], simplify=True)
 
     if trees_orig.num_samples != trees.num_samples:
         raise ValueError(
