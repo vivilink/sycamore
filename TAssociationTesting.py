@@ -25,6 +25,7 @@ class TAssociationTesting:
         self.phenotypes = phenotypes
         self.num_associations = -1
         self.p_values = np.empty(0)
+        self.p_values.fill(np.nan)
         # self.p_values_init = False
 
     # def _check_compatibility(self, ts_object, phenotypes):
@@ -41,7 +42,7 @@ class TAssociationTesting:
         subplot.hist(self.p_values, bins=num_bins)
         subplot.set(xlabel='p-values', ylabel='density', title=self.phenotypes.name)
 
-    def chiSquared(self, num_bins):
+    def chi_squared(self, num_bins):
         h, bin_edges = np.histogram(self.p_values, num_bins)
         tmp = scipy.stats.chisquare(f_obs=h, f_exp=((len(self.p_values)) / (num_bins)))
         return tmp
@@ -96,8 +97,8 @@ class TAssociationTesting_GWAS(TAssociationTesting):
         table.to_csv(name + "_variants_results.csv", index=False, header=True)
 
         # summary statistics
-        stats = pd.DataFrame({'min_p_value': [min(self.p_values)],
-                              'max_p_value': [max(self.p_values)]
+        stats = pd.DataFrame({'min_p_value': [np.nanmin(self.p_values)],
+                              'max_p_value': [np.nanmax(self.p_values)]
                               })
         logfile.info("- Writing stats from OLS to '" + name + "_variants_stats.csv'")
         stats.to_csv(name + "_variants_stats.csv", index=False, header=True)
@@ -345,6 +346,7 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
                 iid = inds.names[idx]
                 grmfile.write("\t".join([str(fid), str(iid)]) + os.linesep)
 
+    # TODO: could be static?
     def calculate_and_write_covariance_matrix_to_gcta_file(self, ts_object, variants, tree_obj, inds, covariance_type,
                                                            out, skip_first_tree, logfile):
         """
@@ -416,17 +418,27 @@ class TAssociationTesting_trees_gcta_HE(TAssociationTesting_trees_gcta):
 
         # p-value containers
         self.p_values_HECP_OLS = np.empty(self.num_associations)
+        self.p_values_HECP_OLS.fill(np.nan)
         self.p_values_HECP_Jackknife = np.empty(self.num_associations)
+        self.p_values_HECP_Jackknife.fill(np.nan)
         self.p_values_HESD_OLS = np.empty(self.num_associations)
+        self.p_values_HESD_OLS.fill(np.nan)
         self.p_values_HESD_Jackknife = np.empty(self.num_associations)
+        self.p_values_HESD_Jackknife.fill(np.nan)
 
         # other statistics
         self.V_G_over_Vp_HECP = np.empty(self.num_associations)
+        self.V_G_over_Vp_HECP.fill(np.nan)
         self.V_G_over_Vp_HESD = np.empty(self.num_associations)
+        self.V_G_over_Vp_HESD.fill(np.nan)
         self.V_G_over_Vp_SE_OLS_HECP = np.empty(self.num_associations)
+        self.V_G_over_Vp_SE_OLS_HECP.fill(np.nan)
         self.V_G_over_Vp_SE_OLS_HESD = np.empty(self.num_associations)
+        self.V_G_over_Vp_SE_OLS_HESD.fill(np.nan)
         self.V_G_over_Vp_SE_Jackknife_HECP = np.empty(self.num_associations)
+        self.V_G_over_Vp_SE_Jackknife_HECP.fill(np.nan)
         self.V_G_over_Vp_SE_Jackknife_HESD = np.empty(self.num_associations)
+        self.V_G_over_Vp_SE_Jackknife_HESD.fill(np.nan)
 
     def run_association_one_tree_gcta(self, tree, out):
         # create gcta input files, run gcta and parse output
@@ -439,19 +451,19 @@ class TAssociationTesting_trees_gcta_HE(TAssociationTesting_trees_gcta):
 
         # p-values
         self.p_values_HECP_OLS[tree.index] = HE_CP["P_OLS"][1]
-        if (HE_CP["P_OLS"][1] < 0):
+        if HE_CP["P_OLS"][1] < 0:
             raise ValueError("tree index", tree.index, "produced negative p-value for CP OLS")
 
         self.p_values_HECP_Jackknife[tree.index] = HE_CP["P_Jackknife"][1]
-        if (HE_CP["P_Jackknife"][1] < 0):
+        if HE_CP["P_Jackknife"][1] < 0:
             raise ValueError("tree index", tree.index, "produced negative p-value for CP Jackknife")
 
         self.p_values_HESD_OLS[tree.index] = HE_SD["P_OLS"][1]
-        if (HE_SD["P_OLS"][1] < 0):
+        if HE_SD["P_OLS"][1] < 0:
             raise ValueError("tree index", tree.index, "produced negative p-value for SD OLS")
 
         self.p_values_HESD_Jackknife[tree.index] = HE_SD["P_Jackknife"][1]
-        if (HE_SD["P_Jackknife"][1] < 0):
+        if HE_SD["P_Jackknife"][1] < 0:
             raise ValueError("tree index", tree.index, "produced negative p-value for SD Jackknife")
 
         # other statistics
@@ -463,7 +475,7 @@ class TAssociationTesting_trees_gcta_HE(TAssociationTesting_trees_gcta):
         self.V_G_over_Vp_SE_Jackknife_HECP[tree.index] = HE_CP["SE_Jackknife"][1]
         self.V_G_over_Vp_SE_Jackknife_HESD[tree.index] = HE_SD["SE_Jackknife"][1]
 
-    def write_to_file(self, ts_object, name, logfile):
+    def write_to_file(self, ts_object, out, logfile):
         table = pd.DataFrame()
         table['start'] = ts_object.breakpoints(as_array=True)[
                          0:self.num_associations]  # otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
@@ -487,20 +499,20 @@ class TAssociationTesting_trees_gcta_HE(TAssociationTesting_trees_gcta):
         table['causal'] = np.repeat("FALSE", self.num_associations)
         table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
 
-        table.to_csv(name + "_trees_HE_results.csv", index=False, header=True)
-        logfile.info("- Wrote results from tree association tests to '" + name + "_trees_HE_results.csv'")
+        table.to_csv(out + "_trees_HE_results.csv", index=False, header=True)
+        logfile.info("- Wrote results from tree association tests to '" + out + "_trees_HE_results.csv'")
 
-        stats = pd.DataFrame({'min_p_value_HECP_OLS': [min(self.p_values_HECP_OLS)],
-                              'min_p_value_HECP_Jackknife': [min(self.p_values_HECP_Jackknife)],
-                              'min_p_value_HESD_OLS': [min(self.p_values_HESD_OLS)],
-                              'min_p_value_HESD_Jackknife': [min(self.p_values_HESD_Jackknife)],
-                              'max_p_value_HECP_OLS': [max(self.p_values_HECP_OLS)],
-                              'max_p_value_HECP_Jackknife': [max(self.p_values_HECP_Jackknife)],
-                              'max_p_value_HESD_OLS': [max(self.p_values_HESD_OLS)],
-                              'max_p_value_HESD_Jackknife': [max(self.p_values_HESD_Jackknife)]
+        stats = pd.DataFrame({'min_p_value_HECP_OLS': [np.nanmin(self.p_values_HECP_OLS)],
+                              'min_p_value_HECP_Jackknife': [np.nanmin(self.p_values_HECP_Jackknife)],
+                              'min_p_value_HESD_OLS': [np.nanmin(self.p_values_HESD_OLS)],
+                              'min_p_value_HESD_Jackknife': [np.nanmin(self.p_values_HESD_Jackknife)],
+                              'max_p_value_HECP_OLS': [np.nanmax(self.p_values_HECP_OLS)],
+                              'max_p_value_HECP_Jackknife': [np.nanmax(self.p_values_HECP_Jackknife)],
+                              'max_p_value_HESD_OLS': [np.nanmax(self.p_values_HESD_OLS)],
+                              'max_p_value_HESD_Jackknife': [np.nanmax(self.p_values_HESD_Jackknife)]
                               })
-        stats.to_csv(name + "_trees_HE_stats.csv", index=False, header=True)
-        logfile.info("- Wrote stats from HE to '" + name + "_trees_HE_stats.csv'")
+        stats.to_csv(out + "_trees_HE_stats.csv", index=False, header=True)
+        logfile.info("- Wrote stats from HE to '" + out + "_trees_HE_stats.csv'")
 
 
 class TAssociationTesting_trees_gcta_REML(TAssociationTesting_trees_gcta):
@@ -514,18 +526,30 @@ class TAssociationTesting_trees_gcta_REML(TAssociationTesting_trees_gcta):
 
         # results containers
         self.p_values = np.empty(self.num_associations)
+        self.p_values.fill(np.nan)
         self.V_G = np.empty(self.num_associations)
+        self.V_G.fill(np.nan)
         self.V_e = np.empty(self.num_associations)
+        self.V_e.fill(np.nan)
         self.Vp = np.empty(self.num_associations)
+        self.Vp.fill(np.nan)
         self.V_G_over_Vp = np.empty(self.num_associations)
+        self.V_G_over_Vp.fill(np.nan)
         self.logL = np.empty(self.num_associations)
+        self.logL.fill(np.nan)
         self.logL0 = np.empty(self.num_associations)
+        self.logL0.fill(np.nan)
         self.LRT = np.empty(self.num_associations)
+        self.LRT.fill(np.nan)
 
         self.V_G_SE = np.empty(self.num_associations)
+        self.V_G_SE.fill(np.nan)
         self.V_e_SE = np.empty(self.num_associations)
+        self.V_e_SE.fill(np.nan)
         self.Vp_SE = np.empty(self.num_associations)
+        self.Vp_SE.fill(np.nan)
         self.V_G_over_Vp_SE = np.empty(self.num_associations)
+        self.V_G_over_Vp_SE.fill(np.nan)
 
     def run_association_one_tree_gcta(self, tree, out):
         # create gcta input files, run gcta and parse output
@@ -580,8 +604,8 @@ class TAssociationTesting_trees_gcta_REML(TAssociationTesting_trees_gcta):
         table.to_csv(name + "_trees_REML_results.csv", index=False, header=True)
         logfile.info("- Wrote results from tree association tests to '" + name + "_trees_REML_results.csv'")
 
-        stats = pd.DataFrame({'min_p_value': [min(self.p_values)],
-                              'max_p_value': [max(self.p_values)]
+        stats = pd.DataFrame({'min_p_value': [np.nanmin(self.p_values)],
+                              'max_p_value': [np.nanmax(self.p_values)]
                               })
         stats.to_csv(name + "_trees_REML_stats.csv", index=False, header=True)
         logfile.info("- Wrote stats from tree association tests to '" + name + "_trees_REML_stats.csv'")
