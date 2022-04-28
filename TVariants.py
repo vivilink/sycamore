@@ -143,7 +143,7 @@ class TVariantsFiltered(TVariants):
             for v, var in enumerate(ts_object.variants(samples=samp_ids)):
                 # is variant typed? Depends on freq filter and proportion typed
                 af = self._info['allele_freq'].iloc[v]
-                if af >= min_allele_freq and af <= max_allele_freq:
+                if min_allele_freq <= af <= max_allele_freq:
                     if prop_typed_variants == 1:
                         typed = True
                     else:

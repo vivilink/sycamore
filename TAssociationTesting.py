@@ -44,7 +44,7 @@ class TAssociationTesting:
     def chiSquared(self, num_bins):
         h, bin_edges = np.histogram(self.p_values, num_bins)
         tmp = scipy.stats.chisquare(f_obs=h, f_exp=((len(self.p_values)) / (num_bins)))
-        return (tmp)
+        return tmp
 
 
 class TAssociationTesting_GWAS(TAssociationTesting):
@@ -96,9 +96,9 @@ class TAssociationTesting_GWAS(TAssociationTesting):
         table.to_csv(name + "_variants_results.csv", index=False, header=True)
 
         # summary statistics
-        stats = pd.DataFrame()
-        stats['min_p_value'] = min(self.p_values)
-        stats['max_p_value'] = max(self.p_values)
+        stats = pd.DataFrame({'min_p_value': [min(self.p_values)],
+                              'max_p_value': [max(self.p_values)]
+                              })
         logfile.info("- Writing stats from OLS to '" + name + "_variants_stats.csv'")
         stats.to_csv(name + "_variants_stats.csv", index=False, header=True)
 
@@ -160,7 +160,8 @@ class TAssociationTesting_GWAS(TAssociationTesting):
 
     def manhattan_plot(self, variant_positions, plots_dir, *args):
         fig, ax = plt.subplots(1, figsize=(10, 10))
-        self.manhattan_plot_subset(variant_positions=variant_positions, subplot=ax, index_min=0, index_max=len(self.p_values), *args)
+        self.manhattan_plot_subset(variant_positions=variant_positions, subplot=ax, index_min=0,
+                                   index_max=len(self.p_values), *args)
         fig.tight_layout()
         fig.set_size_inches(30, 30)
         fig.savefig(plots_dir + 'OLS_GWAS.png', bbox_inches='tight')
@@ -185,7 +186,8 @@ class TAssociationTesting_trees(TAssociationTesting):
     def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, logfile, title_supplement="", *args):
         logfile.info("Plotting " + str(self.num_associations) + " associations")
         self.manhattan_plot_subset(variant_positions=variant_positions, subplot=subplot, index_min=0,
-                                   index_max=self.num_associations, p_values=p_values, title_supplement=title_supplement)
+                                   index_max=self.num_associations, p_values=p_values,
+                                   title_supplement=title_supplement)
 
     def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, p_values,
                               title_supplement="", size=1, n_snps_lowess=0, *args):
@@ -378,10 +380,10 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
                                            skip_first_tree=skip_first_tree)
 
             # if np.trace(covariance) != inds.num_inds:
-                # raise ValueError("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
-                # inds.num_inds) + " but obtained " + str(np.trace(covariance)))
-                # logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
-                #     inds.num_inds) + " but obtained " + str(np.trace(covariance)))
+            # raise ValueError("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
+            # inds.num_inds) + " but obtained " + str(np.trace(covariance)))
+            # logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
+            #     inds.num_inds) + " but obtained " + str(np.trace(covariance)))
 
         elif covariance_type == "GRM":
             if inds.ploidy == 2:
@@ -488,17 +490,15 @@ class TAssociationTesting_trees_gcta_HE(TAssociationTesting_trees_gcta):
         table.to_csv(name + "_trees_HE_results.csv", index=False, header=True)
         logfile.info("- Wrote results from tree association tests to '" + name + "_trees_HE_results.csv'")
 
-        stats = pd.DataFrame()
-        stats['min_p_value_HECP_OLS'] = min(self.p_values_HECP_OLS)
-        stats['min_p_value_HECP_Jackknife'] = min(self.p_values_HECP_Jackknife)
-        stats['min_p_value_HESD_OLS'] = min(self.p_values_HESD_OLS)
-        stats['min_p_value_HESD_Jackknife'] = min(self.p_values_HESD_Jackknife)
-
-        stats['max_p_value_HECP_OLS'] = max(self.p_values_HECP_OLS)
-        stats['max_p_value_HECP_Jackknife'] = max(self.p_values_HECP_Jackknife)
-        stats['max_p_value_HESD_OLS'] = max(self.p_values_HESD_OLS)
-        stats['max_p_value_HESD_Jackknife'] = max(self.p_values_HESD_Jackknife)
-
+        stats = pd.DataFrame({'min_p_value_HECP_OLS': [min(self.p_values_HECP_OLS)],
+                              'min_p_value_HECP_Jackknife': [min(self.p_values_HECP_Jackknife)],
+                              'min_p_value_HESD_OLS': [min(self.p_values_HESD_OLS)],
+                              'min_p_value_HESD_Jackknife': [min(self.p_values_HESD_Jackknife)],
+                              'max_p_value_HECP_OLS': [max(self.p_values_HECP_OLS)],
+                              'max_p_value_HECP_Jackknife': [max(self.p_values_HECP_Jackknife)],
+                              'max_p_value_HESD_OLS': [max(self.p_values_HESD_OLS)],
+                              'max_p_value_HESD_Jackknife': [max(self.p_values_HESD_Jackknife)]
+                              })
         stats.to_csv(name + "_trees_HE_stats.csv", index=False, header=True)
         logfile.info("- Wrote stats from HE to '" + name + "_trees_HE_stats.csv'")
 
@@ -580,10 +580,10 @@ class TAssociationTesting_trees_gcta_REML(TAssociationTesting_trees_gcta):
         table.to_csv(name + "_trees_REML_results.csv", index=False, header=True)
         logfile.info("- Wrote results from tree association tests to '" + name + "_trees_REML_results.csv'")
 
-        stats = pd.DataFrame()
-        stats['min_p_value'] = min(self.p_values)
-        stats['max_p_value'] = max(self.p_values)
-        stats.to_csv(name + "_trees_stats.csv", index=False, header=True)
+        stats = pd.DataFrame({'min_p_value': [min(self.p_values)],
+                              'max_p_value': [max(self.p_values)]
+                              })
+        stats.to_csv(name + "_trees_REML_stats.csv", index=False, header=True)
         logfile.info("- Wrote stats from tree association tests to '" + name + "_trees_REML_stats.csv'")
 
 
