@@ -18,16 +18,16 @@ class Individuals:
 
         self._ploidy = ploidy
         self._num_haplotypes = N
-        self._num_inds = int(self.num_haplotypes / ploidy)
+        self._num_inds = int(self._num_haplotypes / ploidy)
         self._ind_assignment = pd.DataFrame()
-        self._ind_assignment['haplotype'] = range(0, self.num_haplotypes)
-        self._ind_assignment['individual'] = np.repeat(-1, self.num_haplotypes)
+        self._ind_assignment['haplotype'] = range(0, self._num_haplotypes)
+        self._ind_assignment['individual'] = np.repeat(-1, self._num_haplotypes)
         assignment = -1
         for i in range(self._num_haplotypes):
             if i % 2 == 0:
                 assignment += 1
             self._ind_assignment['individual'][i] = assignment
-        self._names = ["id_" + str(i) for i in np.arange(0, self.num_inds)]
+        self._names = ["id_" + str(i) for i in np.arange(0, self._num_inds)]
 
     @property
     def ploidy(self):
@@ -67,7 +67,7 @@ class Individuals:
         return (self._ind_assignment['individual'][haplotype])['individual']
 
     def get_haplotypes(self, individual):
-        if individual > self.num_inds or individual < 0:
+        if individual > self._num_inds or individual < 0:
             raise ValueError("Individual out of bounds")
 
         tmp = self._ind_assignment['haplotype'].values[self._ind_assignment['individual'] == individual]

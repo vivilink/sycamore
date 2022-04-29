@@ -133,6 +133,7 @@ if args.task == "getTreeAtPosition":
 # -----------------------
 # Downsample variants
 # -----------------------
+# TODO: rename this task, since it also creates shapeit files
 if args.task == "downsampleVariants":
     if args.prop_typed_variants is None:
         raise ValueError("Must provide downsampling probability to task 'downsampleVariant'")
