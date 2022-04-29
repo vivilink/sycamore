@@ -63,7 +63,7 @@ class TParameters:
                          help="Recombination rate for simulating with msprime (does not work for stdPopsim")
         sim.add_argument('--sequence_length', type=float,
                          help="Sequence length for simulating with msprime (does not work for stdPopsim")
-        sim.add_argument('--pos_int', type=float, default=True,
+        sim.add_argument('--pos_int', type=bool, default=True,
                          help="Should the positions of the variants be transformed into integers. Msprime simulates a "
                               "continuous genome, so if pos_int is true, the simulated positions are rounded and if "
                               "one position overlaps the previous, it is moved to the next position in the genome.")

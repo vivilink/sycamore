@@ -39,12 +39,14 @@ class TVariants:
             pos = -1
             if pos_int:
                 pos = round(var.site.position)
-                if v > 0 and pos == self._info['position'][v - 1]:
-                    # print("am in special case for v", v)
+                if v > 0 and pos == self._positions[v - 1]:
+                    # print("am in special case for v", v, "at pos", pos, ". previous pos is", self._positions[v - 1])
                     pos += 1
             else:
                 pos = var.site.position
 
+            if v == 158 or v == 157:
+                print("printing pos ", pos, "for v", v)
             self._positions[v] = pos
             self._alleleFreq[v] = af
 
