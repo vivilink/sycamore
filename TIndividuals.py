@@ -18,7 +18,7 @@ class Individuals:
 
         self._ploidy = ploidy
         self._num_haplotypes = N
-        self._num_inds = int(self._num_haplotypes / ploidy)
+        self._num_inds = int(self._num_haplotypes / self._ploidy)
         self._ind_assignment = pd.DataFrame()
         self._ind_assignment['haplotype'] = range(0, self._num_haplotypes)
         self._ind_assignment['individual'] = np.repeat(-1, self._num_haplotypes)

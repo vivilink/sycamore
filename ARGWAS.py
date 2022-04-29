@@ -141,11 +141,12 @@ if args.task == "downsampleVariants":
     logger.info("- Reading tree simulations from " + args.tree_file)
     trees = tskit.load(args.tree_file)
     samp_ids = trees.samples()
+    N = len(samp_ids)
 
     # --------------------------------
     # create diploids and variants
     # --------------------------------
-    inds = tind.Individuals(args.ploidy, args.N)
+    inds = tind.Individuals(args.ploidy, N)
     inds.write_shapeit2(args.out, logger)
     variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq,
                                       args.prop_typed_variants, args.pos_int, r, logger)
