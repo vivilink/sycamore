@@ -14,7 +14,7 @@ class TVariants:
     A class containing all variants of a tree, all variants are typed
     """
 
-    def __init__(self, ts_object, samp_ids, pos_int):
+    def __init__(self, ts_object, samp_ids):
         self._variants = list(ts_object.variants(samples=samp_ids))
         self._number = len(self._variants)
         self._number_typed = self._number
@@ -23,6 +23,7 @@ class TVariants:
         self._info_columns = ['var_index', 'position', 'allele_freq', 'num_alleles', 'typed', 'tree_index']
         self._info = pd.DataFrame(index=range(self._number), columns=self._info_columns)
 
+    def fill_info(self, ts_object, samp_ids, pos_int):
         for v, var in enumerate(list(ts_object.variants(samples=samp_ids))):
             tmp = sum(var.genotypes) / len(var.genotypes)
 
@@ -39,8 +40,8 @@ class TVariants:
             pos = -1
             if pos_int:
                 pos = round(var.site.position)
-                if v > 0 and pos == self._positions[v - 1]:
-                    # print("am in special case for v", v, "at pos", pos, ". previous pos is", self._positions[v - 1])
+                if v > 0 and pos == self._info['position'][v - 1]:
+                    # print("am in special case for v", v)
                     pos += 1
             else:
                 pos = var.site.position
@@ -127,11 +128,11 @@ class TVariantsFiltered(TVariants):
         #  enumerate in TPhenotypes does not work
         # TODO: develop an iterator for variants that only goes over the typed ones
 
+        super().__init__(ts_object=ts_object, samp_ids=samp_ids, pos_int=pos_int)
+
         # build variant object from tree file -> filter!
         if filtered_variants_file is None:
-
-            super().__init__(ts_object=ts_object, samp_ids=samp_ids, pos_int=pos_int)
-
+            self.fill_info(ts_object, samp_ids, pos_int)
             self._number_typed = -1
 
             logfile.info("- Building variant information from scratch based on simulated trees")
@@ -170,7 +171,7 @@ class TVariantsFiltered(TVariants):
             if 'index' in self._info.columns:
                 self._info.rename(columns={'index': 'var_index'}, inplace=True)
 
-                # check if file is ok
+            # check if file is ok
             if self._info.columns != self._info_columns:
                 raise ValueError("Columns of variants file do not match the current standard")
             if len(self._info['var_index']) != self._number != len(self._variants):
