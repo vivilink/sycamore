@@ -172,7 +172,7 @@ class TVariantsFiltered(TVariants):
                 self._info.rename(columns={'index': 'var_index'}, inplace=True)
 
             # check if file is ok
-            if self._info.columns != self._info_columns:
+            if set(self._info_columns).issubset(set(self._info.columns)):
                 raise ValueError("Columns of variants file do not match the current standard")
             if len(self._info['var_index']) != self._number != len(self._variants):
                 raise ValueError("Variant file " + filtered_variants_file + " contains " + str(
