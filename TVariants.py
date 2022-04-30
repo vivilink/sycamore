@@ -45,8 +45,6 @@ class TVariants:
             else:
                 pos = var.site.position
 
-            if v == 158 or v == 157:
-                print("printing pos ", pos, "for v", v)
             self._positions[v] = pos
             self._alleleFreq[v] = af
 
