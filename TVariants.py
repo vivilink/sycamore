@@ -89,7 +89,7 @@ class TVariants:
     def info(self, info):
         self._info = info
 
-    def write_variant_info(self, ts_object, samp_ids, out, logfile):
+    def write_variant_info(self, out, logfile):
         logfile.info("- Writing variant info to file '" + out + "_sample_variants.csv'")
         self._info.to_csv(out + "_sample_variants.csv", header=True, index=False)
 
@@ -173,7 +173,7 @@ class TVariantsFiltered(TVariants):
 
             # check if file is ok
             if set(self._info_columns).issubset(set(self._info.columns)):
-                raise ValueError("Columns of variants file do not match the current standard")
+                logfile.info("WARNING: Columns of variants file do not match the current standard")
             if len(self._info['var_index']) != self._number != len(self._variants):
                 raise ValueError("Variant file " + filtered_variants_file + " contains " + str(
                     len(self._info['var_index'])) + " variants, expected " + str(self._number))
@@ -196,9 +196,9 @@ class TVariantsFiltered(TVariants):
     #     for v in self._info['variant']:
     #         v.site.metadata = []
 
-    def write_variant_info(self, name, logfile):
-        logfile.info("- Writing variant info to file '" + name + "_filtered_sample_variants.csv'")
-        self._info.to_csv(name + "_filtered_sample_variants.csv", header=True, index=False)
+    def write_variant_info(self, out, logfile):
+        logfile.info("- Writing variant info to file '" + out + "_filtered_sample_variants.csv'")
+        self._info.to_csv(out + "_filtered_sample_variants.csv", header=True, index=False)
 
     def write_shapeit2(self, name, inds, logfile):
         """

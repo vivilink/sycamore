@@ -103,7 +103,7 @@ if args.task == "simulate":
     inds = tind.Individuals(args.ploidy, N)
     variants = tvar.TVariants(ts_object=trees, samp_ids=samp_ids)
     variants.fill_info(ts_object=trees, samp_ids=samp_ids, pos_int=args.pos_int)
-    variants.write_variant_info(ts_object=trees, samp_ids=samp_ids, out=args.out, logfile=logger)
+    variants.write_variant_info(out=args.out, logfile=logger)
 
     tt.TTrees.writeStats(ts_object=trees, out=args.out, logfile=logger)
 
