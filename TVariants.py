@@ -128,7 +128,7 @@ class TVariantsFiltered(TVariants):
         #  enumerate in TPhenotypes does not work
         # TODO: develop an iterator for variants that only goes over the typed ones
 
-        super().__init__(ts_object=ts_object, samp_ids=samp_ids, pos_int=pos_int)
+        super().__init__(ts_object=ts_object, samp_ids=samp_ids)
 
         # build variant object from tree file -> filter!
         if filtered_variants_file is None:
