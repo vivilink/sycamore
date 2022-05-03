@@ -292,10 +292,10 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
         # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ",
         # "  + str(tree.interval.right)) calculate covariance and write to file
 
-        # TODO: this length condition is because if you extract a region from tskit sequence, the first tree goes
+        # TODO: this condition is because if you extract a region from tskit sequence, the first tree goes
         #  from zero to the first tree. This causes problems with eGRM. Needs to be investigated what the problem is
         #  and a better condition needs to be found!
-        if tree_obj.height != -1 or not (skip_first_tree and tree_obj.index == 0):
+        if tree_obj.height != -1 and not (skip_first_tree and tree_obj.index == 0):
             # TODO: calculating and writing should be separate functions, only write if tree is valid and matrix is
             #  not empty. Only possible to do this when eGRM functionality runs internally
             covariance = self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object=ts_object, variants=variants,
