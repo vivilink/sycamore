@@ -378,8 +378,10 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
             self.write_covariance_matrix_R(covariance=covariance, out=out)
 
         elif covariance_type == "eGRM":
-            covariance = tree_obj.get_eGRM(ts_object=ts_object, inds=inds, out=out, logfile=logfile,
-                                           skip_first_tree=skip_first_tree)
+            trees = ts_object.keep_intervals(np.array([[tree_obj.start, tree_obj.end]]), simplify=True)
+            covariance, mu = tree_obj.get_eGRM(tskit_obj=trees, inds=inds, out=out, logfile=logfile,
+                                               skip_first_tree=skip_first_tree)
+            self.write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
 
             # if np.trace(covariance) != inds.num_inds:
             # raise ValueError("Trace of matrix is not equal to the number of individuals. Was expecting " + str(

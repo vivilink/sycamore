@@ -11,6 +11,7 @@ import tskit
 import subprocess
 import os
 import sys
+from egrm import varGRM_C, mTMRCA_C
 
 
 class TTrees:
@@ -196,12 +197,12 @@ class TTree:
 
             return self.covariance_diploid
 
-    def get_eGRM(self, ts_object, inds, out, skip_first_tree, logfile):
+    def get_eGRM(self, tskit_obj, inds, out, skip_first_tree, logfile):
         """       
         Parameters
         ----------
-        ts_object : tskit.treeSequence
-            the tskit tree sequence that contains the tested trees.
+        tskit_obj : tskit.treeSequence
+            the tskit tree sequence that contains the single tree to be tested.
         inds : TInds
             Which haplotypes are assigned to the same individual.
         out : str
@@ -214,39 +215,21 @@ class TTree:
         local eGRM as calculated by egrm (Fan et al. 2022).
         """
 
-        # TODO: I think ts_object does not need to be passed because it can be obtained from tskit.tree with
-        #  tree_sequence
-
         if self.eGRM is None:
             # extract tree and write to file
-            TTrees.extract_single_tree(ts_object=ts_object, out=out, logfile=logfile, position=self.start)
+            # TTrees.extract_single_tree(tree_obj=tree_obj, out=out, logfile=logfile, position=self.start)
 
-            # run egrm
-            # TODO: include eGRM in argwas and remove all this complexity
+            EK_relate, _, EK_relate_mu = varGRM_C(tskit_obj)
+            self.eGRM = EK_relate
+
             if inds.ploidy == 2:
-                # logfile.warning(
-                #     "WARNING: Individual assignment cannot be passed to eGRM calculation yet, only simulate random "
-                #     "phenotypes!")
-                if skip_first_tree:
-                    exit_code = subprocess.call(
-                        [os.path.dirname(sys.argv[0]) + "/run_egrm_skipFirstTree.sh", out + "_focal.trees", out])
-                else:
-                    exit_code = subprocess.call(
-                        [os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out + "_focal.trees", out])
-            else:
-                if skip_first_tree:
-                    exit_code = subprocess.call(
-                        [os.path.dirname(sys.argv[0]) + "/run_egrm_skipFirstTree.sh", out + "_focal.trees", out,
-                         "--haploid"])
-                else:
-                    exit_code = subprocess.call(
-                        [os.path.dirname(sys.argv[0]) + "/run_egrm.sh", out + "_focal.trees", out, "--haploid"])
+                N = self.eGRM.shape[0]
+                maternals = np.array(range(0, N, 2))
+                paternals = np.array(range(1, N, 2))
+                self.eGRM = 0.5 * (self.eGRM[maternals, :][:, maternals] + self.eGRM[maternals, :][:, paternals]
+                                   + self.eGRM[paternals, :][:, maternals] + self.eGRM[paternals, :][:, paternals])
 
-            # read result
-            e = np.load(out + ".npy")
-            mu = np.load(out + "_mu.npy")
-            self.eGRM = e
-        return self.eGRM
+        return self.eGRM, EK_relate_mu
 
     def get_GRM(self, variants, inds, out, logfile):
         """
@@ -267,7 +250,7 @@ class TTree:
         # tree_variant_info = variants.info[(variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (variants.info['allele_freq'] > 0.0)]
         tree_variants = np.array(variants.variants)[
             (variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (
-                        variants.info['allele_freq'] > 0.0)]
+                    variants.info['allele_freq'] > 0.0)]
         num_vars = tree_variants.shape[0]
         if num_vars == 0:
             return None
