@@ -26,3 +26,6 @@ pip install python_log_indenter
 
 Install tsinfer:
  conda install -c conda-forge tsinfer 
+ 
+Install tsdate:
+python3 -m pip install tsdate --user
