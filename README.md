@@ -16,8 +16,6 @@ conda env create -f argwas_environment.yml
 Install statsmodel package from within environment:
 conda install -c conda-forge statsmodels
 
-Install tskit package from within environment:
-conda install -c conda-forge tskit
 
 Install plinkFile library in R
 
@@ -26,6 +24,9 @@ pip install python_log_indenter
 
 Install tsinfer:
  conda install -c conda-forge tsinfer 
+
+Install matplotlib:
+conda install -c conda-forge matplotlib
  
 Install tsdate:
 python3 -m pip install tsdate --user
