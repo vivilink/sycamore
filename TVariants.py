@@ -270,7 +270,7 @@ class TVariantsFiltered(TVariants):
                 buffer[np.arange(1, n_gen, 3)] = tmp2
                 buffer[np.arange(2, n_gen, 3)] = tmp3
 
-                string = "chr snp" + str(i + 1) + " " + ". " + str(int(self._info['position'].values[v])) + " A" + " T "
+                string = "chr snp" + str(i + 1) + " " + str(int(self._info['position'].values[v])) + " A" + " T "
                 string = string + " ".join(map(str, buffer)) + "\n"
                 bytes = haps_file.write(string)
                 i += 1

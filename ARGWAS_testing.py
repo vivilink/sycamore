@@ -65,20 +65,20 @@ N = len(samp_ids)
 trees_relate = tskit.load(directory + "relate_test_2_propTyped1/test_2_propTyped1.trees")
 variants = tvar.TVariantsFiltered(trees, samp_ids, 0, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger,
                                   filtered_variants_file = directory + "/relate_test_2_propTyped1/test_2_propTyped1_filtered_sample_variants.csv")
-print(variants.number_typed)
+print(variants.num_typed)
 len(list(trees_relate.variants(samples=samp_ids)))
 
 trees_relate = tskit.load(directory + "relate_test_2_propTyped0.01/test_2_propTyped0.01.trees")
 variants = tvar.TVariantsFiltered(trees, samp_ids, 0, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger,
                                   filtered_variants_file = directory + "relate_test_2_propTyped0.01/test_2_propTyped0.01_filtered_sample_variants.csv")
-print(variants.number_typed)
+print(variants.num_typed)
 len(list(trees_relate.variants(samples=samp_ids)))
 
 
 trees_relate = tskit.load(directory + "relate_test_2_propTyped0.05/test_2_propTyped0.05.trees")
 variants = tvar.TVariantsFiltered(trees, samp_ids, 0, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger,
                                   filtered_variants_file = directory + "relate_test_2_propTyped0.05/test_2_propTyped0.05_filtered_sample_variants.csv")
-print(variants.number_typed)
+print(variants.num_typed)
 len(list(trees_relate.variants(samples=samp_ids)))
 
 #-----------------------
@@ -98,7 +98,7 @@ for m in causal_tree.sites():
 
 inds = tind.Individuals(2, N)
 variants = tvar.TVariantsFiltered(trees, samp_ids, 0.01, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger)
-variants.number_typed
+variants.num_typed
 
 #see variants from tree directly
 list(trees.variants(samples=samp_ids))[0]
@@ -106,7 +106,7 @@ len(list(trees.variants(samples=samp_ids)))
 
 variants_relate = tvar.TVariantsFiltered(trees_relate, samp_ids, 0.01, 1, prop_typed_variants = 1, pos_int = True, random = r, logfile = logger)
 len(list(trees_relate.variants(samples=samp_ids)))
-variants_relate.number_typed
+variants_relate.num_typed
 #-----------------------
 # GRM
 #------------------------
