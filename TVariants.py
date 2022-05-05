@@ -74,11 +74,11 @@ class TVariants:
         self._number = number
 
     @property
-    def number_typed(self):
+    def num_typed(self):
         return self._number_typed
 
-    @number_typed.setter
-    def number_typed(self, number_typed):
+    @num_typed.setter
+    def num_typed(self, number_typed):
         self._number_typed = number_typed
 
     @property
@@ -242,6 +242,40 @@ class TVariantsFiltered(TVariants):
         logfile.info("- Writing haplotypes in Shapeit2 format to file '" + name + "_variants.haps'")
         haps.to_csv(name + "_variants.haps", sep=' ', header=False, index=False)
 
+    def write_gen(self, out, inds, logfile):
+        """
+        According to https://mathgen.stats.ox.ac.uk/genetics_software/shapeit/shapeit.html#gensample
+        @param out:
+        @param inds:
+        @param logfile:
+        @return:
+        """
+        logfile.info("- Writing haplotypes in impute2 format to file '" + out + ".gen'")
+        haps_file = open(out + ".gen", "a")
+        i = 0
+        for v, var in enumerate(self._variants):
+            n_gen = int(inds.num_inds * 3)
+            if self._info.iloc[v]['typed']:
+                if inds.ploidy == 2:
+                    genotypes = inds.get_diploid_genotypes(var.genotypes)
+                else:
+                    genotypes = var.genotypes
+
+                tmp1 = (genotypes == 2).astype(int)
+                tmp2 = (genotypes == 1).astype(int)
+                tmp3 = (genotypes == 0).astype(int)
+
+                buffer = np.zeros([n_gen]).astype(int)
+                buffer[np.arange(0, n_gen, 3)] = tmp1
+                buffer[np.arange(1, n_gen, 3)] = tmp2
+                buffer[np.arange(2, n_gen, 3)] = tmp3
+
+                string = "chr snp" + str(i + 1) + " " + ". " + str(int(self._info['position'].values[v])) + " A" + " T "
+                string = string + " ".join(map(str, buffer)) + "\n"
+                bytes = haps_file.write(string)
+                i += 1
+        haps_file.close()
+
     def find_variant(self, typed, freq, interval, out, subplot, random, logfile):
         """
         Find a variant that fits criteria to simulate fixed genotype depending on only one variant
@@ -267,8 +301,7 @@ class TVariantsFiltered(TVariants):
         """
 
         # check if interval is valid
-        num_lines = self._info[(self._info['position'] >= interval[0]) & (self._info['position'] <= interval[1])].shape[
-            0]
+        num_lines = self._info[(self._info['position'] >= interval[0]) & (self._info['position'] <= interval[1])].shape[0]
         if num_lines == 0:
             raise ValueError("The interval " + str(interval) + " contains no variants")
 

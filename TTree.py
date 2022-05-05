@@ -53,6 +53,28 @@ class TTrees:
         trees.dump(out + "_focal.trees")
         logfile.info("- Wrote trees with " + str(focal_tree.interval) + " to " + out + "_focal.trees")
 
+    @staticmethod
+    def get_X(trees, variants, inds):
+        """
+        Return num_inds x num_typed_variants genotype matrix
+        @param trees: tskit.treeSequence
+        @param variants: TVariants
+        @param inds: TInds
+        @return: np.array(num_inds, num_typed_variants) type int
+        """
+        X = np.zeros((inds.num_inds, variants.num_typed)).astype("int")
+
+        i = 0
+        for v, variant in enumerate(variants.variants):
+            if variants.info.iloc[v]['typed']:
+                if inds.ploidy == 2:
+                    genotypes = inds.get_diploid_genotypes(variant.genotypes)
+                else:
+                    genotypes = variant.genotypes
+                X[:, i] = genotypes
+                i += 1
+        return X
+
 
 class TTree:
     def __init__(self, tree_iterator):

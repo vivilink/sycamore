@@ -20,6 +20,46 @@ import sys
 import struct
 
 
+def write_covariance_matrix_R(covariance, out):
+    with open(out + '_GRM_covariance.txt', 'w') as f:
+        np.savetxt(f, covariance)
+    f.close()
+
+    subprocess.call(["Rscript", os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])
+
+
+def write_covariance_matrix_bin(covariance, mu, inds, out):
+    """
+    Write out eGRM in GCTA binary format.
+    :param: covariance numpy.ndarray of expected relatedness
+    :param: mu floating point number of expected mutations
+    :param: numpy.ndarray/list of individual IDs
+    :param: str of output
+    :returns: None
+    """
+    # K = prefix_path.grm.bin; relatedness diagonal + lower diagonal
+    # mu = prefix_path.grm.N.bin; number of shared mutations between individuals on diagonal + lower diagonal
+    # samples = prefix_path.grm.id; 2 column text = family_id individual_id
+    n, n = covariance.shape
+    with open("{}.grm.bin".format(out), "wb") as grmfile:
+        for idx in range(n):
+            for jdx in range(idx + 1):
+                val = struct.pack("f", covariance[idx, jdx])
+                grmfile.write(val)
+
+    with open("{}.grm.N.bin".format(out), "wb") as grmfile:
+        for idx in range(n):
+            for jdx in range(idx + 1):
+                val = struct.pack("f", mu)
+                grmfile.write(val)
+
+    with open("{}.grm.id".format(out), "w") as grmfile:
+        for idx in range(n):
+            fid = 0
+            iid = inds.names[idx]
+            grmfile.write("\t".join([str(fid), str(iid)]) + os.linesep)
+
+
 class TAssociationTesting:
     def __init__(self, phenotypes):
         self.phenotypes = phenotypes
@@ -77,12 +117,12 @@ class TAssociationTesting_GWAS(TAssociationTesting):
                 PVALUE = sm.OLS(self.phenotypes.y, genotypes_test).fit().pvalues[1]
                 self.p_values[i] = PVALUE
                 i += 1
-        logfile.info("- Ran OLS for " + str(variants.number_typed) + " variants")
+        logfile.info("- Ran OLS for " + str(variants.num_typed) + " variants")
 
     def write_to_file(self, variants, name, logfile):
         # results for each variant
         info_typed = variants.info.loc[variants.info['typed'] == True]
-        info_typed['index'] = range(variants.number_typed)
+        info_typed['index'] = range(variants.num_typed)
         info_typed.set_index(info_typed['index'], drop=True, inplace=True)
 
         table = pd.DataFrame()
@@ -305,46 +345,6 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
                                                                                  skip_first_tree=skip_first_tree)
             if covariance is not None:
                 self.run_association_one_tree_gcta(tree_obj, out)
-
-    @staticmethod
-    def write_covariance_matrix_R(covariance, out):
-        with open(out + '_GRM_covariance.txt', 'w') as f:
-            np.savetxt(f, covariance)
-        f.close()
-
-        subprocess.call(["Rscript", os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])
-
-    @staticmethod
-    def write_covariance_matrix_bin(covariance, mu, inds, out):
-        """
-        Write out eGRM in GCTA binary format.
-        :param: covariance numpy.ndarray of expected relatedness
-        :param: mu floating point number of expected mutations
-        :param: numpy.ndarray/list of individual IDs
-        :param: str of output
-        :returns: None
-        """
-        # K = prefix_path.grm.bin; relatedness diagonal + lower diagonal
-        # mu = prefix_path.grm.N.bin; number of shared mutations between individuals on diagonal + lower diagonal
-        # samples = prefix_path.grm.id; 2 column text = family_id individual_id
-        n, n = covariance.shape
-        with open("{}.grm.bin".format(out), "wb") as grmfile:
-            for idx in range(n):
-                for jdx in range(idx + 1):
-                    val = struct.pack("f", covariance[idx, jdx])
-                    grmfile.write(val)
-
-        with open("{}.grm.N.bin".format(out), "wb") as grmfile:
-            for idx in range(n):
-                for jdx in range(idx + 1):
-                    val = struct.pack("f", mu)
-                    grmfile.write(val)
-
-        with open("{}.grm.id".format(out), "w") as grmfile:
-            for idx in range(n):
-                fid = 0
-                iid = inds.names[idx]
-                grmfile.write("\t".join([str(fid), str(iid)]) + os.linesep)
 
     # TODO: could be static?
     def calculate_and_write_covariance_matrix_to_gcta_file(self, ts_object, variants, tree_obj, inds, covariance_type,

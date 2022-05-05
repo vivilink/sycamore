@@ -13,6 +13,7 @@ import TVariants as tvar
 import TIndividuals as tind
 import TSimulator as tsim
 import TTree as tt
+import TImputation as impute
 from python_log_indenter import IndentedLoggerAdapter
 import logging
 import os
@@ -235,7 +236,14 @@ if args.task == "associate":
     if args.ass_method == "GWAS" or args.ass_method == "both":
         logger.info("- GWAS:")
         logger.add()
-        GWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=variants.number_typed)
+        GWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
+
+        if args.imputation_ref_panel is not None:
+            # TODO: need to read tree file given in argument here
+            trees_ref_panel = trees_orig
+            impute_obj = impute.TImpute(trees_ref=trees_ref_panel, trees_sample=trees, variants_ref=variants_orig,
+                                        variants_sample=variants, genetic_map_file=args.genetic_map_file, inds=inds,
+                                        out=args.out, logfile=logger)
 
         GWAS.OLS(variants, inds, logger)
         GWAS.write_to_file(variants, args.out, logger)

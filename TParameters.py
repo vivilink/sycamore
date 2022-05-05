@@ -120,6 +120,10 @@ class TParameters:
                            help="Only test tree that is overlapping the given position for association")
         assoc.add_argument('--skip_first_tree', type=bool, default=False,
                            help='Do not run association test on first tree')
+        assoc.add_argument('--imputation_ref_panel', type=str,
+                           help="tskit object of reference panel")
+        assoc.add_argument('--genetic_map_file', type=str,
+                           help="genetic map with columns for Position [bp], Rate [cM/Mb] and Map [cM]")
 
         args = parser.parse_args()
 
