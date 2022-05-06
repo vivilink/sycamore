@@ -19,6 +19,7 @@ import os
 import sys
 from numpy.random import RandomState
 
+
 os.chdir(os.path.dirname(sys.argv[0]))
 
 # -----------------------------

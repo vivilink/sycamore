@@ -8,11 +8,8 @@ Created on Tue Sep  7 17:43:29 2021
 import numpy as np
 import pandas as pd
 import tskit
-import subprocess
-import os
-import sys
-from egrm import varGRM_C, mTMRCA_C
-
+from egrm import varGRM_C
+from egrm import varGRM
 
 class TTrees:
     def __init__(self, ts_object):
@@ -197,7 +194,7 @@ class TTree:
 
             return self.covariance_diploid
 
-    def get_eGRM(self, tskit_obj, inds, out, skip_first_tree, logfile):
+    def get_eGRM(self, tskit_obj, tree_obj, inds, out, skip_first_tree, logfile):
         """       
         Parameters
         ----------
@@ -213,13 +210,14 @@ class TTree:
         Returns
         -------
         local eGRM as calculated by egrm (Fan et al. 2022).
+        @param tree_obj:
         """
 
         if self.eGRM is None:
             # extract tree and write to file
             # TTrees.extract_single_tree(tree_obj=tree_obj, out=out, logfile=logfile, position=self.start)
 
-            EK_relate, _, EK_relate_mu = varGRM_C(tskit_obj)
+            EK_relate, _, EK_relate_mu = varGRM(tskit_obj, tree_obj.tree)
             self.eGRM = EK_relate
 
             if inds.ploidy == 2:
@@ -249,7 +247,7 @@ class TTree:
         """
         # tree_variant_info = variants.info[(variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (variants.info['allele_freq'] > 0.0)]
         tree_variants = np.array(variants.variants)[
-            (variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (
+            (variants.info['tree_index'] == self.index) & (variants.info['typed'] is True) & (
                     variants.info['allele_freq'] > 0.0)]
         num_vars = tree_variants.shape[0]
         if num_vars == 0:
