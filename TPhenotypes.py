@@ -135,7 +135,7 @@ class Phenotypes:
 
             fig, ax = plt.subplots(1, figsize=(30, 30))
             var_index, pos = variants_orig.find_variant(typed=True, freq=args.single_variant_af,
-                                                        interval=args.single_variant_interval, out=args.out, subplot=ax,
+                                                        interval=args.single_variant_interval, subplot=ax,
                                                         random=r, logfile=logfile)
             fig.tight_layout()
             fig.set_size_inches(30, 30)
@@ -157,7 +157,7 @@ class Phenotypes:
 
             fig, ax = plt.subplots(1, figsize=(30, 30))
             var_index, pos = variants_orig.find_variant(typed=False, freq=args.single_variant_af,
-                                                        interval=args.single_variant_interval, out=args.out, subplot=ax,
+                                                        interval=args.single_variant_interval, subplot=ax,
                                                         random=r, logfile=logfile)
             fig.tight_layout()
             fig.set_size_inches(30, 30)

@@ -28,23 +28,21 @@ def remove_monomorphic(trees):
                         site_id = tables.sites.add_row(
                             site.position, site.ancestral_state, metadata=site.metadata
                         )
-                    tables.mutations.add_row(
-                        site_id,
-                        mutation.node,
-                        mutation.derived_state,
-                        parent=-1,
-                        metadata=None,
-                    )
+                        tables.mutations.add_row(
+                            site_id,
+                            mutation.node,
+                            mutation.derived_state,
+                            parent=-1,
+                            metadata=None,
+                        )
     tables.compute_mutation_parents()
     return tables.tree_sequence()
 
 
 class TImpute:
 
-    def __init__(self, trees_ref, trees_sample, variants_ref, variants_sample, inds, genetic_map_file, out, logfile):
-        self.run_impute(trees_ref=trees_ref, trees_sample=trees_sample, variants_ref=variants_ref,
-                        variants_sample=variants_sample, inds=inds, genetic_map_file=genetic_map_file,
-                        out=out, logfile=logfile)
+    def __init__(self):
+        pass
 
     # TODO: getX and X2gen is creating the diploid genotype matrix. This should be produced by TTrees
     def getX(self, trees, idx):
@@ -85,7 +83,7 @@ class TImpute:
         buffer = tmp1 * 2 + tmp2
         return buffer
 
-    def run_impute(self, trees_ref, trees_sample, variants_ref, variants_sample, inds, genetic_map_file, out, logfile):
+    def run_impute_return_X(self, trees_ref, trees_sample, variants_ref, variants_sample, inds, genetic_map_file, out, logfile):
         """
         Impute
         @param genetic_map_file: str
@@ -98,11 +96,11 @@ class TImpute:
         @param variants_ref: TVariants for reference panel
         @param out: str
         """
-        trees_ref = remove_monomorphic(trees_ref.simplify(trees_ref.samples()))
-        trees_sample = remove_monomorphic(trees_sample.simplify(trees_sample.samples()))
-
-        MAFs = np.array([v.genotypes.mean() for v in trees_sample.variants()])
-        loci = np.array([v.position for v in trees_sample.variants()])
+        # trees_ref = remove_monomorphic(trees_ref.simplify(trees_ref.samples()))
+        # trees_sample = remove_monomorphic(trees_sample.simplify(trees_sample.samples()))
+        #
+        # MAFs = np.array([v.genotypes.mean() for v in trees_sample.variants()])
+        # loci = np.array([v.position for v in trees_sample.variants()])
 
         # MAFs = variants.info['allele_freq']
         # loci = variants.info['position']
@@ -139,9 +137,12 @@ class TImpute:
         # os.mkdir("impute")
         # os.chdir("impute")
 
-        # write sample files
+        # write files in gen format
+        name_imputation_output = out + "_imputed.gen"
         sample_gen_file = out + "_samples"
+        reference_gen_file = out + "_reference"
         variants_sample.write_gen(sample_gen_file, inds, logfile)
+        variants_ref.write_gen(reference_gen_file, inds, logfile)
         # X_obs = self.getX(trees_sample, variants_sample.num_typed)
         # gen_obs = self.X2gen(X_obs)
         # loci_obs = variants_sample.info['positions'].values[variants_sample.info['typed'] is True]
@@ -154,58 +155,36 @@ class TImpute:
         #     bytes = haps_file.write(string)
         #     i += 1
         # haps_file.close()
+        logfile.info("- Starting imputation with impute2 for sample with " + str(variants_sample.num_typed)
+                     + " typed variants using reference panel with " + str(variants_ref.num_typed) + " typed variants.")
+        # os.system(
+        #     "~/git/argwas/impute2 "
+        #     + " -g_ref "
+        #     + reference_gen_file + '.gen'
+        #     + " -m "
+        #     + genetic_map_file
+        #     + " -g "
+        #     + sample_gen_file + '.gen'
+        #     + " -int 0 "
+        #     + str(trees_sample.sequence_length)  # chromosome length
+        #     + " -allow_large_regions "
+        #     + " -o " + name_imputation_output
+        # )
 
-        # write reference files
-        reference_gen_file = out + "_reference"
-        variants_ref.write_gen(out + "_reference", inds, logfile)
-        inds.write_shapeit2(out, logfile)
-
-        # X_ref = self.getX(trees_ref, np.arange(trees_ref.num_mutations))
-        # gen_ref = self.X2gen(X_ref)
-        # loci_ref = np.array([v.position for v in trees_ref.variants()])
-        # loci_ref = np.ceil(loci_ref).astype(int)
-        #
-        # haps_file = open(out + "_ref.gen", "a")
-        # i = 0
-        # for idx, obs in enumerate(np.arange(trees_ref.num_mutations)):
-        #     string = "1 refsnp" + str(obs + 1) + " " + str(loci_ref[idx]) + " A" + " T "
-        #     string = string + " ".join(map(str, gen_ref[:, idx])) + "\n"
-        #     bytes = haps_file.write(string)
-        #     i += 1
-        # haps_file.close()
-
-        # map_file = open(out + ".map", "a")
-        # map_file.write("pos COMBINED_rate Genetic_Map\n")
-        # for idx, obs in enumerate(variants_ref.info['allele_freq']):
-        #     string = str(loci_obs[idx]) + " " + str(1) + " "
-        #     string = string + str(loci_obs[idx] / 1000000) + "\n"
-        #     bytes = map_file.write(string)
-        # map_file.close()
-
-        os.system(
-            "~/git/argwas/impute2 "
-            + " -g_ref "
-            + reference_gen_file + '.gen'
-            + " -m "
-            + genetic_map_file
-            + " -g "
-            + sample_gen_file + '.gen'
-            + " -int 0 "
-            + str(trees_sample.sequence_length)  # chromosome length
-            + " -allow_large_regions "
-            + " -o out.gen"
-        )
-
-        gen_imputed = pd.read_table("out.gen", sep=" ", header=None).iloc[:, 5:]
+        # read imputation results
+        gen_imputed = pd.read_table(name_imputation_output, sep=" ", header=None).iloc[:, 5:]
         gen_imputed = np.transpose(gen_imputed.values)
         X_imputed = self.gen2X(gen_imputed)
 
+        # keep only polymorphic variants
         keep = np.logical_and(X_imputed.mean(axis=0) > 0, X_imputed.mean(axis=0) < 1)
         X_imputed = X_imputed[:, keep]
+        logfile.info("- Done running impute2, imputed sample data set has " + str(X_imputed.shape[1]) + " variants, i.e. "
+                     + str(X_imputed.shape[1] - variants_sample.num_typed) + " more than before")
 
-        Z_imputed = X_imputed
-        Z_imputed -= Z_imputed.mean(axis=0)
-        Z_imputed /= Z_imputed.std(axis=0)
-        K_imputed = np.dot(Z_imputed, np.transpose(Z_imputed))
-
-        os.chdir("..")
+        # Z_imputed = X_imputed
+        # Z_imputed -= Z_imputed.mean(axis=0)
+        # Z_imputed /= Z_imputed.std(axis=0)
+        # K_imputed = np.dot(Z_imputed, np.transpose(Z_imputed))
+        # os.chdir("..")
+        return X_imputed

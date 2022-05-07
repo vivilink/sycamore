@@ -7,6 +7,7 @@ Created on Mon Aug 30 17:44:45 2021
 """
 import numpy as np
 import pandas as pd
+import os
 
 
 class TVariants:
@@ -251,6 +252,7 @@ class TVariantsFiltered(TVariants):
         @return:
         """
         logfile.info("- Writing haplotypes in impute2 format to file '" + out + ".gen'")
+        os.system("rm " + out + ".gen")
         haps_file = open(out + ".gen", "a")
         i = 0
         for v, var in enumerate(self._variants):
@@ -276,7 +278,7 @@ class TVariantsFiltered(TVariants):
                 i += 1
         haps_file.close()
 
-    def find_variant(self, typed, freq, interval, out, subplot, random, logfile):
+    def find_variant(self, typed, freq, interval, subplot, random, logfile):
         """
         Find a variant that fits criteria to simulate fixed genotype depending on only one variant
 
@@ -285,14 +287,16 @@ class TVariantsFiltered(TVariants):
         typed : bool
             Should the variant returned be typed or not.
         freq : float
-            Requested allele frequency of the variant. If there is no variant with this exact frequency within the requested interval, 0.001 will be deducted from the freq repeatedly until a variant is found.
+            Requested allele frequency of the variant. If there is no variant with this exact frequency within the
+            requested interval, 0.001 will be deducted from the freq repeatedly until a variant is found.
         interval : list of floats
             Requested genomic interval within which the variant should be.
 
         Raises
         ------
         ValueError
-            If the search for a variant within the requested genomic interval ends up with the allele freq being negative, the search is stopped an an error is thrown.
+            If the search for a variant within the requested genomic interval ends up with the allele freq being
+            negative, the search is stopped an an error is thrown.
 
         Returns
         -------

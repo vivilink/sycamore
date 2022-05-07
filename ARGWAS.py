@@ -130,15 +130,14 @@ if args.task == "getTreeAtPosition":
     logger.info("- Reading tree from " + args.tree_file)
     trees = tskit.load(args.tree_file)
     trees_class = tt.TTrees(trees)
-    trees_class.extract_single_tree(trees, args.out, logger, position=args.test_only_tree_at)  # 49027865
+    trees_class.extract_single_tree(trees, args.out, logger, position=args.test_only_tree_at)
 
 # -----------------------
 # Downsample variants
 # -----------------------
-# TODO: rename this task, since it also creates shapeit files
-if args.task == "downsampleVariants":
+if args.task == "downsampleVariantsWriteShapeit":
     if args.prop_typed_variants is None:
-        raise ValueError("Must provide downsampling probability to task 'downsampleVariant'")
+        raise ValueError("Must provide downsampling probability to task 'downsampleVariantsWriteShapeit'")
     logger.info("- TASK: Downsampling variants")
     logger.info("- Reading tree simulations from " + args.tree_file)
     trees = tskit.load(args.tree_file)
@@ -174,7 +173,8 @@ if args.task == "associate":
         "- Reading tree used for Aim's association testing, and for defining variants to be tested by GWAS, from " + args.tree_file)
     trees = tskit.load(args.tree_file)
     if args.trees_interval is not None:
-        logger.info("- Running association only on the trees overlapping the following interval: " + str(args.trees_interval))
+        logger.info(
+            "- Running association only on the trees overlapping the following interval: " + str(args.trees_interval))
         trees = trees.keep_intervals([args.trees_interval], simplify=True)
 
     if trees_orig.num_samples != trees.num_samples:
@@ -239,13 +239,18 @@ if args.task == "associate":
         GWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
 
         if args.imputation_ref_panel is not None:
+            logger.info("- Imputing genotypes with impute2:")
+            logger.add()
             # TODO: need to read tree file given in argument here
             trees_ref_panel = trees_orig
-            impute_obj = impute.TImpute(trees_ref=trees_ref_panel, trees_sample=trees, variants_ref=variants_orig,
-                                        variants_sample=variants, genetic_map_file=args.genetic_map_file, inds=inds,
-                                        out=args.out, logfile=logger)
-
-        GWAS.OLS(variants, inds, logger)
+            imputation_obj = impute.TImpute()
+            X = imputation_obj.run_impute_return_X(trees_ref=trees_ref_panel, trees_sample=trees, variants_ref=variants_orig,
+                                                   variants_sample=variants, genetic_map_file=args.genetic_map_file, inds=inds,
+                                                   out=args.out, logfile=logger)
+            logger.sub()
+            GWAS.test_with_X_matrix(X, inds, logger)
+        else:
+            GWAS.test_with_variants_object(variants, inds, logger)
         GWAS.write_to_file(variants, args.out, logger)
         GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
 

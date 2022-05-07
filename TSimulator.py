@@ -10,6 +10,8 @@ import stdpopsim
 import tskit
 import msprime
 import TTree as tt
+import math
+import numpy as np
 
 
 class TSimulator:
@@ -106,6 +108,36 @@ class TSimulatorStdPopsim(TSimulator):
         return self.trees
 
 
+def step_mig_mat(m, nrow, ncol):
+    pmat = np.arange(0, nrow * ncol).reshape(nrow, ncol)
+    mmat = np.zeros(shape=[nrow * ncol, nrow * ncol])
+
+    def contain(ix, max_ix):
+        if ix < 0:
+            return 0
+        if ix > (max_ix - 1):
+            return max_ix - 1
+        else:
+            return ix
+
+    for ii in range(nrow * ncol):
+        center_ix = np.where(pmat == ii)
+        top_ix = pmat[contain(center_ix[0] - 1, nrow), contain(center_ix[1], ncol)]
+        bottom_ix = pmat[contain(center_ix[0] + 1, nrow), contain(center_ix[1], ncol)]
+        left_ix = pmat[contain(center_ix[0], nrow), contain(center_ix[1] - 1, ncol)]
+        right_ix = pmat[contain(center_ix[0], nrow), contain(center_ix[1] + 1, ncol)]
+
+        mmat[ii, top_ix] = mmat[ii, bottom_ix] = mmat[ii, left_ix] = mmat[
+            ii, right_ix
+        ] = m
+        mmat[top_ix, ii] = mmat[bottom_ix, ii] = mmat[left_ix, ii] = mmat[
+            right_ix, ii
+        ] = m
+        mmat[ii, ii] = 0
+
+    return mmat
+
+
 class TSimulatorMSPrime(TSimulator):
     def __init__(self):
         super().__init__()
@@ -123,4 +155,5 @@ class TSimulatorMSPrime(TSimulator):
         logfile.info("Writing trees to " + arguments.out + ".trees")
         logfile.sub()
 
-        return (self.trees)
+        return self.trees
+

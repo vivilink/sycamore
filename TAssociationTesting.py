@@ -20,6 +20,13 @@ import sys
 import struct
 
 
+def OLS(genotypes, phenotypes):
+    # add intercept
+    genotypes_test = sm.tools.add_constant(genotypes)
+    PVALUE = sm.OLS(phenotypes.y, genotypes_test).fit().pvalues[1]
+    return PVALUE
+
+
 def write_covariance_matrix_R(covariance, out):
     with open(out + '_GRM_covariance.txt', 'w') as f:
         np.savetxt(f, covariance)
@@ -90,7 +97,7 @@ class TAssociationTesting:
 
 class TAssociationTesting_GWAS(TAssociationTesting):
     """
-    SNP based association testing
+    SNP based association testing using Ordinary Least Squares regression
     """
 
     def __init__(self, phenotypes, num_typed_variants):
@@ -102,7 +109,7 @@ class TAssociationTesting_GWAS(TAssociationTesting):
         # self._check_compatibility(ts_object, phenotypes)
         self.p_values = np.empty(self.num_associations)
 
-    def OLS(self, variants, inds, logfile):
+    def test_with_variants_object(self, variants, inds, logfile):
         # counter respective to typed variants
         i = 0
         for v, variant in enumerate(variants.variants):
@@ -112,12 +119,19 @@ class TAssociationTesting_GWAS(TAssociationTesting):
                 else:
                     genotypes = variant.genotypes
 
-                # add intercept
-                genotypes_test = sm.tools.add_constant(genotypes)
-                PVALUE = sm.OLS(self.phenotypes.y, genotypes_test).fit().pvalues[1]
+                PVALUE = OLS(genotypes=genotypes, phenotypes=self.phenotypes)
                 self.p_values[i] = PVALUE
                 i += 1
         logfile.info("- Ran OLS for " + str(variants.num_typed) + " variants")
+
+    def test_with_X_matrix(self, X, inds, logfile):
+        # counter respective to typed variants
+        i = 0
+        for v in range(X.shape[1]):
+            genotypes = X[:, v]
+            PVALUE = OLS(genotypes=genotypes, phenotypes=self.phenotypes)
+            self.p_values[i] = PVALUE
+        logfile.info("- Ran OLS for " + str(X.shape[1]) + " variants")
 
     def write_to_file(self, variants, name, logfile):
         # results for each variant
