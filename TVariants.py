@@ -41,8 +41,7 @@ class TVariants:
             pos = -1
             if pos_int:
                 pos = round(var.site.position)
-                if v > 0 and pos == self._info['position'][v - 1]:
-                    # print("am in special case for v", v)
+                if v > 0 and pos == self._positions[v - 1]:
                     pos += 1
             else:
                 pos = var.site.position
