@@ -20,7 +20,6 @@ import os
 import sys
 from numpy.random import RandomState
 
-
 os.chdir(os.path.dirname(sys.argv[0]))
 
 # -----------------------------
@@ -156,6 +155,8 @@ if args.task == "downsampleVariantsWriteShapeit":
     variants.write_variant_info(args.out, logger)
     variants.write_shapeit2(args.out, inds, logger)
 
+    variants.write_genetic_map(out=args.out, logfile=logger)
+
 # ----------------------------------------------------------------
 # Read simulation to simulate phenotypes and perform association
 # ----------------------------------------------------------------
@@ -187,11 +188,12 @@ if args.task == "associate":
     # --------------------------------
     samp_ids = trees.samples()
     N = len(samp_ids)
-    inds = tind.Individuals(args.ploidy, N, N_sample_pop=args.N_sample_pop, N_ref_pop=args.N_ref_pop)
+    inds = tind.Individuals(args.ploidy, N)
     trees = tt.TTrees.remove_monomorphic(trees)
 
     # TODO: trees_orig and variants_orig should be initialized at the same time, e.g. together in one function. We
-    #  should not have 2 tree files and 2 variant files just floating around separately
+    #  should not have 2 tree files and 2 variant files just floating around separately. Maybe TTrees class could
+    #  contain the tskit sequence and variants
 
     # TODO: find way to save variants in their tskit format without needing to read the original tree. I only need
     #  original tree in association task for this. It would be nice if the only tree that needs to be read would be
@@ -199,11 +201,11 @@ if args.task == "associate":
 
     #  do not provide variant file here but have it estimated from tree, otherwise variants and tree
     #  won't match (tree only contains typed variants). The variant file is only useful for simulating phenotypes to
-    #  be able to keep track of untyped variants
+    #  be able to keep track of untyped variants (i.e. for variants_orig)
     variants = tvar.TVariantsFiltered(ts_object=trees, samp_ids=samp_ids, min_allele_freq=args.min_allele_freq,
                                       max_allele_freq=args.max_allele_freq,
                                       prop_typed_variants=args.prop_typed_variants, pos_int=args.pos_int, random=r,
-                                      logfile=logger)
+                                      logfile=logger, filtered_variants_file=None)
 
     # variants_orig are used to simulate phenotypes. They need to be consistent with original tree and the typed
     # status that might have been defined earlier with a variants file. The causal mutation should not be affected by
@@ -238,22 +240,35 @@ if args.task == "associate":
         logger.add()
         GWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
 
-        if args.imputation_ref_panel is not None:
+        if args.imputation_ref_panel_tree_file is not None:
             logger.info("- Imputing genotypes with impute2:")
             logger.add()
-            # TODO: need to read tree file given in argument here
-            trees_ref = tskit.load(args.reference_tree_file)
-            trees_ref = tt.remove_monomorphic(trees_ref)
 
-            trees_ref_panel = trees_orig
+            logger.info("- Obtaining reference panel variant information from " + args.imputation_ref_panel_tree_file)
+            trees_ref = tskit.load(args.imputation_ref_panel_tree_file)
+            trees_ref = tt.TTrees.remove_monomorphic(trees_ref)
+            samp_ids_ref = trees_ref.samples()
+            N_ref = len(samp_ids_ref)
+            inds_ref = tind.Individuals(args.ploidy_ref, N_ref)
+            variants_ref = tvar.TVariantsFiltered(ts_object=trees_ref, samp_ids=samp_ids_ref, min_allele_freq=0,
+                                                  max_allele_freq=1, prop_typed_variants=1, pos_int=args.pos_int,
+                                                  random=r, logfile=logger, filtered_variants_file=None)
             imputation_obj = impute.TImpute()
-            X = imputation_obj.run_impute_return_X(trees_ref=trees_ref_panel, trees_sample=trees,
-                                                   variants_ref=variants_orig,
-                                                   variants_sample=variants, genetic_map_file=args.genetic_map_file,
-                                                   inds=inds,
-                                                   out=args.out, logfile=logger)
+            if args.genetic_map_file is None:
+                genetic_map_file_name = variants.write_genetic_map(out=args.out, logfile=logger)
+                logger.info("- No genetic map file provided. Writing map with constant rate to " + genetic_map_file_name)
+            else:
+                genetic_map_file_name = args.genetic_map_file
+                logger.info("- Reading map with constant rate from " + genetic_map_file_name)
+            genotype_matrix_imputed = imputation_obj.run_impute_return_X(trees_ref=trees_ref, trees_sample=trees,
+                                                                         variants_ref=variants_ref,
+                                                                         variants_sample=variants,
+                                                                         genetic_map_file=genetic_map_file_name,
+                                                                         inds=inds, inds_ref=inds_ref,
+                                                                         out=args.out, logfile=logger)
             logger.sub()
-            GWAS.test_with_X_matrix(X, inds, logger)
+
+            GWAS.test_with_X_matrix(genotype_matrix_imputed, inds, logger)
         else:
             GWAS.test_with_variants_object(variants, inds, logger)
         GWAS.write_to_file(variants, args.out, logger)

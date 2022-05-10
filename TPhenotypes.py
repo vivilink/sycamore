@@ -66,17 +66,17 @@ class Phenotypes:
 
         # calculate genetic variance
         self._genetic_variance = np.var(self._y)
-        logfile.info("- Simulated phenotypes with genetic variance component " + str(self._genetic_variance))
+        logfile.info("- Simulated phenotypes with genetic variance " + str(self._genetic_variance))
 
         # simulate noise
         if args.pty_sd_envNoise is None and args.pty_h_squared is not None:
             self._random_noise = self.simulate_env_noise_h(requested_hsquared=args.pty_h_squared, random=r)
             logfile.info("- Simulated random noise to result in h^2 " + str(args.pty_h_squared) +
-                         ". The random variance component is thus " + str(np.var(self._random_noise)))
+                         ". The variance of the random noise is thus " + str(np.var(self._random_noise)))
         elif args.pty_h_squared is None and args.pty_sd_envNoise is not None:
             self._random_noise = self.simulate_env_noise_sd(sd_random_noise=args.pty_sd_envNoise, random=r)
             logfile.info("- Simulated random noise with sd " + str(args.pty_sd_envNoise) +
-                         ". The random variance component is thus " + str(np.var(self._random_noise)))
+                         ". The variance of the random noise is thus " + str(np.var(self._random_noise)))
         else:
             raise ValueError("Must provide random noise distribution parameter. Either set noise sd with "
                              "'pty_sd_envNoise' or heritability with 'pty_h_squared'")

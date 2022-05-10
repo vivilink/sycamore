@@ -393,8 +393,7 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
 
         elif covariance_type == "eGRM":
             # trees = ts_object.keep_intervals(np.array([[tree_obj.start, tree_obj.end]]), simplify=True)
-            covariance, mu = tree_obj.get_eGRM(tskit_obj=ts_object, tree_obj=tree_obj, inds=inds, out=out, logfile=logfile,
-                                               skip_first_tree=skip_first_tree)
+            covariance, mu = tree_obj.get_eGRM(tskit_obj=ts_object, tree_obj=tree_obj, inds=inds)
             write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
 
             # if np.trace(covariance) != inds.num_inds:

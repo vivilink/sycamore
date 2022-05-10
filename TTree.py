@@ -11,6 +11,7 @@ import tskit
 from egrm import varGRM_C
 from egrm import varGRM
 
+
 class TTrees:
     def __init__(self, ts_object):
         # self.trees = ts_object.trees()
@@ -101,6 +102,7 @@ class TTree:
         self.covariance_diploid: np.array = None
         self.covariance_scaled_diploid: np.array = None
         self.eGRM: np.array = None
+        self.EK_relate_mu = None
         self.eGRM_diploid: np.array = None
 
     def test_PSD(self, A, tol=1e-8):
@@ -227,23 +229,19 @@ class TTree:
 
             return self.covariance_diploid
 
-    def get_eGRM(self, tskit_obj, tree_obj, inds, out, skip_first_tree, logfile):
+    def get_eGRM(self, tskit_obj, tree_obj, inds):
         """       
         Parameters
         ----------
+        tree_obj : TTree
         tskit_obj : tskit.treeSequence
             the tskit tree sequence that contains the single tree to be tested.
         inds : TInds
             Which haplotypes are assigned to the same individual.
-        out : str
-            output prefix.
-        skip_first_tree : Skip the first tree in ts_object
-        logfile : IndentedLoggerAdapter
 
         Returns
         -------
         local eGRM as calculated by egrm (Fan et al. 2022).
-        @param tree_obj:
         """
 
         if self.eGRM is None:
@@ -252,6 +250,7 @@ class TTree:
 
             EK_relate, _, EK_relate_mu = varGRM(tskit_obj, tree_obj.tree)
             self.eGRM = EK_relate
+            self.EK_relate_mu = EK_relate_mu
 
             if inds.ploidy == 2:
                 N = self.eGRM.shape[0]
@@ -260,7 +259,7 @@ class TTree:
                 self.eGRM = 0.5 * (self.eGRM[maternals, :][:, maternals] + self.eGRM[maternals, :][:, paternals]
                                    + self.eGRM[paternals, :][:, maternals] + self.eGRM[paternals, :][:, paternals])
 
-        return self.eGRM, EK_relate_mu
+        return self.eGRM, self.EK_relate_mu
 
     def get_GRM(self, variants, inds, out, logfile):
         """

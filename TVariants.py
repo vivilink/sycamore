@@ -93,6 +93,28 @@ class TVariants:
         logfile.info("- Writing variant info to file '" + out + "_sample_variants.csv'")
         self._info.to_csv(out + "_sample_variants.csv", header=True, index=False)
 
+    def write_genetic_map(self, out, logfile):
+        """
+        Taken from egrm/Manuscript/simulate
+        @param out: str
+        @param logfile:
+        @return:
+        """
+        # if file exists, clear
+        map_file = open(out + ".map", "w")
+        map_file.close()
+
+        # write file line by line
+        map_file = open(out + ".map", 'a')
+        map_file.write("pos COMBINED_rate Genetic_Map\n")
+        for index, row in self._info.iterrows():
+            if row['typed']:
+                string = str(row['position']) + " " + str(1) + " "
+                string = string + str(row['position'] / 1000000) + "\n"
+                bytes = map_file.write(string)
+        map_file.close()
+        return out + ".map"
+
 
 class TVariantsFiltered(TVariants):
     """
@@ -251,7 +273,11 @@ class TVariantsFiltered(TVariants):
         @return:
         """
         logfile.info("- Writing haplotypes in impute2 format to file '" + out + ".gen'")
-        os.system("rm " + out + ".gen")
+        # if file exists, clear
+        map_file = open(out + ".gen", "w")
+        map_file.close()
+
+        #write line by line
         haps_file = open(out + ".gen", "a")
         i = 0
         for v, var in enumerate(self._variants):

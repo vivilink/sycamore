@@ -25,7 +25,8 @@ class TParameters:
         parser.add_argument('--out', required=True, type=str,
                             help='Prefix of all output files')
         parser.add_argument('--seed', type=int,
-                            default=datetime.datetime.now().hour * 10000 + datetime.datetime.now().minute * 100 + datetime.datetime.now().second,
+                            default=datetime.datetime.now().hour * 10000 + datetime.datetime.now().minute * 100
+                                    + datetime.datetime.now().second,
                             help='Set seed of random generator. Default is time stamp.')
         # parser.add_argument('--verbose', dest="verbose", 
         #                     help="Write output to screen")
@@ -42,6 +43,10 @@ class TParameters:
         parser.add_argument('--N_ref_pop', type=int, default=0,
                             help="Number of samples in reference population. Must be used on tree simulated with "
                                  "egrm simulate (reference individuals come after sample individuals")
+        parser.add_argument('--ploidy', type=int, choices=[1, 2],
+                            help="Ploidy of individuals. Haplotypes will be assigned to individuals in increasing order")
+        parser.add_argument('--ploidy_ref', type=int, choices=[1, 2], default=2,
+                            help="Ploidy of individuals. Haplotypes will be assigned to individuals in increasing order")
 
         # limit data
         parser.add_argument('--min_allele_freq', type=float, default=0.01,
@@ -80,8 +85,6 @@ class TParameters:
 
         # simulating phenotypes
         pty = parser.add_argument_group('simulating phenotypes')
-        pty.add_argument('--ploidy', type=int, choices=[1, 2],
-                         help="Ploidy of individuals. Haplotypes will be assigned to individuals in increasing order")
         pty.add_argument('--pty_sd_envNoise', type=float,
                          help="Std. dev. for environmental noise. If set to 0, no noise will be simulated.")
         pty.add_argument('--pty_h_squared', type=float,
@@ -130,8 +133,8 @@ class TParameters:
                            help="Only test tree that is overlapping the given position for association")
         assoc.add_argument('--skip_first_tree', type=bool, default=False,
                            help='Do not run association test on first tree')
-        assoc.add_argument('--imputation_ref_panel', type=str,
-                           help="tskit object of reference panel")
+        assoc.add_argument('--imputation_ref_panel_tree_file', type=str,
+                           help="tskit object of reference panel. If provided, imputation will be run before GWAS.")
         assoc.add_argument('--genetic_map_file', type=str,
                            help="genetic map with columns for Position [bp], Rate [cM/Mb] and Map [cM]")
 

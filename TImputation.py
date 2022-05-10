@@ -83,93 +83,42 @@ class TImpute:
         buffer = tmp1 * 2 + tmp2
         return buffer
 
-    def run_impute_return_X(self, trees_ref, trees_sample, variants_ref, variants_sample, inds, genetic_map_file, out, logfile):
+    def run_impute_return_X(self, trees_ref, trees_sample, variants_ref, variants_sample, inds, inds_ref, genetic_map_file, out, logfile):
         """
         Impute
         @param genetic_map_file: str
         @param logfile:
-        @param inds: TInds
+        @param inds: TInds for sample
+        @param inds_ref: TInds for reference panel
         @param variants_sample: TVariants for sample
         @param variants_ref: TVariants for reference panel
         @param trees_ref: tskit.treeSequence for reference panel
-        @param trees_sample: tskit.treeSequence for sample
+        @param trees_sample: tskit.treeSequence for sample (tree used for association testing)
         @param variants_ref: TVariants for reference panel
         @param out: str
         """
-        # trees_ref = remove_monomorphic(trees_ref.simplify(trees_ref.samples()))
-        # trees_sample = remove_monomorphic(trees_sample.simplify(trees_sample.samples()))
-        #
-        # MAFs = np.array([v.genotypes.mean() for v in trees_sample.variants()])
-        # loci = np.array([v.position for v in trees_sample.variants()])
-
-        # MAFs = variants.info['allele_freq']
-        # loci = variants.info['position']
-        # M = loci.shape[0]
-
-        # # observation
-        # idx_5 = MAFs
-        #
-        # loci_ceil = np.ceil(loci)
-        # print("loci_ceil", loci_ceil)
-        # overlapped = np.insert(loci_ceil[:-1] == loci_ceil[1:], 1, False)
-        # non_overlapped = np.logical_not(overlapped)
-        # print("overlapped", overlapped)
-        # print("non_overlapped", non_overlapped)
-
-        # observable = variants.info['allele_freq'].values[variants.info['typed'] == True]
-        # M_observable = observable.sum()
-        #
-        # Beta = 1
-        # obs_ratio = 0.2
-        # weights = np.multiply(np.power(MAFs, Beta), np.power(1 - MAFs, Beta))
-        # weights = np.multiply(weights, observable)
-        # weights /= weights.sum()
-        #
-        # M_obs = int(round(M_observable * obs_ratio))
-        # obss = np.random.choice(
-        #     np.where(observable)[0], M_obs, replace=False, p=weights[observable]
-        # )
-        # obss.sort()
-        #
-        # print("obss", obss)
-        #
-        # print("computing K_imputed", flush=True)
-        # os.mkdir("impute")
-        # os.chdir("impute")
-
         # write files in gen format
         name_imputation_output = out + "_imputed.gen"
         sample_gen_file = out + "_samples"
         reference_gen_file = out + "_reference"
         variants_sample.write_gen(sample_gen_file, inds, logfile)
-        variants_ref.write_gen(reference_gen_file, inds, logfile)
-        # X_obs = self.getX(trees_sample, variants_sample.num_typed)
-        # gen_obs = self.X2gen(X_obs)
-        # loci_obs = variants_sample.info['positions'].values[variants_sample.info['typed'] is True]
-        #
-        # haps_file = open(out + ".gen", "a")
-        # i = 0
-        # for idx, obs in enumerate(trees_sample.num_mutations):
-        #     string = "chr snp" + str(obs + 1) + " " + str(loci_obs[idx]) + " A" + " T "
-        #     string = string + " ".join(map(str, gen_obs[:, idx])) + "\n"
-        #     bytes = haps_file.write(string)
-        #     i += 1
-        # haps_file.close()
+        variants_ref.write_gen(reference_gen_file, inds_ref, logfile)
+
         logfile.info("- Starting imputation with impute2 for sample with " + str(variants_sample.num_typed)
                      + " typed variants using reference panel with " + str(variants_ref.num_typed) + " typed variants.")
-        # os.system(
-        #     "~/git/argwas/impute2 "
-        #     + " -g_ref "
-        #     + reference_gen_file + '.gen'
-        #     + " -m "
-        #     + genetic_map_file
-        #     + " -g "
-        #     + sample_gen_file + '.gen'
-        #     + " -int 0 "
-        #     + str(trees_sample.sequence_length)  # chromosome length
-        #     + " -allow_large_regions "
-        #     + " -o " + name_imputation_output
-        # )
+        os.system(
+            "~/git/argwas/impute2 "
+            + " -g_ref "
+            + reference_gen_file + '.gen'
+            + " -m "
+            + genetic_map_file
+            + " -g "
+            + sample_gen_file + '.gen'
+            + " -int 0 "
+            + str(trees_sample.sequence_length)  # chromosome length
+            + " -allow_large_regions "
+            + " -o " + name_imputation_output
+        )
 
         # read imputation results
         gen_imputed = pd.read_table(name_imputation_output, sep=" ", header=None).iloc[:, 5:]
@@ -179,12 +128,7 @@ class TImpute:
         # keep only polymorphic variants
         keep = np.logical_and(X_imputed.mean(axis=0) > 0, X_imputed.mean(axis=0) < 1)
         X_imputed = X_imputed[:, keep]
-        logfile.info("- Done running impute2, imputed sample data set has " + str(X_imputed.shape[1]) + " variants, i.e. "
-                     + str(X_imputed.shape[1] - variants_sample.num_typed) + " more than before")
+        logfile.info("- Done running impute2, imputed sample data set has " + str(X_imputed.shape[1])
+                     + " variants, i.e. " + str(X_imputed.shape[1] - variants_sample.num_typed) + " more than before")
 
-        # Z_imputed = X_imputed
-        # Z_imputed -= Z_imputed.mean(axis=0)
-        # Z_imputed /= Z_imputed.std(axis=0)
-        # K_imputed = np.dot(Z_imputed, np.transpose(Z_imputed))
-        # os.chdir("..")
         return X_imputed

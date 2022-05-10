@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 
 class Individuals:
-    def __init__(self, ploidy, N, N_sample_pop, N_ref_pop):
+    def __init__(self, ploidy, N):
 
         if ploidy is None:
             raise ValueError("Must provide ploidy with --ploidy")
@@ -18,8 +18,6 @@ class Individuals:
         self._ploidy = ploidy
         self._num_haplotypes = N
         self._num_inds = int(self._num_haplotypes / self._ploidy)
-        self._study_ids = range(0, N_sample_pop)
-        self._ref_ids = range(0, N_ref_pop)
         self._ind_assignment = pd.DataFrame()
         self._ind_assignment['haplotype'] = range(0, self._num_haplotypes)
         self._ind_assignment['individual'] = np.repeat(-1, self._num_haplotypes)
@@ -56,22 +54,6 @@ class Individuals:
     @num_inds.setter
     def num_inds(self, num_inds):
         self._num_inds = num_inds
-
-    @property
-    def study_ids(self):
-        return self._study_ids
-
-    @study_ids.setter
-    def study_ids(self, study_ids):
-        self._study_ids = study_ids
-
-    @property
-    def ref_ids(self):
-        return self._ref_ids
-
-    @ref_ids.setter
-    def ref_ids(self, ref_ids):
-        self._ref_ids = ref_ids
 
     @property
     def names(self):
