@@ -389,13 +389,13 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
         """
         if covariance_type == "scaled":
             covariance = tree_obj.get_covariance_scaled(inds=inds)
-            self.write_covariance_matrix_R(covariance=covariance, out=out)
+            write_covariance_matrix_R(covariance=covariance, out=out)
 
         elif covariance_type == "eGRM":
-            trees = ts_object.keep_intervals(np.array([[tree_obj.start, tree_obj.end]]), simplify=True)
-            covariance, mu = tree_obj.get_eGRM(tskit_obj=trees, inds=inds, out=out, logfile=logfile,
+            # trees = ts_object.keep_intervals(np.array([[tree_obj.start, tree_obj.end]]), simplify=True)
+            covariance, mu = tree_obj.get_eGRM(tskit_obj=ts_object, tree_obj=tree_obj, inds=inds, out=out, logfile=logfile,
                                                skip_first_tree=skip_first_tree)
-            self.write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
+            write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
 
             # if np.trace(covariance) != inds.num_inds:
             # raise ValueError("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
@@ -412,7 +412,7 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
             if np.trace(covariance) != inds.num_inds:
                 logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
                     inds.num_inds) + " but obtained " + str(np.trace(covariance)))
-            self.write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
+            write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
 
         else:
             raise ValueError("Did not recognize " + str(covariance_type) + " as a covariance type")

@@ -8,11 +8,8 @@ Created on Tue Sep  7 17:43:29 2021
 import numpy as np
 import pandas as pd
 import tskit
-import subprocess
-import os
-import sys
+from egrm import varGRM_C
 from egrm import varGRM
-
 
 class TTrees:
     def __init__(self, ts_object):
@@ -56,9 +53,10 @@ class TTrees:
     @staticmethod
     def remove_monomorphic(trees):
         """
-        This was copied from egrm/manuscript/simulate. Needed to remove variants that are only polymorphic in one population
-        @param trees: tskit.treeSequences
-        @return: tskit.treeSequences
+        From egrm/manuscript/simulate, needed to remove variants that are not polymorphic in one of the populations
+        if original tree simulation contained multiple populations
+        @param trees: tskit.treeSequence
+        @return: tskit.treeSequence
         """
         tables = trees.tables
         tables.sites.clear()
@@ -71,10 +69,10 @@ class TTrees:
                     k = tree.num_samples(mutation.node)
                     if 0 < k < n:
                         if not visited:
+                            visited = True
                             site_id = tables.sites.add_row(
                                 site.position, site.ancestral_state, metadata=site.metadata
                             )
-                            visited = True
                         tables.mutations.add_row(
                             site_id,
                             mutation.node,
@@ -84,28 +82,6 @@ class TTrees:
                         )
         tables.compute_mutation_parents()
         return tables.tree_sequence()
-
-    @staticmethod
-    def get_X(trees, variants, inds):
-        """
-        Return num_inds x num_typed_variants genotype matrix
-        @param trees: tskit.treeSequence
-        @param variants: TVariants
-        @param inds: TInds
-        @return: np.array(num_inds, num_typed_variants) type int
-        """
-        X = np.zeros((inds.num_inds, variants.num_typed)).astype("int")
-
-        i = 0
-        for v, variant in enumerate(variants.variants):
-            if variants.info.iloc[v]['typed']:
-                if inds.ploidy == 2:
-                    genotypes = inds.get_diploid_genotypes(variant.genotypes)
-                else:
-                    genotypes = variant.genotypes
-                X[:, i] = genotypes
-                i += 1
-        return X
 
 
 class TTree:
@@ -251,7 +227,7 @@ class TTree:
 
             return self.covariance_diploid
 
-    def get_eGRM(self, tskit_obj, inds, out, skip_first_tree, logfile):
+    def get_eGRM(self, tskit_obj, tree_obj, inds, out, skip_first_tree, logfile):
         """       
         Parameters
         ----------
@@ -267,13 +243,14 @@ class TTree:
         Returns
         -------
         local eGRM as calculated by egrm (Fan et al. 2022).
+        @param tree_obj:
         """
 
         if self.eGRM is None:
             # extract tree and write to file
             # TTrees.extract_single_tree(tree_obj=tree_obj, out=out, logfile=logfile, position=self.start)
 
-            EK_relate, _, EK_relate_mu = varGRM(tskit_obj)
+            EK_relate, _, EK_relate_mu = varGRM(tskit_obj, tree_obj.tree)
             self.eGRM = EK_relate
 
             if inds.ploidy == 2:
