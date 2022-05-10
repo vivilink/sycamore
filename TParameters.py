@@ -29,13 +29,19 @@ class TParameters:
                             help='Set seed of random generator. Default is time stamp.')
         # parser.add_argument('--verbose', dest="verbose", 
         #                     help="Write output to screen")
-        parser.add_argument('--tree_file',
+        parser.add_argument('--tree_file', type=str,
                             help="File of trees to be used for association tests in tskit format")
         parser.add_argument('--variants_file', dest="variants_file",
                             help="File of variant info. Useful if they have been downsampled and you want to use the "
                                  "same typed variants")
         parser.add_argument('--tree_file_simulated',
                             help="File of simulated trees to be used for phenotype simulation in tskit format")
+        parser.add_argument('--N_sample_pop', type=int, default=0,
+                            help="Number of samples in sample population. Must be used on tree simulated with "
+                                 "egrm simulate (reference individuals come after sample individuals")
+        parser.add_argument('--N_ref_pop', type=int, default=0,
+                            help="Number of samples in reference population. Must be used on tree simulated with "
+                                 "egrm simulate (reference individuals come after sample individuals")
 
         # limit data
         parser.add_argument('--min_allele_freq', type=float, default=0.01,
@@ -54,7 +60,11 @@ class TParameters:
                          choices=["stdPopsim", "msprime"],
                          help="Method used for simulating. stdPopsim is real human chromosome")
         sim.add_argument('--N', type=int,
-                         help="Number of haploid individuals to simulate")
+                         help="Number of haploid African individuals to simulate with stdPopsim")
+        sim.add_argument('--N_African', type=int,
+                         help="Number of haploid African individuals to simulate with stdPopsim")
+        sim.add_argument('--N_European', type=int,
+                         help="Number of haploid African individuals to simulate with stdPopsim")
         sim.add_argument('--mu', type=float,
                          help="Mutation rate for simulating with msprime (does not work for stdPopsim")
         sim.add_argument('--AH_tree_pos', type=int,

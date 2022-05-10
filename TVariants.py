@@ -304,6 +304,7 @@ class TVariantsFiltered(TVariants):
         """
 
         # check if interval is valid
+        logfile.info("Searching for variant with correct allele frequency in the following interval: " + str(interval))
         num_lines = self._info[(self._info['position'] >= interval[0]) & (self._info['position'] <= interval[1])].shape[0]
         if num_lines == 0:
             raise ValueError("The interval " + str(interval) + " contains no variants")

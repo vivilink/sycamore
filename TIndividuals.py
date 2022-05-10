@@ -9,9 +9,8 @@ Created on Wed Oct 20 15:43:16 2021
 import pandas as pd
 import numpy as np
 
-
 class Individuals:
-    def __init__(self, ploidy, N):
+    def __init__(self, ploidy, N, N_sample_pop, N_ref_pop):
 
         if ploidy is None:
             raise ValueError("Must provide ploidy with --ploidy")
@@ -19,9 +18,14 @@ class Individuals:
         self._ploidy = ploidy
         self._num_haplotypes = N
         self._num_inds = int(self._num_haplotypes / self._ploidy)
+        self._study_ids = range(0, N_sample_pop)
+        self._ref_ids = range(0, N_ref_pop)
         self._ind_assignment = pd.DataFrame()
         self._ind_assignment['haplotype'] = range(0, self._num_haplotypes)
         self._ind_assignment['individual'] = np.repeat(-1, self._num_haplotypes)
+        # TODO: population assignment should come from tree file!
+        # self._ind_assignment['population'] = np.append(np.repeat("sample", N_sample_pop), np.repeat("ref", N_ref_pop))
+
         assignment = -1
         for i in range(self._num_haplotypes):
             if i % 2 == 0:
@@ -52,6 +56,22 @@ class Individuals:
     @num_inds.setter
     def num_inds(self, num_inds):
         self._num_inds = num_inds
+
+    @property
+    def study_ids(self):
+        return self._study_ids
+
+    @study_ids.setter
+    def study_ids(self, study_ids):
+        self._study_ids = study_ids
+
+    @property
+    def ref_ids(self):
+        return self._ref_ids
+
+    @ref_ids.setter
+    def ref_ids(self, ref_ids):
+        self._ref_ids = ref_ids
 
     @property
     def names(self):

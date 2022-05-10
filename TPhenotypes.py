@@ -132,6 +132,11 @@ class Phenotypes:
             if args.single_variant_af is None:
                 raise ValueError(
                     "Must provide allele freq values for 'singleTyped' phenotype using '--single_variant_af'")
+            if args.single_variant_interval[0] < 0:
+                raise ValueError("single_variant_interval start cannot be negative")
+            if args.single_variant_interval[1] > trees.sequence_length:
+                raise ValueError("single_variant_interval end cannot be larger than tree sequence length, which is "
+                                 + str(trees.sequence_length))
 
             fig, ax = plt.subplots(1, figsize=(30, 30))
             var_index, pos = variants_orig.find_variant(typed=True, freq=args.single_variant_af,
@@ -153,7 +158,10 @@ class Phenotypes:
                 raise ValueError("Must provide beta values for phenotype 'singleUntyped' using '--pty_fixed_betas'")
             if args.single_variant_af is None:
                 raise ValueError(
-                    "Must provide allele freq values for 'singleTyped' phenotype using '--single_variant_af'")
+                    "Must provide allele freq values for 'singleUntyped' phenotype using '--single_variant_af'")
+            if args.single_variant_interval[1] > trees.sequence_length:
+                raise ValueError("single_variant_interval end cannot be larger than tree sequence length, which is "
+                                 + str(trees.sequence_length))
 
             fig, ax = plt.subplots(1, figsize=(30, 30))
             var_index, pos = variants_orig.find_variant(typed=False, freq=args.single_variant_af,

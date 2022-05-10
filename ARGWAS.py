@@ -181,14 +181,13 @@ if args.task == "associate":
         raise ValueError(
             "The trees provided with params 'tree_file_simulated' and 'tree_file' must have the same number of samples")
 
-    samp_ids = trees.samples()
-    N = len(samp_ids)
-
     # --------------------------------
     # create diploids and variants
     # --------------------------------
-
-    inds = tind.Individuals(args.ploidy, N)
+    samp_ids = trees.samples()
+    N = len(samp_ids)
+    inds = tind.Individuals(args.ploidy, N, N_sample_pop=args.N_sample_pop, N_ref_pop=args.N_ref_pop)
+    trees = tt.TTrees.remove_monomorphic(trees)
 
     # TODO: trees_orig and variants_orig should be initialized at the same time, e.g. together in one function. We
     #  should not have 2 tree files and 2 variant files just floating around separately
@@ -242,10 +241,15 @@ if args.task == "associate":
             logger.info("- Imputing genotypes with impute2:")
             logger.add()
             # TODO: need to read tree file given in argument here
+            trees_ref = tskit.load(args.reference_tree_file)
+            trees_ref = tt.remove_monomorphic(trees_ref)
+
             trees_ref_panel = trees_orig
             imputation_obj = impute.TImpute()
-            X = imputation_obj.run_impute_return_X(trees_ref=trees_ref_panel, trees_sample=trees, variants_ref=variants_orig,
-                                                   variants_sample=variants, genetic_map_file=args.genetic_map_file, inds=inds,
+            X = imputation_obj.run_impute_return_X(trees_ref=trees_ref_panel, trees_sample=trees,
+                                                   variants_ref=variants_orig,
+                                                   variants_sample=variants, genetic_map_file=args.genetic_map_file,
+                                                   inds=inds,
                                                    out=args.out, logfile=logger)
             logger.sub()
             GWAS.test_with_X_matrix(X, inds, logger)

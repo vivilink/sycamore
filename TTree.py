@@ -11,7 +11,7 @@ import tskit
 import subprocess
 import os
 import sys
-from egrm import varGRM_C, mTMRCA_C
+from egrm import varGRM
 
 
 class TTrees:
@@ -52,6 +52,38 @@ class TTrees:
         trees = ts_object.keep_intervals([np.array(focal_tree.interval)], simplify=True)
         trees.dump(out + "_focal.trees")
         logfile.info("- Wrote trees with " + str(focal_tree.interval) + " to " + out + "_focal.trees")
+
+    @staticmethod
+    def remove_monomorphic(trees):
+        """
+        This was copied from egrm/manuscript/simulate. Needed to remove variants that are only polymorphic in one population
+        @param trees: tskit.treeSequences
+        @return: tskit.treeSequences
+        """
+        tables = trees.tables
+        tables.sites.clear()
+        tables.mutations.clear()
+        n = trees.num_samples
+        for tree in trees.trees():
+            for site in tree.sites():
+                visited = False
+                for mutation in site.mutations:
+                    k = tree.num_samples(mutation.node)
+                    if 0 < k < n:
+                        if not visited:
+                            site_id = tables.sites.add_row(
+                                site.position, site.ancestral_state, metadata=site.metadata
+                            )
+                            visited = True
+                        tables.mutations.add_row(
+                            site_id,
+                            mutation.node,
+                            mutation.derived_state,
+                            parent=-1,
+                            metadata=None,
+                        )
+        tables.compute_mutation_parents()
+        return tables.tree_sequence()
 
     @staticmethod
     def get_X(trees, variants, inds):
@@ -241,7 +273,7 @@ class TTree:
             # extract tree and write to file
             # TTrees.extract_single_tree(tree_obj=tree_obj, out=out, logfile=logfile, position=self.start)
 
-            EK_relate, _, EK_relate_mu = varGRM_C(tskit_obj)
+            EK_relate, _, EK_relate_mu = varGRM(tskit_obj)
             self.eGRM = EK_relate
 
             if inds.ploidy == 2:
