@@ -107,7 +107,7 @@ class TImpute:
         logfile.info("- Starting imputation with impute2 for sample with " + str(variants_sample.num_typed)
                      + " typed variants using reference panel with " + str(variants_ref.num_typed) + " typed variants.")
         os.system(
-            "~/git/argwas/impute2 "
+            "impute2 "
             + " -g_ref "
             + reference_gen_file + '.gen'
             + " -m "
