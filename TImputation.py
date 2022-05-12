@@ -92,7 +92,6 @@ class TImpute:
         @param inds_ref: TInds for reference panel
         @param variants_sample: TVariants for sample
         @param variants_ref: TVariants for reference panel
-        @param trees_ref: tskit.treeSequence for reference panel
         @param trees_sample: tskit.treeSequence for sample (tree used for association testing)
         @param variants_ref: TVariants for reference panel
         @param out: str
