@@ -92,6 +92,7 @@ class TImpute:
         @param inds_ref: TInds for reference panel
         @param variants_sample: TVariants for sample
         @param variants_ref: TVariants for reference panel
+        @param trees_ref: tskit.treeSequence for reference panel
         @param trees_sample: tskit.treeSequence for sample (tree used for association testing)
         @param variants_ref: TVariants for reference panel
         @param out: str
@@ -108,7 +109,7 @@ class TImpute:
             logfile.info("- Starting imputation with impute2 for sample with " + str(variants_sample.num_typed)
                          + " typed variants using reference panel with " + str(variants_ref.num_typed) + " typed variants.")
             os.system(
-                "impute2 "
+                "./impute2 "
                 + " -g_ref "
                 + reference_gen_file + '.gen'
                 + " -m "
