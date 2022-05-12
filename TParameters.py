@@ -77,7 +77,7 @@ class TParameters:
                          help="Recombination rate for simulating with msprime (does not work for stdPopsim")
         sim.add_argument('--sequence_length', type=float,
                          help="Sequence length for simulating with msprime (does not work for stdPopsim")
-        sim.add_argument('--pos_float', type=bool, action=argparse.BooleanOptionalAction,
+        sim.add_argument('--pos_float', action='store_true',
                          help="Should the positions of the variants be transformed into integers. Msprime simulates a "
                               "continuous genome, so if pos_int is true, the simulated positions are rounded and if "
                               "one position overlaps the previous, it is moved to the next position in the genome.")
@@ -130,9 +130,9 @@ class TParameters:
                                 "N/trace, or use the eGRM calculated by egrm (Fan et al. 2022)")
         assoc.add_argument('--test_only_tree_at', type=float,
                            help="Only test tree that is overlapping the given position for association")
-        assoc.add_argument('--skip_first_tree', action=argparse.BooleanOptionalAction,
+        assoc.add_argument('--skip_first_tree', action='store_true',
                            help='Do not run association test on first tree')
-        assoc.add_argument('--do_imputation', action=argparse.BooleanOptionalAction,
+        assoc.add_argument('--do_imputation', action='store_true',
                            help="Imputation takes a long time to run. Use this parameter if imputation was already run "
                                 "and you just want to read in files")
         assoc.add_argument('--imputation_ref_panel_tree_file', type=str,
