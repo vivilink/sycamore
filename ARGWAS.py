@@ -206,6 +206,7 @@ if args.task == "associate":
                                       max_allele_freq=args.max_allele_freq,
                                       prop_typed_variants=args.prop_typed_variants, pos_int=args.pos_int, random=r,
                                       logfile=logger, filtered_variants_file=None)
+    variants.write_variant_info(out=args.out + "_sample", logfile=logger)
 
     # variants_orig are used to simulate phenotypes. They need to be consistent with original tree and the typed
     # status that might have been defined earlier with a variants file. The causal mutation should not be affected by
@@ -238,12 +239,12 @@ if args.task == "associate":
     if args.ass_method == "GWAS" or args.ass_method == "both":
         logger.info("- GWAS:")
         logger.add()
-        GWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
 
         if args.imputation_ref_panel_tree_file is not None:
             logger.info("- Imputing genotypes with impute2:")
             logger.add()
 
+            # read and write variant information
             logger.info("- Obtaining reference panel variant information from " + args.imputation_ref_panel_tree_file)
             trees_ref = tskit.load(args.imputation_ref_panel_tree_file)
             trees_ref = tt.TTrees.remove_monomorphic(trees_ref)
@@ -253,26 +254,36 @@ if args.task == "associate":
             variants_ref = tvar.TVariantsFiltered(ts_object=trees_ref, samp_ids=samp_ids_ref, min_allele_freq=0,
                                                   max_allele_freq=1, prop_typed_variants=1, pos_int=args.pos_int,
                                                   random=r, logfile=logger, filtered_variants_file=None)
-            imputation_obj = impute.TImpute()
+            variants_ref.write_variant_info(out=args.out + "_reference", logfile=logger)
+
+            # genetic map
             if args.genetic_map_file is None:
                 genetic_map_file_name = variants.write_genetic_map(out=args.out, logfile=logger)
-                logger.info("- No genetic map file provided. Writing map with constant rate to " + genetic_map_file_name)
+                logger.info(
+                    "- No genetic map file provided. Writing map with constant rate to " + genetic_map_file_name)
             else:
                 genetic_map_file_name = args.genetic_map_file
                 logger.info("- Reading map with constant rate from " + genetic_map_file_name)
-            genotype_matrix_imputed = imputation_obj.run_impute_return_X(trees_ref=trees_ref, trees_sample=trees,
-                                                                         variants_ref=variants_ref,
-                                                                         variants_sample=variants,
-                                                                         genetic_map_file=genetic_map_file_name,
-                                                                         inds=inds, inds_ref=inds_ref,
-                                                                         out=args.out, logfile=logger)
-            logger.sub()
 
-            GWAS.test_with_X_matrix(genotype_matrix_imputed, inds, logger)
+            # impute
+            imputation_obj = impute.TImpute()
+            genotype_matrix_imputed, positions = imputation_obj.run_impute_return_X(trees_sample=trees,
+                                                                                    variants_ref=variants_ref,
+                                                                                    variants_sample=variants,
+                                                                                    genetic_map_file=genetic_map_file_name,
+                                                                                    inds=inds, inds_ref=inds_ref,
+                                                                                    do_imputation=args.do_imputation,
+                                                                                    out=args.out, logfile=logger)
+            logger.sub()
+            GWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=genotype_matrix_imputed.shape[1])
+            GWAS.test_with_positions_from_X_matrix(X=genotype_matrix_imputed, positions=positions, variants_sample=variants,
+                                                   logfile=logger)
+            GWAS.write_to_file_with_X_matrix(positions=positions, name=args.out, logfile=logger)
         else:
+            GWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
             GWAS.test_with_variants_object(variants, inds, logger)
-        GWAS.write_to_file(variants, args.out, logger)
-        GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
+            GWAS.write_to_file(variants, args.out, logger)
+            # GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
 
         logger.sub()
 

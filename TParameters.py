@@ -57,8 +57,7 @@ class TParameters:
                             help="Proportion of variants that are typed (out of the ones that pass the frequency "
                                  "filter).")
         parser.add_argument('--trees_interval', nargs='+', type=int,  # default=[49e6, 50e6],
-                            help="Proportion of variants that are typed (out of the ones that pass the frequency "
-                                 "filter).")
+                            help="Only test the trees and variants in this interval for association")
         # simulating trees
         sim = parser.add_argument_group('simulating trees')
         sim.add_argument('--sim_tree_simulator', dest="sim_tree_simulator", default="stdPopsim",
@@ -133,6 +132,9 @@ class TParameters:
                            help="Only test tree that is overlapping the given position for association")
         assoc.add_argument('--skip_first_tree', type=bool, default=False,
                            help='Do not run association test on first tree')
+        assoc.add_argument('--do_imputation', type=bool, default=True,
+                           help="Imputation takes a long time to run. Use this parameter if imputation was already run "
+                                "and you just want to read in files")
         assoc.add_argument('--imputation_ref_panel_tree_file', type=str,
                            help="tskit object of reference panel. If provided, imputation will be run before GWAS.")
         assoc.add_argument('--genetic_map_file', type=str,

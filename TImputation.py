@@ -83,7 +83,7 @@ class TImpute:
         buffer = tmp1 * 2 + tmp2
         return buffer
 
-    def run_impute_return_X(self, trees_ref, trees_sample, variants_ref, variants_sample, inds, inds_ref, genetic_map_file, out, logfile):
+    def run_impute_return_X(self, trees_sample, variants_ref, variants_sample, inds, inds_ref, genetic_map_file, do_imputation, out, logfile):
         """
         Impute
         @param genetic_map_file: str
@@ -92,7 +92,6 @@ class TImpute:
         @param inds_ref: TInds for reference panel
         @param variants_sample: TVariants for sample
         @param variants_ref: TVariants for reference panel
-        @param trees_ref: tskit.treeSequence for reference panel
         @param trees_sample: tskit.treeSequence for sample (tree used for association testing)
         @param variants_ref: TVariants for reference panel
         @param out: str
@@ -101,27 +100,32 @@ class TImpute:
         name_imputation_output = out + "_imputed.gen"
         sample_gen_file = out + "_samples"
         reference_gen_file = out + "_reference"
-        variants_sample.write_gen(sample_gen_file, inds, logfile)
-        variants_ref.write_gen(reference_gen_file, inds_ref, logfile)
 
-        logfile.info("- Starting imputation with impute2 for sample with " + str(variants_sample.num_typed)
-                     + " typed variants using reference panel with " + str(variants_ref.num_typed) + " typed variants.")
-        os.system(
-            "impute2 "
-            + " -g_ref "
-            + reference_gen_file + '.gen'
-            + " -m "
-            + genetic_map_file
-            + " -g "
-            + sample_gen_file + '.gen'
-            + " -int 0 "
-            + str(trees_sample.sequence_length)  # chromosome length
-            + " -allow_large_regions "
-            + " -o " + name_imputation_output
-        )
+        if do_imputation:
+            variants_sample.write_gen(sample_gen_file, inds, logfile)
+            variants_ref.write_gen(reference_gen_file, inds_ref, logfile)
+
+            logfile.info("- Starting imputation with impute2 for sample with " + str(variants_sample.num_typed)
+                         + " typed variants using reference panel with " + str(variants_ref.num_typed) + " typed variants.")
+            os.system(
+                "impute2 "
+                + " -g_ref "
+                + reference_gen_file + '.gen'
+                + " -m "
+                + genetic_map_file
+                + " -g "
+                + sample_gen_file + '.gen'
+                + " -int 0 "
+                + str(trees_sample.sequence_length)  # chromosome length
+                + " -allow_large_regions "
+                + " -o " + name_imputation_output
+            )
+        else:
+            logfile.info("- Assuming imputation was already run, reading imputed genotypes from " + name_imputation_output)
 
         # read imputation results
         gen_imputed = pd.read_table(name_imputation_output, sep=" ", header=None).iloc[:, 5:]
+        positions = np.array(pd.read_table(name_imputation_output, sep=" ", header=None).iloc[:, 2].values)
         gen_imputed = np.transpose(gen_imputed.values)
         X_imputed = self.gen2X(gen_imputed)
 
@@ -131,4 +135,4 @@ class TImpute:
         logfile.info("- Done running impute2, imputed sample data set has " + str(X_imputed.shape[1])
                      + " variants, i.e. " + str(X_imputed.shape[1] - variants_sample.num_typed) + " more than before")
 
-        return X_imputed
+        return X_imputed, positions[keep]

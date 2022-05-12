@@ -108,6 +108,7 @@ class TAssociationTesting_GWAS(TAssociationTesting):
         self.num_associations = self.num_typed_variants
         # self._check_compatibility(ts_object, phenotypes)
         self.p_values = np.empty(self.num_associations)
+        self.imputed_status = np.repeat(False, self.num_associations)
 
     def test_with_variants_object(self, variants, inds, logfile):
         # counter respective to typed variants
@@ -124,14 +125,40 @@ class TAssociationTesting_GWAS(TAssociationTesting):
                 i += 1
         logfile.info("- Ran OLS for " + str(variants.num_typed) + " variants")
 
-    def test_with_X_matrix(self, X, inds, logfile):
+    def test_with_positions_from_X_matrix(self, X, positions, variants_sample, logfile):
         # counter respective to typed variants
-        i = 0
+        if len(positions) != X.shape[1]:
+            raise ValueError("X genotype matrix does not have same number of columns (" + str(X.shape[1])
+                             + ") as positions (" + str(len(positions)) + ")")
+        positions_sample = set(variants_sample.info['position'].values)
         for v in range(X.shape[1]):
             genotypes = X[:, v]
             PVALUE = OLS(genotypes=genotypes, phenotypes=self.phenotypes)
-            self.p_values[i] = PVALUE
+            self.p_values[v] = PVALUE
+            if not (positions[v] in positions_sample):
+                self.imputed_status[v] = True
         logfile.info("- Ran OLS for " + str(X.shape[1]) + " variants")
+
+    def write_to_file_with_X_matrix(self, positions, name, logfile):
+        # results for each variant
+        table = pd.DataFrame()
+        table['start'] = positions
+        table['end'] = positions
+        # table['typed'] = variants.info['typed']
+        table['p_value'] = self.p_values
+        table['imputed_status'] = self.imputed_status
+        # table['causal'] = np.repeat("FALSE", self.num_associations)
+        # table.loc[self.phenotypes.causal_variant_indeces, 'causal'] = "TRUE"
+        # table['betas'] = self.phenotypes.betas
+        logfile.info("- Writing results from OLS to '" + name + "_variants_results.csv'")
+        table.to_csv(name + "_variants_results.csv", index=False, header=True)
+
+        # summary statistics
+        stats = pd.DataFrame({'min_p_value': [np.nanmin(self.p_values)],
+                              'max_p_value': [np.nanmax(self.p_values)]
+                              })
+        logfile.info("- Writing stats from OLS to '" + name + "_variants_stats.csv'")
+        stats.to_csv(name + "_variants_stats.csv", index=False, header=True)
 
     def write_to_file(self, variants, name, logfile):
         # results for each variant
@@ -144,6 +171,7 @@ class TAssociationTesting_GWAS(TAssociationTesting):
         table['end'] = info_typed['position']
         # table['typed'] = variants.info['typed']
         table['p_value'] = self.p_values
+        table['imputed_status'] = self.imputed_status
         # table['causal'] = np.repeat("FALSE", self.num_associations)
         # table.loc[self.phenotypes.causal_variant_indeces, 'causal'] = "TRUE"
         # table['betas'] = self.phenotypes.betas 
