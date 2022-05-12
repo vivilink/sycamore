@@ -83,7 +83,8 @@ class TImpute:
         buffer = tmp1 * 2 + tmp2
         return buffer
 
-    def run_impute_return_X(self, trees_sample, variants_ref, variants_sample, inds, inds_ref, genetic_map_file, do_imputation, out, logfile):
+    def run_impute_return_X(self, trees_sample, variants_ref, variants_sample, inds, inds_ref, genetic_map_file,
+                            do_imputation, imputed_gen_file, out, logfile):
         """
         Impute
         @param genetic_map_file: str
@@ -96,12 +97,12 @@ class TImpute:
         @param variants_ref: TVariants for reference panel
         @param out: str
         """
-        # write files in gen format
-        name_imputation_output = out + "_imputed.gen"
-        sample_gen_file = out + "_samples"
-        reference_gen_file = out + "_reference"
-
         if do_imputation:
+            # write files in gen format
+            name_imputation_output = out + "_imputed.gen"
+            sample_gen_file = out + "_samples"
+            reference_gen_file = out + "_reference"
+
             variants_sample.write_gen(sample_gen_file, inds, logfile)
             variants_ref.write_gen(reference_gen_file, inds_ref, logfile)
 
@@ -121,7 +122,11 @@ class TImpute:
                 + " -o " + name_imputation_output
             )
         else:
-            logfile.info("- Assuming imputation was already run, reading imputed genotypes from " + name_imputation_output)
+            if imputed_gen_file is None:
+                raise ValueError("When --do_imputation is set to False, the imputed genotypes must be provided with "
+                                 "--imputed_gen_file parameter")
+            logfile.info("- Assuming imputation was already run, reading imputed genotypes from " + imputed_gen_file)
+            name_imputation_output = imputed_gen_file
 
         # read imputation results
         gen_imputed = pd.read_table(name_imputation_output, sep=" ", header=None).iloc[:, 5:]

@@ -273,6 +273,7 @@ if args.task == "associate":
                                                                                     genetic_map_file=genetic_map_file_name,
                                                                                     inds=inds, inds_ref=inds_ref,
                                                                                     do_imputation=args.do_imputation,
+                                                                                    imputed_gen_file=args.imputed_gen_file,
                                                                                     out=args.out, logfile=logger)
             logger.sub()
             GWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=genotype_matrix_imputed.shape[1])

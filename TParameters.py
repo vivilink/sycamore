@@ -137,6 +137,9 @@ class TParameters:
                                 "and you just want to read in files")
         assoc.add_argument('--imputation_ref_panel_tree_file', type=str,
                            help="tskit object of reference panel. If provided, imputation will be run before GWAS.")
+        assoc.add_argument('--imputed_gen_file', type=str,
+                           help="If imputation has already been run previously, set do_imputation to False and provide "
+                                "the .gen file produced by impute2 with this parameter")
         assoc.add_argument('--genetic_map_file', type=str,
                            help="genetic map with columns for Position [bp], Rate [cM/Mb] and Map [cM]")
 
