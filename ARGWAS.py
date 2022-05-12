@@ -256,14 +256,6 @@ if args.task == "associate":
                                                   random=r, logfile=logger, filtered_variants_file=None)
             variants_ref.write_variant_info(out=args.out + "_reference", logfile=logger)
 
-            # genetic map
-            if args.genetic_map_file is None:
-                genetic_map_file_name = variants.write_genetic_map(out=args.out, logfile=logger)
-                logger.info(
-                    "- No genetic map file provided. Writing map with constant rate to " + genetic_map_file_name)
-            else:
-                genetic_map_file_name = args.genetic_map_file
-                logger.info("- Reading map with constant rate from " + genetic_map_file_name)
 
             # impute
             imputation_obj = impute.TImpute()

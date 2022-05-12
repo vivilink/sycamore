@@ -106,6 +106,15 @@ class TImpute:
             variants_sample.write_gen(sample_gen_file, inds, logfile)
             variants_ref.write_gen(reference_gen_file, inds_ref, logfile)
 
+            # genetic map
+            if genetic_map_file is None:
+                genetic_map_file_name = variants_sample.write_genetic_map(out=out, logfile=logfile)
+                logfile.info(
+                    "- No genetic map file provided. Writing map with constant rate to " + genetic_map_file_name)
+            else:
+                genetic_map_file_name = genetic_map_file
+                logfile.info("- Reading map with constant rate from " + genetic_map_file_name)
+
             logfile.info("- Starting imputation with impute2 for sample with " + str(variants_sample.num_typed)
                          + " typed variants using reference panel with " + str(variants_ref.num_typed) + " typed variants.")
             os.system(
