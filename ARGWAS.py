@@ -103,7 +103,7 @@ if args.task == "simulate":
         logger.warning("Number of samples in tree does not match number of samples in arguments")
     inds = tind.Individuals(args.ploidy, N)
     variants = tvar.TVariants(ts_object=trees, samp_ids=samp_ids)
-    variants.fill_info(ts_object=trees, samp_ids=samp_ids, pos_int=args.pos_int)
+    variants.fill_info(ts_object=trees, samp_ids=samp_ids, pos_float=args.pos_float)
     variants.write_variant_info(out=args.out, logfile=logger)
 
     tt.TTrees.writeStats(ts_object=trees, out=args.out, logfile=logger)
@@ -150,7 +150,7 @@ if args.task == "downsampleVariantsWriteShapeit":
     inds = tind.Individuals(args.ploidy, N)
     inds.write_shapeit2(args.out, logger)
     variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq,
-                                      args.prop_typed_variants, args.pos_int, r, logger)
+                                      args.prop_typed_variants, args.pos_float, r, logger)
     # variants = tvar.TVariantsFiltered(trees, samp_ids, 0.01, 1, 0.5, r)
     variants.write_variant_info(args.out, logger)
     variants.write_shapeit2(args.out, inds, logger)
@@ -204,7 +204,7 @@ if args.task == "associate":
     #  be able to keep track of untyped variants (i.e. for variants_orig)
     variants = tvar.TVariantsFiltered(ts_object=trees, samp_ids=samp_ids, min_allele_freq=args.min_allele_freq,
                                       max_allele_freq=args.max_allele_freq,
-                                      prop_typed_variants=args.prop_typed_variants, pos_int=args.pos_int, random=r,
+                                      prop_typed_variants=args.prop_typed_variants, pos_float=args.pos_float, random=r,
                                       logfile=logger, filtered_variants_file=None)
     variants.write_variant_info(out=args.out + "_sample", logfile=logger)
 
@@ -212,7 +212,7 @@ if args.task == "associate":
     # status that might have been defined earlier with a variants file. The causal mutation should not be affected by
     # a freq filter
     variants_orig = tvar.TVariantsFiltered(ts_object=trees_orig, samp_ids=samp_ids, min_allele_freq=0,
-                                           max_allele_freq=1, prop_typed_variants=1, pos_int=args.pos_int, random=r,
+                                           max_allele_freq=1, prop_typed_variants=1, pos_float=args.pos_float, random=r,
                                            logfile=logger, filtered_variants_file=args.variants_file)
 
     # --------------------------------
@@ -252,7 +252,7 @@ if args.task == "associate":
             N_ref = len(samp_ids_ref)
             inds_ref = tind.Individuals(args.ploidy_ref, N_ref)
             variants_ref = tvar.TVariantsFiltered(ts_object=trees_ref, samp_ids=samp_ids_ref, min_allele_freq=0,
-                                                  max_allele_freq=1, prop_typed_variants=1, pos_int=args.pos_int,
+                                                  max_allele_freq=1, prop_typed_variants=1, pos_float=args.pos_float,
                                                   random=r, logfile=logger, filtered_variants_file=None)
             variants_ref.write_variant_info(out=args.out + "_reference", logfile=logger)
 

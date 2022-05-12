@@ -24,7 +24,7 @@ class TVariants:
         self._info_columns = ['var_index', 'position', 'allele_freq', 'num_alleles', 'typed', 'tree_index']
         self._info = pd.DataFrame(index=range(self._number), columns=self._info_columns)
 
-    def fill_info(self, ts_object, samp_ids, pos_int):
+    def fill_info(self, ts_object, samp_ids, pos_float):
         for v, var in enumerate(list(ts_object.variants(samples=samp_ids))):
             tmp = sum(var.genotypes) / len(var.genotypes)
 
@@ -39,7 +39,7 @@ class TVariants:
 
             # determine position
             pos = -1
-            if pos_int:
+            if not pos_float:
                 pos = round(var.site.position)
                 if v > 0 and pos == self._positions[v - 1]:
                     pos += 1
@@ -122,7 +122,7 @@ class TVariantsFiltered(TVariants):
     filtered_variants_file, or if none given it depends on the allele frequency filteres and prop_typed_variants filters
     """
 
-    def __init__(self, ts_object, samp_ids, min_allele_freq, max_allele_freq, prop_typed_variants, pos_int, random,
+    def __init__(self, ts_object, samp_ids, min_allele_freq, max_allele_freq, prop_typed_variants, pos_float, random,
                  logfile, filtered_variants_file=None):
         """
         Parameters
@@ -134,8 +134,8 @@ class TVariantsFiltered(TVariants):
         min_allele_freq : float
         max_allele_freq : float
         prop_typed_variants : float
-        pos_int : bool
-            Defines if positions of variants are to be saved as integers.
+        pos_float : bool
+            Defines if positions of variants are to be saved as integers (default) or as float.
         random : TRandomGenerator
         logfile : logger
         filtered_variants_file : str, optional
@@ -154,7 +154,7 @@ class TVariantsFiltered(TVariants):
 
         # build variant object from tree file -> filter!
         if filtered_variants_file is None:
-            self.fill_info(ts_object, samp_ids, pos_int)
+            self.fill_info(ts_object, samp_ids, pos_float)
             self._number_typed = -1
 
             logfile.info("- Building variant information from scratch based on simulated trees")
