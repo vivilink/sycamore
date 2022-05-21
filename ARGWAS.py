@@ -144,6 +144,11 @@ if args.task == "downsampleVariantsWriteShapeit":
     samp_ids = trees.samples()
     N = len(samp_ids)
 
+    if args.trees_interval is not None:
+        logger.info(
+            "- Creating downsampled trees only for positions overlapping the following interval: " + str(args.trees_interval))
+        trees = trees.keep_intervals([args.trees_interval], simplify=True)
+
     # --------------------------------
     # create diploids and variants
     # --------------------------------
