@@ -267,7 +267,7 @@ if args.task == "associate":
             genotype_matrix_imputed, positions = imputation_obj.run_impute_return_X(trees_sample=trees,
                                                                                     variants_ref=variants_ref,
                                                                                     variants_sample=variants,
-                                                                                    genetic_map_file=genetic_map_file_name,
+                                                                                    genetic_map_file=args.genetic_map_file,
                                                                                     inds=inds, inds_ref=inds_ref,
                                                                                     do_imputation=args.do_imputation,
                                                                                     imputed_gen_file=args.imputed_gen_file,
