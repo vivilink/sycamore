@@ -122,7 +122,7 @@ class TImpute:
                 + " -g_ref "
                 + reference_gen_file + '.gen'
                 + " -m "
-                + genetic_map_file
+                + genetic_map_file_name
                 + " -g "
                 + sample_gen_file + '.gen'
                 + " -int 0 "
