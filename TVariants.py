@@ -100,12 +100,14 @@ class TVariants:
         @param logfile:
         @return:
         """
+        outname = out + ".map"
+        logfile.info("- Writing genetic map to " + outname)
         # if file exists, clear
-        map_file = open(out + ".map", "w")
+        map_file = open(outname, "w")
         map_file.close()
 
         # write file line by line
-        map_file = open(out + ".map", 'a')
+        map_file = open(outname, 'a')
         map_file.write("pos COMBINED_rate Genetic_Map\n")
         for index, row in self._info.iterrows():
             if row['typed']:
@@ -113,7 +115,7 @@ class TVariants:
                 string = string + str(row['position'] / 1000000) + "\n"
                 bytes = map_file.write(string)
         map_file.close()
-        return out + ".map"
+        return outname
 
 
 class TVariantsFiltered(TVariants):
