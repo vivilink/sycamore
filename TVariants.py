@@ -7,7 +7,7 @@ Created on Mon Aug 30 17:44:45 2021
 """
 import numpy as np
 import pandas as pd
-import os
+import time
 
 
 class TVariants:
@@ -250,10 +250,16 @@ class TVariantsFiltered(TVariants):
         haps.iloc[:, 4] = 'T'
 
         logfile.info("- Building haplotypes for typed variants")
-
+        logfile.add()
         # can't use v for index because it loops over all variants, not only typed ones
         index = 0
+        # log progress
+        start = time.time()
+
         for v, var in enumerate(self._variants):
+            if v % 10000 == 0:
+                end = time.time()
+                logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(round(end - start)) + " s")
             # print(v, self._info.iloc[v]['typed'])
             if self._info.iloc[v]['typed']:
                 # if self._info.iloc[v]['position'] == None :
@@ -265,6 +271,7 @@ class TVariantsFiltered(TVariants):
 
         logfile.info("- Writing haplotypes in Shapeit2 format to file '" + name + "_variants.haps'")
         haps.to_csv(name + "_variants.haps", sep=' ', header=False, index=False)
+        logfile.sub()
 
     def write_gen(self, out, inds, logfile):
         """
