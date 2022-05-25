@@ -126,14 +126,22 @@ class TVariants:
         @return:
         """
         logfile.info("- Writing haplotypes in impute2 format to file '" + out + ".gen'")
+        logfile.add()
         # if file exists, clear
         map_file = open(out + ".gen", "w")
         map_file.close()
+
+        # log progress
+        start = time.time()
 
         #write line by line
         haps_file = open(out + ".gen", "a")
         i = 0
         for v, var in enumerate(self._variants):
+            if v % 10000 == 0:
+                end = time.time()
+                logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(round(end - start)) + " s")
+
             n_gen = int(inds.num_inds * 3)
             if self._info.iloc[v]['typed']:
                 if inds.ploidy == 2:
@@ -155,6 +163,7 @@ class TVariants:
                 bytes = haps_file.write(string)
                 i += 1
         haps_file.close()
+        logfile.sub()
 
     def write_shapeit2(self, name, inds, logfile):
         """
