@@ -7,6 +7,7 @@ Created on Mon Aug  9 16:57:18 2021
 """
 import tskit
 import TParameters as params
+import TRandomGenerator as rg
 import TPhenotypes as pt
 import TAssociationTesting as gwas
 import TVariants as tvar
@@ -18,7 +19,6 @@ from python_log_indenter import IndentedLoggerAdapter
 import logging
 import os
 import sys
-from numpy.random import RandomState
 
 os.chdir(os.path.dirname(sys.argv[0]))
 
@@ -67,13 +67,8 @@ logger.info("- Adding plots to the following directory '" + str(args.out) + "_pl
 # -----------------------------
 # initialize random generator
 # -----------------------------
-class TRandomGenerator:
-    def __init__(self, seed):
-        self.seed = seed
-        self.random = RandomState(seed)
 
-
-r = TRandomGenerator(args.seed)
+r = rg.TRandomGenerator(args.seed)
 
 logger.info("- randomGenerator seed is set to " + str(r.random.get_state()[1][0]))
 
@@ -359,3 +354,7 @@ if args.task == "associate":
         logger.sub()
 
         logger.info("- Done running association tests")
+
+
+# if __name__ == "__main__":
+#     sys.exit(main(sys.argv[1:]))
