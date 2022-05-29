@@ -10,6 +10,9 @@ import numpy as np
 import os
 import pandas as pd
 import TTree as tt
+import tskit
+import TVariants as tvar
+import TIndividuals as tind
 
 
 def remove_monomorphic(trees):
@@ -45,7 +48,8 @@ class TImpute:
         pass
 
     # TODO: getX and X2gen is creating the diploid genotype matrix. This should be produced by TTrees
-    def getX(self, trees, idx):
+    @staticmethod
+    def getX(trees, idx):
         N = trees.num_samples
         print("idx", idx)
         M = idx
@@ -59,7 +63,8 @@ class TImpute:
             i += 1
         return X
 
-    def X2gen(self, X):
+    @staticmethod
+    def X2gen(X):
         n, m = X.shape
         maternals = np.array(range(0, n, 2))
         paternals = np.array(range(1, n, 2))
@@ -76,72 +81,21 @@ class TImpute:
         buffer[np.arange(2, n_gen, 3), :] = tmp3
         return buffer
 
-    def gen2X(self, gen):
+    @staticmethod
+    def gen2X(gen):
         n, m = gen.shape
         tmp1 = gen[np.arange(0, n, 3), :]
         tmp2 = gen[np.arange(1, n, 3), :]
         buffer = tmp1 * 2 + tmp2
         return buffer
 
-    def run_impute_return_X(self, trees_sample, variants_ref, variants_sample, inds, inds_ref, genetic_map_file,
-                            do_imputation, imputed_gen_file, out, logfile):
-        """
-        Impute
-        @param genetic_map_file: str
-        @param logfile:
-        @param inds: TInds for sample
-        @param inds_ref: TInds for reference panel
-        @param variants_sample: TVariants for sample
-        @param variants_ref: TVariants for reference panel
-        @param trees_sample: tskit.treeSequence for sample (tree used for association testing)
-        @param variants_ref: TVariants for reference panel
-        @param out: str
-        """
-        if do_imputation:
-            # write files in gen format
-            name_imputation_output = out + "_imputed.gen"
-            sample_gen_file = out + "_samples"
-            reference_gen_file = out + "_reference"
-
-            variants_sample.write_gen(sample_gen_file, inds, logfile)
-            variants_ref.write_gen(reference_gen_file, inds_ref, logfile)
-
-            # genetic map
-            if genetic_map_file is None:
-                genetic_map_file_name = variants_sample.write_genetic_map(out=out, logfile=logfile)
-                logfile.info(
-                    "- No genetic map file provided. Writing map with constant rate to " + genetic_map_file_name)
-            else:
-                genetic_map_file_name = genetic_map_file
-                logfile.info("- Reading map with constant rate from " + genetic_map_file_name)
-
-            logfile.info("- Starting imputation with impute2 for sample with " + str(variants_sample.num_typed)
-                         + " typed variants using reference panel with " + str(variants_ref.num_typed) + " typed variants.")
-            os.system(
-                "./impute2 "
-                + " -g_ref "
-                + reference_gen_file + '.gen'
-                + " -m "
-                + genetic_map_file
-                + " -g "
-                + sample_gen_file + '.gen'
-                + " -int 0 "
-                + str(trees_sample.sequence_length)  # chromosome length
-                + " -allow_large_regions "
-                + " -o " + name_imputation_output
-            )
-        else:
-            if imputed_gen_file is None:
-                raise ValueError("When --do_imputation is set to False, the imputed genotypes must be provided with "
-                                 "--imputed_gen_file parameter")
-            logfile.info("- Assuming imputation was already run, reading imputed genotypes from " + imputed_gen_file)
-            name_imputation_output = imputed_gen_file
-
+    @staticmethod
+    def read_imputed_gt(name_imputation_output, variants_sample, logfile):
         # read imputation results
         gen_imputed = pd.read_table(name_imputation_output, sep=" ", header=None).iloc[:, 5:]
         positions = np.array(pd.read_table(name_imputation_output, sep=" ", header=None).iloc[:, 2].values)
         gen_imputed = np.transpose(gen_imputed.values)
-        X_imputed = self.gen2X(gen_imputed)
+        X_imputed = TImpute.gen2X(gen_imputed)
 
         # keep only polymorphic variants
         keep = np.logical_and(X_imputed.mean(axis=0) > 0, X_imputed.mean(axis=0) < 1)
@@ -150,3 +104,65 @@ class TImpute:
                      + " variants, i.e. " + str(X_imputed.shape[1] - variants_sample.num_typed) + " more than before")
 
         return X_imputed, positions[keep]
+
+    @staticmethod
+    def run_impute(trees_sample, imputation_ref_panel_tree_file, ploidy_ref, variants_sample, inds, genetic_map_file,
+                   out, logfile):
+        """
+        Impute with impute2 and a reference panel in tskit tree format
+        @param ploidy_ref: int
+        @param imputation_ref_panel_tree_file: tskit.TreeSequence
+        @param genetic_map_file: str
+        @param logfile:
+        @param inds: TInds for sample
+        @param variants_sample: TVariants for sample
+        @param trees_sample: tskit.treeSequence for sample (tree used for association testing)
+        @param out: str
+        """
+
+        # read and write variant information
+        logfile.info(
+            "- Obtaining reference panel variant information from " + imputation_ref_panel_tree_file)
+        trees_ref = tskit.load(imputation_ref_panel_tree_file)
+        trees_ref = tt.TTrees.remove_monomorphic(trees_ref)
+        samp_ids_ref = trees_ref.samples()
+        N_ref = len(samp_ids_ref)
+        variants_ref = tvar.TVariants(ts_object=trees_ref, samp_ids=samp_ids_ref)
+        variants_ref.fill_info(ts_object=trees_ref, samp_ids=samp_ids_ref, pos_float=False)
+        variants_ref.write_variant_info(out=out + "_reference", logfile=logfile)
+
+        name_imputation_output = out + "_imputed.gen"
+        sample_gen_file = out + "_samples"
+        reference_gen_file = out + "_reference"
+
+        variants_sample.write_gen(sample_gen_file, inds, logfile)
+        inds_ref = tind.Individuals(ploidy_ref, N_ref)
+        variants_ref.write_gen(reference_gen_file, inds_ref, logfile)
+
+        # read or write genetic map
+        if genetic_map_file is None:
+            genetic_map_file_name = variants_sample.write_genetic_map(out=out, logfile=logfile)
+            logfile.info(
+                "- No genetic map file provided. Writing map with constant rate to " + genetic_map_file_name)
+        else:
+            genetic_map_file_name = genetic_map_file
+            logfile.info("- Reading map with constant rate from " + genetic_map_file_name)
+
+        # impute
+        logfile.info("- Starting imputation with impute2 for sample with " + str(variants_sample.num_typed)
+                     + " typed variants using reference panel with " + str(variants_ref.num_typed) + " typed variants.")
+        os.system(
+            "./impute2 "
+            + " -g_ref "
+            + reference_gen_file + '.gen'
+            + " -m "
+            + genetic_map_file_name
+            + " -g "
+            + sample_gen_file + '.gen'
+            + " -int 0 "
+            + str(trees_sample.sequence_length)  # chromosome length
+            + " -allow_large_regions "
+            + " -o " + name_imputation_output
+        )
+
+        return name_imputation_output

@@ -19,7 +19,7 @@ class TParameters:
 
         # general arguments
         parser.add_argument('--task', required=True,
-                            choices=['simulate', 'associate', 'downsampleVariantsWriteShapeit', 'ARGStatistics',
+                            choices=['simulate', 'impute', 'associate', 'downsampleVariantsWriteShapeit', 'ARGStatistics',
                                      'getTreeAtPosition', 'simulateMoreMutations'],
                             help='The task to be executed (simulate or associate)')
         parser.add_argument('--out', required=True, type=str,

@@ -7,7 +7,7 @@ Created on Mon Aug 30 17:44:45 2021
 """
 import numpy as np
 import pandas as pd
-import os
+import time
 
 
 class TVariants:
@@ -100,12 +100,14 @@ class TVariants:
         @param logfile:
         @return:
         """
+        outname = out + ".map"
+        logfile.info("- Writing genetic map to " + outname)
         # if file exists, clear
-        map_file = open(out + ".map", "w")
+        map_file = open(outname, "w")
         map_file.close()
 
         # write file line by line
-        map_file = open(out + ".map", 'a')
+        map_file = open(outname, 'a')
         map_file.write("pos COMBINED_rate Genetic_Map\n")
         for index, row in self._info.iterrows():
             if row['typed']:
@@ -113,7 +115,104 @@ class TVariants:
                 string = string + str(row['position'] / 1000000) + "\n"
                 bytes = map_file.write(string)
         map_file.close()
-        return out + ".map"
+        return outname
+
+    def write_gen(self, out, inds, logfile):
+        """
+        According to https://mathgen.stats.ox.ac.uk/genetics_software/shapeit/shapeit.html#gensample
+        @param out:
+        @param inds:
+        @param logfile:
+        @return:
+        """
+        logfile.info("- Writing haplotypes in impute2 format to file '" + out + ".gen'")
+        logfile.add()
+        # if file exists, clear
+        map_file = open(out + ".gen", "w")
+        map_file.close()
+
+        # log progress
+        start = time.time()
+
+        #write line by line
+        haps_file = open(out + ".gen", "a")
+        i = 0
+        for v, var in enumerate(self._variants):
+            if v % 10000 == 0:
+                end = time.time()
+                logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(round(end - start)) + " s")
+
+            n_gen = int(inds.num_inds * 3)
+            if self._info.iloc[v]['typed']:
+                if inds.ploidy == 2:
+                    genotypes = inds.get_diploid_genotypes(var.genotypes)
+                else:
+                    genotypes = var.genotypes
+
+                tmp1 = (genotypes == 2).astype(int)
+                tmp2 = (genotypes == 1).astype(int)
+                tmp3 = (genotypes == 0).astype(int)
+
+                buffer = np.zeros([n_gen]).astype(int)
+                buffer[np.arange(0, n_gen, 3)] = tmp1
+                buffer[np.arange(1, n_gen, 3)] = tmp2
+                buffer[np.arange(2, n_gen, 3)] = tmp3
+
+                string = "chr snp" + str(i + 1) + " " + str(int(self._info['position'].values[v])) + " A" + " T "
+                string = string + " ".join(map(str, buffer)) + "\n"
+                bytes = haps_file.write(string)
+                i += 1
+        haps_file.close()
+        logfile.sub()
+
+    def write_shapeit2(self, name, inds, logfile):
+        """
+        Write files in SHAPEIT2 format, to be used as input by RELATE (https://myersgroup.github.io/relate/input_data.html)
+
+        Parameters
+        ----------
+        name : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        haps = pd.DataFrame(index=range(self._number_typed), columns=range(5 + inds.num_haplotypes))
+        info_typed = self._info.loc[self._info['typed'] == True]
+        info_typed['index'] = range(self._number_typed)
+        info_typed.set_index(info_typed['index'], drop=True, inplace=True)
+
+        haps.iloc[:, 0] = np.repeat(1, self._number_typed)
+        haps.iloc[:, 1] = '.'
+        haps.iloc[0:self._number_typed, 2] = info_typed['position']
+        haps.iloc[:, 3] = 'A'
+        haps.iloc[:, 4] = 'T'
+
+        logfile.info("- Building haplotypes for typed variants")
+        logfile.add()
+        # can't use v for index because it loops over all variants, not only typed ones
+        index = 0
+        # log progress
+        start = time.time()
+
+        for v, var in enumerate(self._variants):
+            if v % 10000 == 0:
+                end = time.time()
+                logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(round(end - start)) + " s")
+            # print(v, self._info.iloc[v]['typed'])
+            if self._info.iloc[v]['typed']:
+                # if self._info.iloc[v]['position'] == None :
+                #     print(self._info.iloc[v])
+                haps.iloc[index, 5:] = var.genotypes
+                # if index in [9,10, 11, 12]:
+                #     print("v", v, "positions\n", self._info.iloc[v])
+                index += 1
+
+        logfile.info("- Writing haplotypes in Shapeit2 format to file '" + name + "_variants.haps'")
+        haps.to_csv(name + "_variants.haps", sep=' ', header=False, index=False)
+        logfile.sub()
 
 
 class TVariantsFiltered(TVariants):
@@ -222,86 +321,9 @@ class TVariantsFiltered(TVariants):
         logfile.info("- Writing variant info to file '" + out + "_filtered_sample_variants.csv'")
         self._info.to_csv(out + "_filtered_sample_variants.csv", header=True, index=False)
 
-    def write_shapeit2(self, name, inds, logfile):
-        """
-        Write files in SHAPEIT2 format, to be used as input by RELATE (https://myersgroup.github.io/relate/input_data.html)
 
-        Parameters
-        ----------
-        name : TYPE
-            DESCRIPTION.
 
-        Returns
-        -------
-        None.
 
-        """
-        haps = pd.DataFrame(index=range(self._number_typed), columns=range(5 + inds.num_haplotypes))
-        info_typed = self._info.loc[self._info['typed'] == True]
-        info_typed['index'] = range(self._number_typed)
-        info_typed.set_index(info_typed['index'], drop=True, inplace=True)
-
-        haps.iloc[:, 0] = np.repeat(1, self._number_typed)
-        haps.iloc[:, 1] = '.'
-        haps.iloc[0:self._number_typed, 2] = info_typed['position']
-        haps.iloc[:, 3] = 'A'
-        haps.iloc[:, 4] = 'T'
-
-        logfile.info("- Building haplotypes for typed variants")
-
-        # can't use v for index because it loops over all variants, not only typed ones
-        index = 0
-        for v, var in enumerate(self._variants):
-            # print(v, self._info.iloc[v]['typed'])
-            if self._info.iloc[v]['typed']:
-                # if self._info.iloc[v]['position'] == None :
-                #     print(self._info.iloc[v])
-                haps.iloc[index, 5:] = var.genotypes
-                # if index in [9,10, 11, 12]:
-                #     print("v", v, "positions\n", self._info.iloc[v])
-                index += 1
-
-        logfile.info("- Writing haplotypes in Shapeit2 format to file '" + name + "_variants.haps'")
-        haps.to_csv(name + "_variants.haps", sep=' ', header=False, index=False)
-
-    def write_gen(self, out, inds, logfile):
-        """
-        According to https://mathgen.stats.ox.ac.uk/genetics_software/shapeit/shapeit.html#gensample
-        @param out:
-        @param inds:
-        @param logfile:
-        @return:
-        """
-        logfile.info("- Writing haplotypes in impute2 format to file '" + out + ".gen'")
-        # if file exists, clear
-        map_file = open(out + ".gen", "w")
-        map_file.close()
-
-        #write line by line
-        haps_file = open(out + ".gen", "a")
-        i = 0
-        for v, var in enumerate(self._variants):
-            n_gen = int(inds.num_inds * 3)
-            if self._info.iloc[v]['typed']:
-                if inds.ploidy == 2:
-                    genotypes = inds.get_diploid_genotypes(var.genotypes)
-                else:
-                    genotypes = var.genotypes
-
-                tmp1 = (genotypes == 2).astype(int)
-                tmp2 = (genotypes == 1).astype(int)
-                tmp3 = (genotypes == 0).astype(int)
-
-                buffer = np.zeros([n_gen]).astype(int)
-                buffer[np.arange(0, n_gen, 3)] = tmp1
-                buffer[np.arange(1, n_gen, 3)] = tmp2
-                buffer[np.arange(2, n_gen, 3)] = tmp3
-
-                string = "chr snp" + str(i + 1) + " " + str(int(self._info['position'].values[v])) + " A" + " T "
-                string = string + " ".join(map(str, buffer)) + "\n"
-                bytes = haps_file.write(string)
-                i += 1
-        haps_file.close()
 
     def find_variant(self, typed, freq, interval, subplot, random, logfile):
         """

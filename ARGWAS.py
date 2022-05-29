@@ -92,13 +92,13 @@ if args.task == "simulate":
     # TODO: trees should be put in a wrapper class, only this class should import tskit
     trees = simulator.run_simulation(arguments=args, randomGenerator=r, logfile=logger)
 
-    samp_ids = trees.samples()
-    N = len(samp_ids)
+    sample_ids = trees.samples()
+    N = len(sample_ids)
     if args.N != N:
         logger.warning("Number of samples in tree does not match number of samples in arguments")
     inds = tind.Individuals(args.ploidy, N)
-    variants = tvar.TVariants(ts_object=trees, samp_ids=samp_ids)
-    variants.fill_info(ts_object=trees, samp_ids=samp_ids, pos_float=args.pos_float)
+    variants = tvar.TVariants(ts_object=trees, samp_ids=sample_ids)
+    variants.fill_info(ts_object=trees, samp_ids=sample_ids, pos_float=args.pos_float)
     variants.write_variant_info(out=args.out, logfile=logger)
 
     tt.TTrees.writeStats(ts_object=trees, out=args.out, logfile=logger)
@@ -136,21 +136,59 @@ if args.task == "downsampleVariantsWriteShapeit":
     logger.info("- TASK: Downsampling variants")
     logger.info("- Reading tree simulations from " + args.tree_file)
     trees = tskit.load(args.tree_file)
-    samp_ids = trees.samples()
-    N = len(samp_ids)
+    sample_ids = trees.samples()
+    N = len(sample_ids)
+
+    if args.trees_interval is not None:
+        logger.info(
+            "- Creating downsampled trees only for positions overlapping the following interval: " + str(
+                args.trees_interval))
+        trees = trees.keep_intervals([args.trees_interval], simplify=True)
 
     # --------------------------------
     # create diploids and variants
     # --------------------------------
     inds = tind.Individuals(args.ploidy, N)
     inds.write_shapeit2(args.out, logger)
-    variants = tvar.TVariantsFiltered(trees, samp_ids, args.min_allele_freq, args.max_allele_freq,
+    variants = tvar.TVariantsFiltered(trees, sample_ids, args.min_allele_freq, args.max_allele_freq,
                                       args.prop_typed_variants, args.pos_float, r, logger)
     # variants = tvar.TVariantsFiltered(trees, samp_ids, 0.01, 1, 0.5, r)
     variants.write_variant_info(args.out, logger)
     variants.write_shapeit2(args.out, inds, logger)
 
     variants.write_genetic_map(out=args.out, logfile=logger)
+
+# -----------------------
+# Impute
+# -----------------------
+if args.task == "impute":
+    logger.info("- TASK: Impute")
+    if args.imputation_ref_panel_tree_file is None:
+        raise ValueError("Most provide reference panel tree file using --imputation_ref_panel_tree_file")
+
+    logger.info(
+        "-  Imputing genotypes from " + args.tree_file + " with reference panel trees from " + args.imputation_ref_panel_tree_file)
+
+    # TODO: this needs to be standardized and used in all tasks
+    trees = tskit.load(args.tree_file)
+    sample_ids = trees.samples()
+    N = len(sample_ids)
+    inds = tind.Individuals(args.ploidy, N)
+    trees = tt.TTrees.remove_monomorphic(trees)
+    variants = tvar.TVariantsFiltered(ts_object=trees, samp_ids=sample_ids, min_allele_freq=args.min_allele_freq,
+                                      max_allele_freq=args.max_allele_freq,
+                                      prop_typed_variants=args.prop_typed_variants, pos_float=args.pos_float, random=r,
+                                      logfile=logger, filtered_variants_file=None)
+
+    # impute
+    imputation_obj = impute.TImpute()
+    name_imputation_output = imputation_obj.run_impute(trees_sample=trees,
+                                                       variants_sample=variants,
+                                                       inds=inds,
+                                                       imputation_ref_panel_tree_file=args.imputation_ref_panel_tree_file,
+                                                       ploidy_ref=args.ploidy_ref,
+                                                       genetic_map_file=args.genetic_map_file,
+                                                       out=args.out, logfile=logger)
 
 # ----------------------------------------------------------------
 # Read simulation to simulate phenotypes and perform association
@@ -181,8 +219,8 @@ if args.task == "associate":
     # --------------------------------
     # create diploids and variants
     # --------------------------------
-    samp_ids = trees.samples()
-    N = len(samp_ids)
+    sample_ids = trees.samples()
+    N = len(sample_ids)
     inds = tind.Individuals(args.ploidy, N)
     trees = tt.TTrees.remove_monomorphic(trees)
 
@@ -197,7 +235,7 @@ if args.task == "associate":
     #  do not provide variant file here but have it estimated from tree, otherwise variants and tree
     #  won't match (tree only contains typed variants). The variant file is only useful for simulating phenotypes to
     #  be able to keep track of untyped variants (i.e. for variants_orig)
-    variants = tvar.TVariantsFiltered(ts_object=trees, samp_ids=samp_ids, min_allele_freq=args.min_allele_freq,
+    variants = tvar.TVariantsFiltered(ts_object=trees, samp_ids=sample_ids, min_allele_freq=args.min_allele_freq,
                                       max_allele_freq=args.max_allele_freq,
                                       prop_typed_variants=args.prop_typed_variants, pos_float=args.pos_float, random=r,
                                       logfile=logger, filtered_variants_file=None)
@@ -206,7 +244,7 @@ if args.task == "associate":
     # variants_orig are used to simulate phenotypes. They need to be consistent with original tree and the typed
     # status that might have been defined earlier with a variants file. The causal mutation should not be affected by
     # a freq filter
-    variants_orig = tvar.TVariantsFiltered(ts_object=trees_orig, samp_ids=samp_ids, min_allele_freq=0,
+    variants_orig = tvar.TVariantsFiltered(ts_object=trees_orig, samp_ids=sample_ids, min_allele_freq=0,
                                            max_allele_freq=1, prop_typed_variants=1, pos_float=args.pos_float, random=r,
                                            logfile=logger, filtered_variants_file=args.variants_file)
 
@@ -236,38 +274,45 @@ if args.task == "associate":
         logger.add()
 
         if args.imputation_ref_panel_tree_file is not None:
-            logger.info("- Imputing genotypes with impute2:")
+            logger.info("- Using genotypes imputed with impute2 for GWAS:")
             logger.add()
 
-            # read and write variant information
-            logger.info("- Obtaining reference panel variant information from " + args.imputation_ref_panel_tree_file)
-            trees_ref = tskit.load(args.imputation_ref_panel_tree_file)
-            trees_ref = tt.TTrees.remove_monomorphic(trees_ref)
-            samp_ids_ref = trees_ref.samples()
-            N_ref = len(samp_ids_ref)
-            inds_ref = tind.Individuals(args.ploidy_ref, N_ref)
-            variants_ref = tvar.TVariantsFiltered(ts_object=trees_ref, samp_ids=samp_ids_ref, min_allele_freq=0,
-                                                  max_allele_freq=1, prop_typed_variants=1, pos_float=args.pos_float,
-                                                  random=r, logfile=logger, filtered_variants_file=None)
-            variants_ref.write_variant_info(out=args.out + "_reference", logfile=logger)
+            if args.do_imputation:
+                # impute
+                imputation_obj = impute.TImpute()
+                name_imputation_output = imputation_obj.run_impute(trees_sample=trees,
+                                                                   variants_sample=variants,
+                                                                   inds=inds,
+                                                                   imputation_ref_panel_tree_file=args.imputation_ref_panel_tree_file,
+                                                                   ploidy_ref=args.ploidy_ref,
+                                                                   genetic_map_file=args.genetic_map_file,
+                                                                   out=args.out, logfile=logger)
+            else:
+                if args.imputed_gen_file is None:
+                    raise ValueError(
+                        "When --do_imputation is set to False, the imputed genotypes must be provided "
+                        "with --imputed_gen_file parameter")
 
+                logger.info(
+                    "- Assuming imputation was already run, reading imputed genotypes from " + args.imputed_gen_file)
+                name_imputation_output = args.imputed_gen_file
 
-            # impute
-            imputation_obj = impute.TImpute()
-            genotype_matrix_imputed, positions = imputation_obj.run_impute_return_X(trees_sample=trees,
-                                                                                    variants_ref=variants_ref,
-                                                                                    variants_sample=variants,
-                                                                                    genetic_map_file=genetic_map_file_name,
-                                                                                    inds=inds, inds_ref=inds_ref,
-                                                                                    do_imputation=args.do_imputation,
-                                                                                    imputed_gen_file=args.imputed_gen_file,
-                                                                                    out=args.out, logfile=logger)
+            # read imputed genotypes
+            gt_matrix_imputed, pos = impute.TImpute.read_imputed_gt(name_imputation_output=name_imputation_output,
+                                                                    variants_sample=variants,
+                                                                    logfile=logger)
             logger.sub()
-            GWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=genotype_matrix_imputed.shape[1])
-            GWAS.test_with_positions_from_X_matrix(X=genotype_matrix_imputed, positions=positions, variants_sample=variants,
+
+            # run association tests
+            GWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=gt_matrix_imputed.shape[1])
+            GWAS.test_with_positions_from_X_matrix(X=gt_matrix_imputed, positions=pos,
+                                                   variants_sample=variants,
                                                    logfile=logger)
-            GWAS.write_to_file_with_X_matrix(positions=positions, name=args.out, logfile=logger)
+            GWAS.write_to_file_with_X_matrix(positions=pos, name=args.out, logfile=logger)
+
         else:
+            logger.info("- Using genotypes from tree file for GWAS:")
+            # run association tests
             GWAS = gwas.TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
             GWAS.test_with_variants_object(variants, inds, logger)
             GWAS.write_to_file(variants, args.out, logger)
