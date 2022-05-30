@@ -216,6 +216,8 @@ if args.task == "associate":
         logger.info(
             "- Running association only on the trees overlapping the following interval: " + str(args.trees_interval))
         trees = trees.keep_intervals([args.trees_interval], simplify=True)
+    else:
+        args.trees_interval = [0, trees.sequence_length]
 
     if trees_orig.num_samples != trees.num_samples:
         raise ValueError(
@@ -305,6 +307,7 @@ if args.task == "associate":
             # read imputed genotypes
             gt_matrix_imputed, pos = impute.TImpute.read_imputed_gt(name_imputation_output=name_imputation_output,
                                                                     variants_sample=variants,
+                                                                    trees_interval=args.trees_interval,
                                                                     logfile=logger)
             logger.sub()
 

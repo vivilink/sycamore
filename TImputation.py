@@ -90,10 +90,19 @@ class TImpute:
         return buffer
 
     @staticmethod
-    def read_imputed_gt(name_imputation_output, variants_sample, logfile):
+    def read_imputed_gt(name_imputation_output, variants_sample, trees_interval, logfile):
         # read imputation results
-        gen_imputed = pd.read_table(name_imputation_output, sep=" ", header=None).iloc[:, 5:]
-        positions = np.array(pd.read_table(name_imputation_output, sep=" ", header=None).iloc[:, 2].values)
+        #gen_imputed = pd.read_table(name_imputation_output, sep=" ", header=None).iloc[:, 5:]
+        gen_imputed = pd.read_table(name_imputation_output, sep=" ", header=None)
+
+        # extract only variants in trees interval
+        gen_imputed = gen_imputed.loc[(gen_imputed[2] >= trees_interval[0]) & (gen_imputed[2] <= trees_interval[1])]
+        positions = np.array(gen_imputed[2].values)
+
+        # remove columns that are not genotypes
+        gen_imputed = gen_imputed.iloc[:, 5:]
+
+        # transform gen format to genotypes
         gen_imputed = np.transpose(gen_imputed.values)
         X_imputed = TImpute.gen2X(gen_imputed)
 
