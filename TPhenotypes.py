@@ -197,6 +197,8 @@ class Phenotypes:
             self.simulate_causal_region(variants_orig, inds, left_bound=causal_tree.interval.left,
                                         right_bound=causal_tree.interval.right,
                                         sd_beta_causal_mutations=args.pty_sd_beta_causal_mutations, random=r,
+                                        min_allele_freq_causal=args.min_allele_freq_causal,
+                                        max_allele_freq_causal=args.max_allele_freq_causal,
                                         logfile=logfile)
 
         elif args.pty_sim_method == 'allelicHetero':
@@ -393,11 +395,25 @@ class Phenotypes:
         self.filled = True
 
     def simulate_causal_region(self, variants, inds, left_bound, right_bound, sd_beta_causal_mutations, random,
-                               logfile):
+                               min_allele_freq_causal, max_allele_freq_causal, logfile):
+        """
+
+        @param variants: TVariants
+        @param inds: TInds
+        @param left_bound: float. Left bound of causal region (included)
+        @param right_bound: Right bound of causal region (included)
+        @param sd_beta_causal_mutations: Betas for causal mutations simulated according to N(0, sd_beta_causal_mutations)
+        @param random: TRandom
+        @param min_allele_freq_causal: float. Only variants with freq higher than this can be causal
+        @param max_allele_freq_causal: Only variants with freq lower than this can be causal
+        @param logfile:
+        @return:
+        """
         # add phenotypic effect to mutations that are uniformly distributed
         for v, var in enumerate(variants.variants):
             # is the variant in the tree
-            if left_bound <= variants.info.loc[v]['position'] <= right_bound:
+            if left_bound <= variants.info.loc[v]['position'] <= right_bound \
+                    and min_allele_freq_causal <= variants.info.loc[v]['allele_freq'] <= max_allele_freq_causal:
 
                 # define beta
                 beta = random.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)[0]

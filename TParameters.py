@@ -116,6 +116,10 @@ class TParameters:
         pty.add_argument('--causal_tree_pos', type=int,
                          help="Simulate phenotype with allelic heterogeneity by making all mutations of the local "
                               "tree covering this genomic position causal")
+        pty.add_argument('--min_allele_freq_causal', type=float, default=0.0,
+                         help="Simulate phenotype with all variants in a region with this min allele freq to be causal")
+        pty.add_argument('--max_allele_freq_causal', type=float, default=1.0,
+                         help="Simulate phenotype with all variants in a region with this max allele freq to be causal")
 
         # run associations
         assoc = parser.add_argument_group('running association tests')
