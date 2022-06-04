@@ -24,7 +24,7 @@ class TVariants:
         self._info_columns = ['var_index', 'position', 'allele_freq', 'num_alleles', 'typed', 'tree_index']
         self._info = pd.DataFrame(index=range(self._number), columns=self._info_columns)
 
-    def fill_info(self, ts_object, samp_ids, pos_float):
+    def fill_info(self, ts_object, samp_ids, pos_float, logfile):
         for v, var in enumerate(list(ts_object.variants(samples=samp_ids))):
             tmp = sum(var.genotypes) / len(var.genotypes)
 
@@ -41,8 +41,13 @@ class TVariants:
             pos = -1
             if not pos_float:
                 pos = round(var.site.position)
-                if v > 0 and pos == self._positions[v - 1]:
-                    pos += 1
+                print("pos", pos)
+                if v > 0 and pos <= self._positions[v - 1]:
+                    logfile.info("WARNING: Pos (" + str(pos) + ") is smaller than previous one ("
+                                 + str(self._positions[v - 1]) + "). Setting to " + str(self._positions[v - 1] + 1))
+                    pos = self._positions[v - 1] + 1
+                    # if pos > 49499400:
+                    #     raise ValueError("stop")
             else:
                 pos = var.site.position
 
@@ -253,7 +258,7 @@ class TVariantsFiltered(TVariants):
 
         # build variant object from tree file -> filter!
         if filtered_variants_file is None:
-            self.fill_info(ts_object, samp_ids, pos_float)
+            self.fill_info(ts_object, samp_ids, pos_float, logfile=logfile)
             self._number_typed = -1
 
             logfile.info("- Building variant information from scratch based on simulated trees")

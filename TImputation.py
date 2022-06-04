@@ -137,7 +137,7 @@ class TImpute:
         samp_ids_ref = trees_ref.samples()
         N_ref = len(samp_ids_ref)
         variants_ref = tvar.TVariants(ts_object=trees_ref, samp_ids=samp_ids_ref)
-        variants_ref.fill_info(ts_object=trees_ref, samp_ids=samp_ids_ref, pos_float=False)
+        variants_ref.fill_info(ts_object=trees_ref, samp_ids=samp_ids_ref, pos_float=False, logfile=logfile)
         variants_ref.write_variant_info(out=out + "_reference", logfile=logfile)
 
         name_imputation_output = out + "_imputed.gen"
