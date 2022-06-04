@@ -295,7 +295,7 @@ class TVariantsFiltered(TVariants):
             # check if file is ok
             if set(self._info_columns).issubset(set(self._info.columns)):
                 logfile.info("WARNING: Columns of variants file do not match the current standard")
-            if len(self._info['var_index']) != self._number != len(self._variants):
+            if len(self._info['var_index']) != self._number or len(self._info['var_index']) != len(self._variants):
                 raise ValueError("Variant file " + filtered_variants_file + " contains " + str(
                     len(self._info['var_index'])) + " variants, expected " + str(self._number))
             if 'tree_index' not in self._info.columns:

@@ -65,7 +65,7 @@ class Phenotypes:
                                          trees=trees, plots_dir=plots_dir)
 
         # calculate genetic variance
-        self._genetic_variance = np.var(self._y)
+        self._genetic_variance = float(np.var(self._y))
         logfile.info("- Simulated phenotypes with genetic variance " + str(self._genetic_variance))
 
         # simulate noise
