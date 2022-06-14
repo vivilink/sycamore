@@ -76,6 +76,8 @@ class TParameters:
         sim.add_argument('--recomb_rate',
                          help="Recombination rate for simulating with msprime. Can be float or rate map file "
                               "(does not work for stdPopsim)")
+        sim.add_argument('--recomb_map_start_random', action='store_true',
+                         help="Use recombination rates starting at random position (does not work for stdPopsim)")
         sim.add_argument('--mut_window_size', type=int,
                          help="window size for mutation rate map for simulating with msprime (does not work for stdPopsim)")
         sim.add_argument('--sequence_length', type=float,

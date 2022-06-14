@@ -150,9 +150,21 @@ class TSimulatorMSPrime(TSimulator):
         except ValueError:
             recomb_obj = msprime.RateMap.read_hapmap(arguments.recomb_rate)
             # recomb_obj = recomb_obj.slice(left=190000000, right=200000000, trim=True)
-            recomb_obj = recomb_obj.slice(left=recomb_obj.left[1], right=recomb_obj.sequence_length, trim=True)
+            if arguments.recomb_map_start_random is False:
+                recomb_map_start = recomb_obj.left[1]  # first position in map file
+                recomb_map_end = recomb_obj.sequence_length  # last position in map file
+            else:
+                if recomb_obj.sequence_length - arguments.sequence_length < 0:
+                    raise ValueError("Cannot extract slice with length " + str(arguments.sequence_length)
+                                     + " from recombination map. Map too short")
+                recomb_map_start = randomGenerator.random.randint(recomb_obj.left[1],
+                                                                  recomb_obj.sequence_length - arguments.sequence_length)
+                recomb_map_end = recomb_map_start + arguments.sequence_length
+
+            recomb_obj = recomb_obj.slice(left=recomb_map_start, right=recomb_map_end, trim=True)
             logfile.info("- Simulating with recombination map read from " + arguments.recomb_rate + " with length "
-                         + str(recomb_obj.sequence_length))
+                         + str(recomb_obj.sequence_length) + ", starting pos " + str(recomb_map_start)
+                         + " and ending pos " + str(recomb_map_end))
 
         # get mutation rates
         if len(arguments.mu) == 1:
