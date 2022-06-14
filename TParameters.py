@@ -69,14 +69,17 @@ class TParameters:
                          help="Number of haploid African individuals to simulate with stdPopsim")
         sim.add_argument('--N_European', type=int,
                          help="Number of haploid African individuals to simulate with stdPopsim")
-        sim.add_argument('--mu', type=float,
-                         help="Mutation rate for simulating with msprime (does not work for stdPopsim")
+        sim.add_argument('--mu', nargs='+',
+                         help="Mutation rate for simulating with msprime (does not work for stdPopsim)")
         sim.add_argument('--AH_tree_pos', type=int,
                          help="Add mutations only to the local tree covering this genomic position")
-        sim.add_argument('--recomb_rate', type=float,
-                         help="Recombination rate for simulating with msprime (does not work for stdPopsim")
+        sim.add_argument('--recomb_rate',
+                         help="Recombination rate for simulating with msprime. Can be float or rate map file "
+                              "(does not work for stdPopsim)")
+        sim.add_argument('--mut_window_size', type=int,
+                         help="window size for mutation rate map for simulating with msprime (does not work for stdPopsim)")
         sim.add_argument('--sequence_length', type=float,
-                         help="Sequence length for simulating with msprime (does not work for stdPopsim")
+                         help="Sequence length for simulating with msprime (does not work for stdPopsim)")
         sim.add_argument('--pos_float', action='store_true',
                          help="Should the positions of the variants be transformed into integers. Msprime simulates a "
                               "continuous genome, so if pos_int is true, the simulated positions are rounded and if "

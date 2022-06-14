@@ -5,12 +5,10 @@ Created on Thu Oct 21 16:50:32 2021
 
 @author: linkv
 """
-
 import stdpopsim
 import tskit
 import msprime
 import TTree as tt
-import math
 import numpy as np
 
 
@@ -143,17 +141,37 @@ class TSimulatorMSPrime(TSimulator):
         super().__init__()
 
     def run_simulation(self, arguments, randomGenerator, logfile):
-        logfile.info("- Simulating trees using msprime.")
+        logfile.info("- Simulating trees using msprime:")
         logfile.add()
 
+        # get recombination rates
+        try:
+            recomb_obj = float(arguments.recomb_rate)
+        except ValueError:
+            recomb_obj = msprime.RateMap.read_hapmap(arguments.recomb_rate)
+            # recomb_obj = recomb_obj.slice(left=190000000, right=200000000, trim=True)
+            recomb_obj = recomb_obj.slice(left=recomb_obj.left[1], right=recomb_obj.sequence_length, trim=True)
+            logfile.info("- Simulating with recombination map read from " + arguments.recomb_rate + " with length "
+                         + str(recomb_obj.sequence_length))
+
+        # get mutation rates
+        if len(arguments.mu) == 1:
+            mut_obj = float(arguments.mu)
+        else:
+            num_windows = int(np.floor(arguments.sequence_length / arguments.mut_window_size))
+            positions = [0 + w * arguments.mut_window_size for w in range(num_windows + 1)]
+            mut_obj = msprime.RateMap(
+                position=positions,
+                rate=arguments.mu
+            )
+
+        # simulate
         trees_msprime = msprime.sim_ancestry(samples=arguments.N, ploidy=arguments.ploidy,
                                              sequence_length=arguments.sequence_length,
-                                             recombination_rate=arguments.recomb_rate)
-        self.trees = msprime.sim_mutations(trees_msprime, rate=arguments.mu, random_seed=arguments.seed)
+                                             recombination_rate=recomb_obj)
+        self.trees = msprime.sim_mutations(trees_msprime, rate=mut_obj, random_seed=arguments.seed)
         self.trees.dump(arguments.out + ".trees")
 
-        logfile.info("Writing trees to " + arguments.out + ".trees")
+        logfile.info("- Writing trees to " + arguments.out + ".trees")
         logfile.sub()
-
         return self.trees
-

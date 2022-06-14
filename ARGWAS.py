@@ -82,6 +82,8 @@ if args.task == "simulate":
     if args.N is None:
         raise ValueError("Must provide sample size with argument '--N'")
 
+    logger.info("- Simulating " + str(args.N) + " individuals with ploidy " + str(args.ploidy))
+
     if args.sim_tree_simulator == "stdPopsim":
         simulator = tsim.TSimulatorStdPopsim()
     elif args.sim_tree_simulator == "msprime":
@@ -94,8 +96,9 @@ if args.task == "simulate":
 
     sample_ids = trees.samples()
     N = len(sample_ids)
-    if args.N != N:
-        logger.warning("Number of samples in tree does not match number of samples in arguments")
+    if 2 * args.N != N:
+        logger.warning("WARNING: Number of samples in tree (" + str(N) + ") does not match number of samples in "
+                                                                         "arguments (" + str(args.N) + ")")
     inds = tind.Individuals(args.ploidy, N)
     variants = tvar.TVariants(ts_object=trees, samp_ids=sample_ids)
     variants.fill_info(ts_object=trees, samp_ids=sample_ids, pos_float=args.pos_float, logfile=logger)
