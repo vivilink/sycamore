@@ -41,7 +41,6 @@ class TVariants:
             pos = -1
             if not pos_float:
                 pos = round(var.site.position)
-                print("pos", pos)
                 if v > 0 and pos <= self._positions[v - 1]:
                     logfile.info("WARNING: Pos (" + str(pos) + ") is smaller than previous one ("
                                  + str(self._positions[v - 1]) + "). Setting to " + str(self._positions[v - 1] + 1))
