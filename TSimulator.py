@@ -172,11 +172,11 @@ class TSimulatorMSPrime(TSimulator):
         else:
             num_windows = int(np.floor(arguments.sequence_length / arguments.mut_window_size))
             positions = [0 + w * arguments.mut_window_size for w in range(num_windows + 1)]
-            # rates = [randomGenerator.random.beta(0.00000000001, 0.000001) for w in range(num_windows)]
-            rates = arguments.mu
-            print(rates)
-            logfile.info("- Simulating mutation rates in windows with positions " + str(positions)
-                         + " and mutation rates " + str(rates))
+            rates = [randomGenerator.random.beta(arguments.mut_beta_shape1, arguments.mut_beta_shape2) for w in range(num_windows)]
+            # rates = arguments.mu
+            # print(rates)
+            logfile.info("- Simulating mutation rates in windows with length " + str(arguments.mut_window_size)
+                         + ", mutation rate mean " + str(np.mean(rates)) + " and variance " + str(np.var(rates)))
             mut_obj = msprime.RateMap(
                 position=positions,
                 rate=rates
