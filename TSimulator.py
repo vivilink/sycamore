@@ -167,8 +167,9 @@ class TSimulatorMSPrime(TSimulator):
                          + " and ending pos " + str(recomb_map_end))
 
         # get mutation rates
-        if len(arguments.mu) == 1:
+        if arguments.mu is not None:
             mut_obj = float(arguments.mu)
+            logfile.info("- Simulating fixed mutation rate of " + str(arguments.mu))
         else:
             num_windows = int(np.floor(arguments.sequence_length / arguments.mut_window_size))
             positions = [0 + w * arguments.mut_window_size for w in range(num_windows + 1)]

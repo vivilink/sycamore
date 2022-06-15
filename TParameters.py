@@ -69,7 +69,7 @@ class TParameters:
                          help="Number of haploid African individuals to simulate with stdPopsim")
         sim.add_argument('--N_European', type=int,
                          help="Number of haploid African individuals to simulate with stdPopsim")
-        sim.add_argument('--mu', nargs='+',
+        sim.add_argument('--mu', type=float,
                          help="Mutation rate for simulating with msprime (does not work for stdPopsim)")
         sim.add_argument('--AH_tree_pos', type=int,
                          help="Add mutations only to the local tree covering this genomic position")
