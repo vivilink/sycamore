@@ -80,6 +80,10 @@ class TParameters:
                          help="Use recombination rates starting at random position (does not work for stdPopsim)")
         sim.add_argument('--mut_window_size', type=int,
                          help="window size for mutation rate map for simulating with msprime (does not work for stdPopsim)")
+        sim.add_argument('--mut_beta_shape1', type=float, default=10,
+                         help="shape1 parameter for window-based mutation rate beta distribution")
+        sim.add_argument('--mut_beta_shape2', type=float, default=1000000000,
+                         help="shape2 parameter for window-based mutation rate beta distribution")
         sim.add_argument('--sequence_length', type=float,
                          help="Sequence length for simulating with msprime (does not work for stdPopsim)")
         sim.add_argument('--pos_float', action='store_true',
