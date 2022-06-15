@@ -184,9 +184,10 @@ class TSimulatorMSPrime(TSimulator):
             )
 
         # simulate
-        trees_msprime = msprime.sim_ancestry(samples=arguments.N, ploidy=arguments.ploidy,
+        trees_msprime = msprime.sim_ancestry(samples=arguments.N, ploidy=1, # do not simulate ploidy here!
                                              sequence_length=arguments.sequence_length,
-                                             recombination_rate=recomb_obj)
+                                             recombination_rate=recomb_obj,
+                                             population_size=arguments.population_size)
         self.trees = msprime.sim_mutations(trees_msprime, rate=mut_obj, random_seed=arguments.seed)
         self.trees.dump(arguments.out + ".trees")
 

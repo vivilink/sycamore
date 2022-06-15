@@ -96,7 +96,7 @@ if args.task == "simulate":
 
     sample_ids = trees.samples()
     N = len(sample_ids)
-    if 2 * args.N != N:
+    if args.N != N:
         logger.warning("WARNING: Number of samples in tree (" + str(N) + ") does not match number of samples in "
                                                                          "arguments (" + str(args.N) + ")")
     inds = tind.Individuals(args.ploidy, N)

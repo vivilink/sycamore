@@ -15,6 +15,7 @@ class TParameters:
 
     @staticmethod
     def initialize():
+
         parser = argparse.ArgumentParser(description='Running association tests on variants and trees.')
 
         # general arguments
@@ -56,8 +57,9 @@ class TParameters:
         parser.add_argument('--prop_typed_variants', type=float, default=1,
                             help="Proportion of variants that are typed (out of the ones that pass the frequency "
                                  "filter).")
-        parser.add_argument('--trees_interval', nargs='+', type=int,  # default=[49e6, 50e6],
+        parser.add_argument('--trees_interval', nargs='+',
                             help="Only test the trees and variants in this interval for association")
+
         # simulating trees
         sim = parser.add_argument_group('simulating trees')
         sim.add_argument('--sim_tree_simulator', dest="sim_tree_simulator", default="stdPopsim",
@@ -71,6 +73,8 @@ class TParameters:
                          help="Number of haploid African individuals to simulate with stdPopsim")
         sim.add_argument('--mu', type=float,
                          help="Mutation rate for simulating with msprime (does not work for stdPopsim)")
+        sim.add_argument('--population_size', type=int,
+                         help="Ancestral population size for simulating with msprime", default=1000)
         sim.add_argument('--AH_tree_pos', type=int,
                          help="Add mutations only to the local tree covering this genomic position")
         sim.add_argument('--recomb_rate',
@@ -157,5 +161,6 @@ class TParameters:
                            help="genetic map with columns for Position [bp], Rate [cM/Mb] and Map [cM]")
 
         args = parser.parse_args()
+
 
         return args
