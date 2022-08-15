@@ -110,13 +110,28 @@ if args.task == "simulateMoreMutations":
     logger.info("- TASK: simulateMoreMutations")
     tsim.TSimulator.simulate_more_mutations(arguments=args, logfile=logger)
 
+
+# ---------------------
+# read tree file
+# ---------------------
+def read_trees():
+    logger.info("- Reading tree from " + args.tree_file)
+    trees = tskit.load(args.tree_file)
+    if args.trees_interval is not None:
+        logger.info(
+            "- Running association only on the trees overlapping the following interval: " + str(args.trees_interval))
+        trees = trees.keep_intervals([args.trees_interval], simplify=True)
+    else:
+        args.trees_interval = [0, trees.sequence_length]
+
+    return trees
+
 # -----------------------
 # ARG statistics
 # -----------------------
 if args.task == "ARGStatistics":
     logger.info("- TASK: ARGStatistics")
-    logger.info("- Reading tree from " + args.tree_file)
-    trees = tskit.load(args.tree_file)
+    trees = read_trees()
     trees_class = tt.TTrees(ts_object=trees)
     trees_class.writeStats(ts_object=trees, out=args.out, logfile=logger)
 
@@ -125,8 +140,7 @@ if args.task == "ARGStatistics":
 # -----------------------
 if args.task == "getTreeAtPosition":
     logger.info("- TASK: getTreeAtPosition")
-    logger.info("- Reading tree from " + args.tree_file)
-    trees = tskit.load(args.tree_file)
+    trees = read_trees()
     trees_class = tt.TTrees(trees)
     trees_class.extract_single_tree(trees, args.out, logger, position=args.test_only_tree_at)
 
@@ -137,16 +151,9 @@ if args.task == "downsampleVariantsWriteShapeit":
     if args.prop_typed_variants is None:
         raise ValueError("Must provide downsampling probability to task 'downsampleVariantsWriteShapeit'")
     logger.info("- TASK: Downsampling variants")
-    logger.info("- Reading tree simulations from " + args.tree_file)
-    trees = tskit.load(args.tree_file)
+    trees = read_trees()
     sample_ids = trees.samples()
     N = len(sample_ids)
-
-    if args.trees_interval is not None:
-        logger.info(
-            "- Creating downsampled trees only for positions overlapping the following interval: " + str(
-                args.trees_interval))
-        trees = trees.keep_intervals([args.trees_interval], simplify=True)
 
     # --------------------------------
     # create diploids and variants
@@ -193,6 +200,13 @@ if args.task == "impute":
                                                        genetic_map_file=args.genetic_map_file,
                                                        out=args.out, logfile=logger)
 
+# -----------------------
+# Write variants plink files
+# -----------------------
+
+if args.task == "writeToPlink":
+
+
 # ----------------------------------------------------------------
 # Read simulation to simulate phenotypes and perform association
 # ----------------------------------------------------------------
@@ -209,13 +223,7 @@ if args.task == "associate":
 
     logger.info(
         "- Reading tree used for Aim's association testing, and for defining variants to be tested by GWAS, from " + args.tree_file)
-    trees = tskit.load(args.tree_file)
-    if args.trees_interval is not None:
-        logger.info(
-            "- Running association only on the trees overlapping the following interval: " + str(args.trees_interval))
-        trees = trees.keep_intervals([args.trees_interval], simplify=True)
-    else:
-        args.trees_interval = [0, trees.sequence_length]
+    trees = read_trees()
 
     if trees_orig.num_samples != trees.num_samples:
         raise ValueError(
