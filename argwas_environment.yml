@@ -1,12 +1,47 @@
-name: aim_env
+name: env_basic
 dependencies:
-    - numpy
-    - stdpopsim
+    - gsl=2.2.1
+    - numpy>=1.22.3,<1.23.0
     - tqdm
     - matplotlib
     - pip
-    - tskit
     - pandas
-    - statsmodels as sm
-    - datatable as dt
+    - statsmodels
+    - xarray
     - spyder
+
+#create environment: 
+#conda env create -f argwas_environment.yml 
+
+#install stdpopsim:
+#conda install -c conda-forge stdpopsim
+
+#install tskit:
+#conda install -c conda-forge tskit
+
+
+
+#activate environment:
+#conda activate env_plink
+
+
+
+#install tsinfer:
+#conda install -c conda-forge tsinfer
+
+#install statsmodels:
+#conda install -c conda-forge statsmodels
+
+
+#install plink:  
+#pip install pandas-plink
+
+#install egrm:
+#cd ~/git/argwas/egrm/egrm 
+#pip install egrm
+
+#install logfile package:
+#pip install python_log_indenter
+
+
+# uninstall environment: conda env remove -n env_basic
