@@ -295,10 +295,10 @@ class TTree:
                 gt = inds.get_diploid_genotypes(gt_haploid)
                 # need unmirrored allele freq
             af = np.sum(gt) / len(gt)
-            first = np.array([gt - af]).T
-            second = np.array([gt - af])
+            first = np.array([gt - inds.ploidy * af]).T
+            second = np.array([gt - inds.ploidy * af])
             M = np.dot(first, second)
-            M = M / (af * (1 - af))
+            M = M / (inds.ploidy * af * (1 - af))
             M_sum += M
         M_tree = M_sum / float(num_vars)
         return (M_tree, num_vars)
