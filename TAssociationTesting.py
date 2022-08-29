@@ -67,6 +67,137 @@ def write_covariance_matrix_bin(covariance, mu, inds, out):
             grmfile.write("\t".join([str(fid), str(iid)]) + os.linesep)
 
 
+def run_association_GWAS(trees, inds, variants, pheno, args, impute, logfile):
+    logfile.info("- GWAS:")
+    logfile.add()
+
+    if args.imputation_ref_panel_tree_file is not None:
+        logfile.info("- Using genotypes imputed with impute2 for GWAS:")
+        logfile.add()
+
+        if args.do_imputation:
+            # impute
+            imputation_obj = impute.TImpute()
+            name_imputation_output = imputation_obj.run_impute(trees_sample=trees,
+                                                               variants_sample=variants,
+                                                               inds=inds,
+                                                               imputation_ref_panel_tree_file=args.imputation_ref_panel_tree_file,
+                                                               ploidy_ref=args.ploidy_ref,
+                                                               genetic_map_file=args.genetic_map_file,
+                                                               out=args.out, logfile=logfile)
+        else:
+            if args.imputed_gen_file is None:
+                raise ValueError(
+                    "When --do_imputation is set to False, the imputed genotypes must be provided "
+                    "with --imputed_gen_file parameter")
+
+            logfile.info(
+                "- Assuming imputation was already run, reading imputed genotypes from " + args.imputed_gen_file)
+            name_imputation_output = args.imputed_gen_file
+
+        # read imputed genotypes
+        gt_matrix_imputed, pos = impute.TImpute.read_imputed_gt(name_imputation_output=name_imputation_output,
+                                                                variants_sample=variants,
+                                                                trees_interval=args.trees_interval,
+                                                                logfile=logfile)
+        logfile.sub()
+
+        # run association tests
+        GWAS = TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=gt_matrix_imputed.shape[1])
+        GWAS.test_with_positions_from_X_matrix(X=gt_matrix_imputed, positions=pos,
+                                               variants_sample=variants,
+                                               logfile=logfile)
+        GWAS.write_to_file_with_X_matrix(positions=pos, name=args.out, logfile=logfile)
+
+    else:
+        logfile.info("- Using genotypes from tree file for GWAS:")
+        # run association tests
+        GWAS = TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
+        GWAS.test_with_variants_object(variants, inds, logfile)
+        GWAS.write_to_file(variants, args.out, logfile)
+        # GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
+
+    logfile.sub()
+
+
+def run_association_ARGWAS(trees, inds, variants, pheno, args, covariance_type, logfile):
+    logfile.info("- AIM:")
+    logfile.add()
+
+    if args.AIM_method is None:
+        raise ValueError("ERROR: No method for tree association provided. Use '--AIM_method' to set method.")
+    if covariance_type is None:
+        raise ValueError(
+            "ERROR: No method for covariance calculation provided. Use '--covariance_type' to set method.")
+
+    logfile.info("- Reading tree estimations for tree-based association from " + args.tree_file)
+
+    pheno.find_causal_trees(trees)
+
+    for m in args.AIM_method:
+
+        if m == "HE":
+
+            if args.test_only_tree_at is None:
+                logfile.info("- Running associations test using GCTA Haseman-Elston for a sequence of trees")
+            else:
+                logfile.info("- Running associations test using GCTA Haseman-Elston for a single tree")
+            logfile.add()
+            treeWAS = TAssociationTesting_trees_gcta_HE(trees, pheno)
+
+            # write phenotypes in gcta format
+            if covariance_type == "eGRM" or covariance_type == "GRM":
+                pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logfile)
+            else:
+                pheno.write_to_file_gcta_scaled(out=args.out, logfile=logfile)
+
+            # run association
+            if args.test_only_tree_at is None:
+                treeWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=args.out, logfile=logfile,
+                                        covariance_type=covariance_type, skip_first_tree=args.skip_first_tree)
+            else:
+                tree = trees.at(args.test_only_tree_at)
+                tree_obj = tt.TTree(tree)
+                treeWAS.run_association_one_tree(ts_object=trees, variants=variants, tree_obj=tree_obj, inds=inds,
+                                                 out=args.out, logfile=logfile, covariance_type=covariance_type,
+                                                 skip_first_tree=args.skip_first_tree)
+
+            treeWAS.write_to_file(trees, args.out, logfile)
+            logfile.sub()
+
+        if m == "REML":
+
+            if args.test_only_tree_at is None:
+                logfile.info("- Running associations test using GCTA REML for a sequence of trees")
+            else:
+                logfile.info("- Running associations test using GCTA REML for a single tree")
+            logfile.add()
+            treeWAS = TAssociationTesting_trees_gcta_REML(trees, pheno)
+
+            # write phenotypes in gcta format
+            if covariance_type == "eGRM" or covariance_type == "GRM":
+                pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logfile)
+            else:
+                pheno.write_to_file_gcta_scaled(out=args.out, logfile=logfile)
+
+            # run association
+            if args.test_only_tree_at is None:
+                treeWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=args.out, logfile=logfile,
+                                        covariance_type=covariance_type, skip_first_tree=args.skip_first_tree)
+            else:
+                tree = trees.at(args.test_only_tree_at)
+                tree_obj = tt.TTree(tree)
+                treeWAS.run_association_one_tree(ts_object=trees, variants=variants, tree_obj=tree_obj, inds=inds,
+                                                 out=args.out, logfile=logfile, covariance_type=covariance_type,
+                                                 skip_first_tree=args.skip_first_tree)
+
+            treeWAS.write_to_file(trees, args.out, logfile)
+
+            logfile.sub()
+
+    logfile.sub()
+
+
 class TAssociationTesting:
     def __init__(self, phenotypes):
         self.phenotypes = phenotypes
