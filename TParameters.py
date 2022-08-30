@@ -139,8 +139,8 @@ class TParameters:
         # TODO: ass method aim method and covariance type should be given in one parameter, maybe a file. Some
         #  combinations should be made impossible
         assoc.add_argument('--ass_method', nargs='+', type=str,
-                           help="Provide association method [AIM, GWAS] and for AIM covariance type with the "
-                                "following format: 'method:covariance'")
+                           help="Provide association method [AIM, GWAS] and for AIM covariance type [eGRM, GRM, "
+                                "scaled] with the following format: 'method:covariance'")
         assoc.add_argument('--AIM_method', nargs='+',
                            help="Use either Haseman-Elston or REML to test trees for association")
         assoc.add_argument('--test_only_tree_at', type=float,

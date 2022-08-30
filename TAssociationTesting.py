@@ -71,6 +71,8 @@ def write_covariance_matrix_bin(covariance, mu, inds, out):
 def run_association_GWAS(trees, inds, variants, pheno, args, impute, logfile):
     logfile.info("- GWAS:")
     logfile.add()
+    outname = args.out + "_GWAS"
+
 
     if args.imputation_ref_panel_tree_file is not None:
         logfile.info("- Using genotypes imputed with impute2 for GWAS:")
@@ -85,7 +87,7 @@ def run_association_GWAS(trees, inds, variants, pheno, args, impute, logfile):
                                                                imputation_ref_panel_tree_file=args.imputation_ref_panel_tree_file,
                                                                ploidy_ref=args.ploidy_ref,
                                                                genetic_map_file=args.genetic_map_file,
-                                                               out=args.out, logfile=logfile)
+                                                               out=outname, logfile=logfile)
         else:
             if args.imputed_gen_file is None:
                 raise ValueError(
@@ -108,14 +110,14 @@ def run_association_GWAS(trees, inds, variants, pheno, args, impute, logfile):
         GWAS.test_with_positions_from_X_matrix(X=gt_matrix_imputed, positions=pos,
                                                variants_sample=variants,
                                                logfile=logfile)
-        GWAS.write_to_file_with_X_matrix(positions=pos, name=args.out, logfile=logfile)
+        GWAS.write_to_file_with_X_matrix(positions=pos, name=outname, logfile=logfile)
 
     else:
         logfile.info("- Using genotypes from tree file for GWAS:")
         # run association tests
         GWAS = TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
         GWAS.test_with_variants_object(variants, inds, logfile)
-        GWAS.write_to_file(variants, args.out, logfile)
+        GWAS.write_to_file(variants, outname, logfile)
         # GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
 
     logfile.sub()
@@ -127,11 +129,11 @@ def run_association_ARGWAS(trees, inds, variants, pheno, args, covariance_type, 
 
     if args.AIM_method is None:
         raise ValueError("ERROR: No method for tree association provided. Use '--AIM_method' to set method.")
-    if covariance_type is None:
-        raise ValueError(
-            "ERROR: No method for covariance calculation provided. Use '--covariance_type' to set method.")
 
     logfile.info("- Reading tree estimations for tree-based association from " + args.tree_file)
+    logfile.info("- Running association test using covariance_matrix type " + covariance_type)
+    logfile.info("- Writing output files with suffix '_" + covariance_type)
+    outname = args.out + "_" + covariance_type
 
     pheno.find_causal_trees(trees)
 
@@ -148,22 +150,22 @@ def run_association_ARGWAS(trees, inds, variants, pheno, args, covariance_type, 
 
             # write phenotypes in gcta format
             if covariance_type == "eGRM" or covariance_type == "GRM":
-                pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logfile)
+                pheno.write_to_file_gcta_eGRM(inds=inds, out=outname, logfile=logfile)
             else:
-                pheno.write_to_file_gcta_scaled(out=args.out, logfile=logfile)
+                pheno.write_to_file_gcta_scaled(out=outname, logfile=logfile)
 
             # run association
             if args.test_only_tree_at is None:
-                treeWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=args.out, logfile=logfile,
+                treeWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=outname, logfile=logfile,
                                         covariance_type=covariance_type, skip_first_tree=args.skip_first_tree)
             else:
                 tree = trees.at(args.test_only_tree_at)
                 tree_obj = tt.TTree(tree)
                 treeWAS.run_association_one_tree(ts_object=trees, variants=variants, tree_obj=tree_obj, inds=inds,
-                                                 out=args.out, logfile=logfile, covariance_type=covariance_type,
+                                                 out=outname, logfile=logfile, covariance_type=covariance_type,
                                                  skip_first_tree=args.skip_first_tree)
 
-            treeWAS.write_to_file(trees, args.out, logfile)
+            treeWAS.write_to_file(trees, outname, logfile)
             logfile.sub()
 
         if m == "REML":
@@ -177,22 +179,22 @@ def run_association_ARGWAS(trees, inds, variants, pheno, args, covariance_type, 
 
             # write phenotypes in gcta format
             if covariance_type == "eGRM" or covariance_type == "GRM":
-                pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logfile)
+                pheno.write_to_file_gcta_eGRM(inds=inds, out=outname, logfile=logfile)
             else:
-                pheno.write_to_file_gcta_scaled(out=args.out, logfile=logfile)
+                pheno.write_to_file_gcta_scaled(out=outname, logfile=logfile)
 
             # run association
             if args.test_only_tree_at is None:
-                treeWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=args.out, logfile=logfile,
+                treeWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=outname, logfile=logfile,
                                         covariance_type=covariance_type, skip_first_tree=args.skip_first_tree)
             else:
                 tree = trees.at(args.test_only_tree_at)
                 tree_obj = tt.TTree(tree)
                 treeWAS.run_association_one_tree(ts_object=trees, variants=variants, tree_obj=tree_obj, inds=inds,
-                                                 out=args.out, logfile=logfile, covariance_type=covariance_type,
+                                                 out=outname, logfile=logfile, covariance_type=covariance_type,
                                                  skip_first_tree=args.skip_first_tree)
 
-            treeWAS.write_to_file(trees, args.out, logfile)
+            treeWAS.write_to_file(trees, outname, logfile)
 
             logfile.sub()
 
