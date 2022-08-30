@@ -563,8 +563,6 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
             #     inds.num_inds) + " but obtained " + str(np.trace(covariance)))
 
         elif covariance_type == "GRM":
-            # if inds.ploidy == 2:
-            #     raise ValueError("GRM not implemented for diploids")
             covariance, mu = tree_obj.get_GRM(variants=variants, inds=inds)
             if covariance is None:
                 return None
