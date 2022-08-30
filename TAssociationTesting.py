@@ -18,6 +18,7 @@ import subprocess
 import os
 import sys
 import struct
+import math
 
 
 def OLS(genotypes, phenotypes):
@@ -564,10 +565,14 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
         elif covariance_type == "GRM":
             # if inds.ploidy == 2:
             #     raise ValueError("GRM not implemented for diploids")
-            covariance, mu = tree_obj.get_GRM(variants=variants, inds=inds, out=out, logfile=logfile)
+            covariance, mu = tree_obj.get_GRM(variants=variants, inds=inds)
             if covariance is None:
                 return None
-            if np.trace(covariance) != inds.num_inds:
+            if np.trace(covariance) < 0:
+                raise ValueError("Trace of matrix cannot be negative")
+            if inds.ploidy == 1 and not math.isclose(np.trace(covariance), inds.num_inds):
+                # trace for haploids is expected to be equal to number of individuals (not true for diploids if they
+                # are not in perfect HWE)
                 logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
                     inds.num_inds) + " but obtained " + str(np.trace(covariance)))
             write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)

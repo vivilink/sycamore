@@ -261,7 +261,7 @@ class TTree:
 
         return self.eGRM, self.EK_relate_mu
 
-    def get_GRM(self, variants, inds, out, logfile):
+    def get_GRM(self, variants, inds):
         """
         Calculate GRM matrix based on variants as in Fan et al. 2022
 
@@ -269,8 +269,6 @@ class TTree:
         ----------
         variants : TVariantsFiltered
         inds : TInds
-        out : str
-        logfile : IndentedLoggerAdapter
 
         Returns
         -------
@@ -283,7 +281,7 @@ class TTree:
                     variants.info['allele_freq'] > 0.0)]
         num_vars = tree_variants.shape[0]
         if num_vars == 0:
-            return None
+            return None, None
 
         # loop over variants
         M_sum = np.zeros(shape=(inds.num_inds, inds.num_inds))
@@ -293,15 +291,15 @@ class TTree:
                 gt = gt_haploid
             else:
                 gt = inds.get_diploid_genotypes(gt_haploid)
-                # need unmirrored allele freq
-            af = np.sum(gt) / len(gt)
+            # need unmirrored allele freq
+            af = np.sum(gt) / (2 * inds.num_inds)
             first = np.array([gt - inds.ploidy * af]).T
             second = np.array([gt - inds.ploidy * af])
             M = np.dot(first, second)
             M = M / (inds.ploidy * af * (1 - af))
             M_sum += M
         M_tree = M_sum / float(num_vars)
-        return (M_tree, num_vars)
+        return M_tree, num_vars
 
     def solving_function(self, array, inds):
         covariance = self.covariance(inds.num_haplotypes)
