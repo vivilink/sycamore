@@ -50,7 +50,7 @@ class TParameters:
                             help="Ploidy of individuals. Haplotypes will be assigned to individuals in increasing order")
 
         # limit data
-        parser.add_argument('--min_allele_freq', type=float, default=0.01,
+        parser.add_argument('--min_allele_freq', type=float, default=0.0,
                             help="Minimum frequency an allele needs to have to be typed")
         parser.add_argument('--max_allele_freq', type=float, default=1,
                             help="Maximum frequency an allele needs to have to be typed")
