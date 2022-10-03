@@ -288,7 +288,13 @@ if args.task == "associate":
             covariance_type = m.split(':')[1]
             if covariance_type not in ["scaled", "eGRM", "GRM"]:
                 raise ValueError("Unknown association method '" + m + "'. Must be one of 'scaled', 'eGRM', 'GRM'.")
-            gwas.run_association_ARGWAS(trees=trees, inds=inds, variants=variants, pheno=pheno, args=args, covariance_type=covariance_type, logfile=logger)
+            gwas.run_association_ARGWAS(trees=trees,
+                                        inds=inds,
+                                        variants=variants,
+                                        pheno=pheno,
+                                        args=args,
+                                        covariance_type=covariance_type,
+                                        logfile=logger)
 
         else:
             raise ValueError("Unknown association method '" + m + "'. Must be 'AIM' or 'GWAS'.")

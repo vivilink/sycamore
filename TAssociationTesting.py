@@ -514,10 +514,13 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
         if tree_obj.height != -1 and not (skip_first_tree and tree_obj.index == 0):
             # TODO: calculating and writing should be separate functions, only write if tree is valid and matrix is
             #  not empty. Only possible to do this when eGRM functionality runs internally
-            covariance = self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object=ts_object, variants=variants,
-                                                                                 tree_obj=tree_obj, inds=inds,
+            covariance = self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object=ts_object,
+                                                                                 variants=variants,
+                                                                                 tree_obj=tree_obj,
+                                                                                 inds=inds,
                                                                                  covariance_type=covariance_type,
-                                                                                 out=out, logfile=logfile,
+                                                                                 out=out,
+                                                                                 logfile=logfile,
                                                                                  skip_first_tree=skip_first_tree)
             if covariance is not None:
                 self.run_association_one_tree_gcta(tree_obj, out)
@@ -556,6 +559,8 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
         elif covariance_type == "eGRM":
             # trees = ts_object.keep_intervals(np.array([[tree_obj.start, tree_obj.end]]), simplify=True)
             covariance, mu = tree_obj.get_eGRM(tskit_obj=ts_object, tree_obj=tree_obj, inds=inds)
+            if covariance is None:
+                return None
             write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
 
             # if np.trace(covariance) != inds.num_inds:
@@ -810,7 +815,7 @@ class TTreeAssociation_Mantel(TAssociationTesting_trees):
             if tree.total_branch_length == 0:
                 print("tree's total branch length is zero")
                 continue
-            tree_obj = tt.TTree(tree, inds.num_haplotypes)
+            tree_obj = tt.TTree(tree)
             tmrca = tree_obj.TMRCA(inds.num_haplotypes)
             # print("tmrca",tmrca)
             self.p_values[tree.index] = ut.mantel(tmrca, diffs)
