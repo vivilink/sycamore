@@ -157,6 +157,8 @@ class TParameters:
                                 "the .gen file produced by impute2 with this parameter")
         assoc.add_argument('--genetic_map_file', type=str,
                            help="genetic map with columns for Position [bp], Rate [cM/Mb] and Map [cM]")
+        assoc.add_argument('--ass_window_size', type=int,
+                           help="window size for region-based association tests")
 
         args = parser.parse_args()
 

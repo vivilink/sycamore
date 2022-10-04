@@ -229,7 +229,7 @@ class TTree:
 
             return self.covariance_diploid
 
-    def get_eGRM(self, tskit_obj, tree_obj, inds):
+    def get_eGRM(self, tree_obj, inds):
         """       
         Parameters
         ----------
@@ -248,7 +248,7 @@ class TTree:
             # extract tree and write to file
             # TTrees.extract_single_tree(tree_obj=tree_obj, out=out, logfile=logfile, position=self.start)
 
-            EK_relate, _, EK_relate_mu = varGRM(tskit_obj, tree_obj.tree)
+            EK_relate, _, EK_relate_mu = varGRM(num_samples=inds.num_haplotypes, tree=tree_obj.tree)
             self.eGRM = EK_relate
             self.EK_relate_mu = EK_relate_mu
 
@@ -261,45 +261,7 @@ class TTree:
 
         return self.eGRM, self.EK_relate_mu
 
-    def get_GRM(self, variants, inds):
-        """
-        Calculate GRM matrix based on variants as in Fan et al. 2022
 
-        Parameters
-        ----------
-        variants : TVariantsFiltered
-        inds : TInds
-
-        Returns
-        -------
-        np.array if there are variants that are typed and have allele freq > 0. Otherwise None.
-
-        """
-        # tree_variant_info = variants.info[(variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (variants.info['allele_freq'] > 0.0)]
-        tree_variants = np.array(variants.variants)[
-            (variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (
-                    variants.info['allele_freq'] > 0.0)]
-        num_vars = tree_variants.shape[0]
-        if num_vars == 0:
-            return None, None
-
-        # loop over variants
-        M_sum = np.zeros(shape=(inds.num_inds, inds.num_inds))
-        for v_i in range(num_vars):  # range(num_vars)
-            gt_haploid = tree_variants[v_i].genotypes
-            if inds.ploidy == 1:
-                gt = gt_haploid
-            else:
-                gt = inds.get_diploid_genotypes(gt_haploid)
-            # need unmirrored allele freq
-            af = np.sum(gt) / (2 * inds.num_inds)
-            first = np.array([gt - inds.ploidy * af]).T
-            second = np.array([gt - inds.ploidy * af])
-            M = np.dot(first, second)
-            M = M / (inds.ploidy * af * (1 - af))
-            M_sum += M
-        M_tree = M_sum / float(num_vars)
-        return M_tree, num_vars
 
     def solving_function(self, array, inds):
         covariance = self.covariance(inds.num_haplotypes)

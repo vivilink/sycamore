@@ -214,7 +214,7 @@ fig.savefig('sims/sims_13_africans.png', bbox_inches='tight')#
 # Mantel
 #-----------------------
 pheno_fixed_hp.find_causal_trees(trees)
-tGWAS_fixed_hp = gwas.TAssociationTesting_trees(trees, pheno_fixed_hp)
+tGWAS_fixed_hp = gwas.TAssociationTestingRegions(trees, pheno_fixed_hp)
 tGWAS_fixed_hp.runMantel(trees, pheno_fixed, N)
 
 fig, ax = plt.subplots(2,figsize=(30,30))
@@ -231,7 +231,7 @@ fig.savefig('sims/sims_13_randomSeq.png', bbox_inches='tight')#
 #-----------------------
 
 pheno_fixed_hp.find_causal_trees(trees)
-tGWAS_fixed_hp = gwas.TAssociationTesting_trees(trees, pheno_fixed_hp)
+tGWAS_fixed_hp = gwas.TAssociationTestingRegions(trees, pheno_fixed_hp)
 tGWAS_fixed_hp.runCGTA_HE(trees, N)
 
 fig, ax = plt.subplots(5,figsize=(30,30))
@@ -270,7 +270,7 @@ fig.savefig('sims/sims_16_HE.png', bbox_inches='tight')#
 #-----------------------
 
 pheno_fixed_hp.find_causal_trees(trees)
-tGWAS_fixed_hp_reml = gwas.TAssociationTesting_trees(trees, pheno_fixed_hp)
+tGWAS_fixed_hp_reml = gwas.TAssociationTestingRegions(trees, pheno_fixed_hp)
 tGWAS_fixed_hp_reml.runGCTA_REML(trees, N)
 
 fig, ax = plt.subplots(5,figsize=(30,30))

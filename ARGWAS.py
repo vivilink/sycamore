@@ -276,6 +276,7 @@ if args.task == "associate":
     # --------------------------------
     # run association tests and plot
     # --------------------------------
+    covariance_types = []
     for m in args.ass_method:
         method = m.split(':')[0]
         logger.info("- Running " + m + " for associating")
@@ -288,12 +289,15 @@ if args.task == "associate":
             covariance_type = m.split(':')[1]
             if covariance_type not in ["scaled", "eGRM", "GRM"]:
                 raise ValueError("Unknown association method '" + m + "'. Must be one of 'scaled', 'eGRM', 'GRM'.")
+            covariance_types.append(covariance_type)
             gwas.run_association_ARGWAS(trees=trees,
                                         inds=inds,
                                         variants=variants,
                                         pheno=pheno,
                                         args=args,
-                                        covariance_type=covariance_type,
+                                        covariance_types=covariance_types,
+                                        association_method_names=args.AIM_method,
+                                        window_size=args.ass_window_size,
                                         logfile=logger)
 
         else:
