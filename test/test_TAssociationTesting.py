@@ -8,9 +8,15 @@ import stdpopsim
 import numpy as np
 
 
-class TestAssociationTesting(unittest.TestCase):
+class TestAssociationTesting:
 
-    def test_get_window_ends(self):
+    @pytest.mark.parametrize(
+        "window_size, window_ends_true",
+        [(20000, [120000, 140000, 160000, 180000, 200000, 30]),
+         (30000, [130000, 160000, 190000, 200000]),
+         ],
+    )
+    def test_get_window_ends(self, window_size, window_ends_true):
         # simulate full trees
         species = stdpopsim.get_species("HomSap")
         contig = species.get_contig("chr22")
@@ -25,14 +31,12 @@ class TestAssociationTesting(unittest.TestCase):
         trees = trees_full.keep_intervals([interval], simplify=True)
 
         # get windows when skipping first tree, sequence length is multiple of window_size
-        window_size = 20000
-        window_ends = at.get_window_ends(ts_object=trees, window_size=window_size, trees_interval=trees_interval)
-        assert window_ends == [120000, 140000, 160000, 180000, 200000]
-
+        unit_0 = at.get_window_ends(ts_object=trees, window_size=window_size, trees_interval=trees_interval)
         # get windows when skipping first tree, sequence length is not multiple of window_size
-        window_size = 30000
-        window_ends = at.get_window_ends(ts_object=trees, window_size=window_size, trees_interval=trees_interval)
-        assert window_ends == [130000, 160000, 190000, 200000]
+        unit_1 = at.get_window_ends(ts_object=trees, window_size=window_size, trees_interval=trees_interval)
+
+        big_unit = unit_0.combine(unit_1)
+        assert big_unit == window_ends_true
 
 
 if __name__ == '__main__':
