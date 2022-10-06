@@ -173,13 +173,14 @@ def run_association_ARGWAS(trees, inds, variants, pheno, args, covariance_types,
 
                     # calculate one covariance matrix per region
                     if window_size is not None:
-                        if tree.interval.left < window_ends[0]:
+                        if tree_obj.end < window_ends[0]:
                             # tree is completely within window, add to existing covariance
-                            covariance_obj.add_tree(tree_obj=tree_obj, inds=inds)
+                            covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=1.0)
                         else:
                             # tree overlaps window end
-                            covariance_obj.add_tree_partial()
-                            covariance_obj.write()
+                            proportion = tree_obj.end - window_ends[0] / tree_obj.length
+                            covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=proportion)
+                            covariance_obj.write(out=outname, inds=inds)
                             for m in association_methods:
                                 m.run_association(index=tree_obj.index, out=outname)
                             covariance_obj.clear()

@@ -57,7 +57,7 @@ class TParameters:
         parser.add_argument('--prop_typed_variants', type=float, default=1,
                             help="Proportion of variants that are typed (out of the ones that pass the frequency "
                                  "filter).")
-        parser.add_argument('--trees_interval', nargs='+',
+        parser.add_argument('--trees_interval', nargs='+', type=int,
                             help="Only test the trees and variants in this interval for association")
 
         # simulating trees

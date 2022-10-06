@@ -88,38 +88,14 @@ class TCovarianceeGRM(TCovariance):
             raise ValueError("mu is not defined but covariance matrix is, this should not happen")
         self.write_for_gcta(covariance_matrix=self.covariance_matrix, mu=self.mu, inds=inds, out=out)
 
-    def add_tree(self, tree_obj, inds):
-        self.covariance_matrix, self.mu = tree_obj.get_eGRM(tree_obj=tree_obj, inds=inds)
-
-        # def run_association_one_region(self, ts_object, variants, tree_obj, inds, out, logfile, covariance_type,
-        #                                skip_first_tree):
-        #     """
-        #     :param ts_object: TreeSequence
-        #     :param variants: TVariants
-        #     :param tree_obj: TTree
-        #     :param inds: TInds
-        #     :param out: str
-        #     :param logfile:
-        #     :param covariance_type: str
-        #     :param skip_first_tree: bool
-        #     :return:
-        #     """
-        #     # logfile.info("starting association testing for tree with corrdinates: " + str(tree.interval.left) + ",
-        #     # "  + str(tree.interval.right)) calculate covariance and write to file
-        #
-
-        # # TODO: calculating and writing should be separate functions, only write if tree is valid and matrix is
-        # #  not empty. Only possible to do this when eGRM functionality runs internally
-        # covariance = self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object=ts_object,
-        #                                                                      variants=variants,
-        #                                                                      tree_obj=tree_obj,
-        #                                                                      inds=inds,
-        #                                                                      covariance_type=covariance_type,
-        #                                                                      out=out,
-        #                                                                      logfile=logfile,
-        #                                                                      skip_first_tree=skip_first_tree)
-        # if covariance is not None:
-        #     self.run_association_one_window_gcta(tree_obj, out)
+    def add_tree(self, tree_obj, proportion, inds):
+        cov, mu = tree_obj.get_eGRM(tree_obj=tree_obj, inds=inds)
+        if cov is None:
+            return None
+        if self.covariance_matrix is None:
+            self.covariance_matrix = proportion * cov
+        else:
+            self.covariance_matrix += proportion * cov
 
 
 class TCovarianceGRM(TCovariance):
@@ -140,13 +116,6 @@ class TCovarianceGRM(TCovariance):
             logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
                 inds.num_inds) + " but obtained " + str(np.trace(self.covariance_matrix)))
         self.write_for_gcta(covariance_matrix=self.covariance_matrix, mu=mu, inds=inds, out=out)
-
-    def add_tree(self, tree_obj, proportion, inds):
-        cov, mu = tree_obj.get_eGRM(tree_obj=tree_obj, inds=inds)
-        if cov is None:
-            return None
-        else:
-            self.covariance_matrix += proportion * cov
 
     def get_GRM(self, window_beginning, window_end, variants, inds):
         """
