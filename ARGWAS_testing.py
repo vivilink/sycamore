@@ -172,20 +172,20 @@ pheno_fixed_hp_wn.simulate_fixed([variants.variants[index]], index, [-0.67])
 # run association tests and plot
 #-----------------------
 
-pGWAS_unif = gwas.TAssociationTesting_GWAS(phenotypes=pheno_unif)
+pGWAS_unif = gwas.TAssociationTestingGWAS(phenotypes=pheno_unif)
 pGWAS_unif.OLS(variants)
-pGWAS_unif_noNoise = gwas.TAssociationTesting_GWAS(phenotypes=pheno_unif_noNoise)
+pGWAS_unif_noNoise = gwas.TAssociationTestingGWAS(phenotypes=pheno_unif_noNoise)
 pGWAS_unif_noNoise.OLS(variants)
 
-pGWAS_random = gwas.TAssociationTesting_GWAS(phenotypes=pheno_random)
+pGWAS_random = gwas.TAssociationTestingGWAS(phenotypes=pheno_random)
 pGWAS_random.OLS(variants)
 
-pGWAS_fixed = gwas.TAssociationTesting_GWAS(phenotypes=pheno_fixed)
+pGWAS_fixed = gwas.TAssociationTestingGWAS(phenotypes=pheno_fixed)
 pGWAS_fixed.OLS(variants)
 
-pGWAS_fixed_hp = gwas.TAssociationTesting_GWAS(phenotypes=pheno_fixed_hp)
+pGWAS_fixed_hp = gwas.TAssociationTestingGWAS(phenotypes=pheno_fixed_hp)
 pGWAS_fixed_hp.OLS(variants)
-pGWAS_fixed_hp_wn = gwas.TAssociationTesting_GWAS(phenotypes=pheno_fixed_hp_wn)
+pGWAS_fixed_hp_wn = gwas.TAssociationTestingGWAS(phenotypes=pheno_fixed_hp_wn)
 pGWAS_fixed_hp_wn.OLS(variants)
 
 

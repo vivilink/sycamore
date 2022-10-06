@@ -132,6 +132,7 @@ def read_trees():
 if args.task == "ARGStatistics":
     logger.info("- TASK: ARGStatistics")
     trees = read_trees()
+
     trees_class = tt.TTrees(ts_object=trees)
     trees_class.writeStats(ts_object=trees, out=args.out, logfile=logger)
 

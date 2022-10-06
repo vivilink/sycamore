@@ -64,7 +64,7 @@ def run_association_GWAS(trees, inds, variants, pheno, args, impute, logfile):
         logfile.sub()
 
         # run association tests
-        GWAS = TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=gt_matrix_imputed.shape[1])
+        GWAS = TAssociationTestingGWAS(phenotypes=pheno, num_typed_variants=gt_matrix_imputed.shape[1])
         GWAS.test_with_positions_from_X_matrix(X=gt_matrix_imputed, positions=pos,
                                                variants_sample=variants,
                                                logfile=logfile)
@@ -73,7 +73,7 @@ def run_association_GWAS(trees, inds, variants, pheno, args, impute, logfile):
     else:
         logfile.info("- Using genotypes from tree file for GWAS:")
         # run association tests
-        GWAS = TAssociationTesting_GWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
+        GWAS = TAssociationTestingGWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
         GWAS.test_with_variants_object(variants, inds, logfile)
         GWAS.write_to_file(variants, outname, logfile)
         # GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
@@ -84,26 +84,24 @@ def run_association_GWAS(trees, inds, variants, pheno, args, impute, logfile):
 def get_association_test_object(test_name, phenotypes, num_associations):
     covariance_obj = None
     if test_name == "HE":
-        test_obj = TAssociationTesting_trees_gcta_HE(phenotypes, num_associations)
+        test_obj = TAssociationTestingRegionsGCTA_HE(phenotypes, num_associations)
     elif test_name == "REML":
-        test_obj = TAssociationTesting_trees_gcta_REML(phenotypes, num_associations)
+        test_obj = TAssociationTestingRegionsGCTA_REML(phenotypes, num_associations)
     else:
         raise ValueError("Did not recognize " + str(test_name) + " as a association test type")
 
     return test_obj
 
 
-def get_window_ends(ts_object, window_size, skip_first_tree):
+def get_window_ends(ts_object, window_size, trees_interval):
     window_ends = []
-    if skip_first_tree:
-        num_tests = (ts_object.sequence_length - ts_object.at_index(1).left) / window_size
-    else:
-        num_tests = (ts_object.sequence_length - ts_object.at_index(0).left) / window_size
+    num_tests = (trees_interval[1] - trees_interval[0]) / window_size
 
-    for w in range(num_tests)[1:]:
-        window_ends.append(ts_object.at_index(0).left + w * window_size)
-    if skip_first_tree:
-        window_ends.pop(0)
+    for w in range(int(np.floor(num_tests))):
+        window_ends.append(trees_interval[0] + (w + 1) * window_size)
+    # add last bit (smaller window)
+    if window_ends[-1] < trees_interval[1]:
+        window_ends.append(trees_interval[1])
 
     return window_ends
 
@@ -123,7 +121,7 @@ def run_association_ARGWAS(trees, inds, variants, pheno, args, covariance_types,
     num_tests = trees.num_trees
     window_ends = list(trees.breakpoints(as_array=True))
     if window_size is not None:
-        window_ends = get_window_ends(ts_object=trees, window_size=window_size, skip_first_tree=args.skip_first_tree)
+        window_ends = get_window_ends(ts_object=trees, window_size=window_size, trees_interval=args.trees_interval)
 
     # loop over covariance types
     for covariance in covariance_types:
@@ -158,11 +156,10 @@ def run_association_ARGWAS(trees, inds, variants, pheno, args, covariance_types,
             for w in range(num_tests):
                 window_end = window_ends[w]
                 covariance_obj.add_tree()
-                covariance_obj.write_to_file()
+                covariance_obj.write()
                 for m in association_methods:
-                    m.test_association()
+                    m.test_association(variants)
                 covariance_obj.clear()
-
 
         # tree based covariance
         else:
@@ -171,19 +168,20 @@ def run_association_ARGWAS(trees, inds, variants, pheno, args, covariance_types,
                 # TODO: this condition is because if you extract a region from tskit sequence, the first tree goes
                 #  from zero to the first tree. This causes problems with eGRM. Needs to be investigated what the problem is
                 #  and a better condition needs to be found!
+                tree_obj = tt.TTree(tree)
                 if tree_obj.height != -1 and not (args.skip_first_tree and tree_obj.index == 0):
 
                     # calculate one covariance matrix per region
                     if window_size is not None:
-                        if tree.interval.left > window_ends[0]:
+                        if tree.interval.left < window_ends[0]:
                             # tree is completely within window, add to existing covariance
-                            covariance_obj.add_tree()
+                            covariance_obj.add_tree(tree_obj=tree_obj, inds=inds)
                         else:
                             # tree overlaps window end
                             covariance_obj.add_tree_partial()
-                            covariance_obj.write_to_file()
+                            covariance_obj.write()
                             for m in association_methods:
-                                m.test_association()
+                                m.run_association(index=tree_obj.index, out=outname)
                             covariance_obj.clear()
                             window_ends.pop(0)
                             covariance_obj.add_tree_partial()  # add rest of tree to next covariance
@@ -191,73 +189,18 @@ def run_association_ARGWAS(trees, inds, variants, pheno, args, covariance_types,
                     # calculate one covariance matrix per tree
                     else:
                         for covariance_type in covariance_types:
-                            covariance_obj.add_tree()
-                            covariance_obj.write_to_file()
+                            covariance_obj.add_tree(tree_obj=tree_obj, inds=inds)
+                            covariance_obj.write(out=outname, inds=inds)
                             for m in association_methods:
-                                m.test_association()
+                                m.run_association(index=tree_obj.index, out=outname)
                             covariance_obj.clear()
 
                     # log progress
-                    if tree.index % 100 == 0:
+                    if tree.index % 10 == 0:
                         end = time.time()
                         logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end - start)) + " s")
 
         logfile.sub()
-
-    # -----------------------------------------------------------------
-
-    for m in args.AIM_method:
-
-        if m == "HE":
-
-            if args.test_only_tree_at is None:
-                logfile.info("- Running associations test using GCTA Haseman-Elston for a sequence of trees")
-
-            else:
-                logfile.info("- Running associations test using GCTA Haseman-Elston for a single tree")
-            logfile.add()
-
-            # run association
-            if args.test_only_tree_at is None:
-                treeWAS.run_association(index, variants=variants, inds=inds, out=outname, logfile=logfile,
-                                        covariance_type=covariance_type, skip_first_tree=args.skip_first_tree)
-            else:
-                tree = trees.at(args.test_only_tree_at)
-
-            treeWAS.write_to_file(trees, outname, logfile)
-            logfile.sub()
-
-        if m == "REML":
-
-            if args.test_only_tree_at is None:
-                logfile.info("- Running associations test using GCTA REML for a sequence of trees")
-            else:
-                logfile.info("- Running associations test using GCTA REML for a single tree")
-            logfile.add()
-            treeWAS = TAssociationTesting_trees_gcta_REML(trees, pheno)
-
-            # write phenotypes in gcta format
-            if covariance_type == "eGRM" or covariance_type == "GRM":
-                pheno.write_to_file_gcta_eGRM(inds=inds, out=outname, logfile=logfile)
-            else:
-                pheno.write_to_file_gcta_scaled(out=outname, logfile=logfile)
-
-            # run association
-            if args.test_only_tree_at is None:
-                treeWAS.run_association(ts_object=trees, variants=variants, inds=inds, out=outname, logfile=logfile,
-                                        covariance_type=covariance_type, skip_first_tree=args.skip_first_tree)
-            else:
-                tree = trees.at(args.test_only_tree_at)
-                tree_obj = tt.TTree(tree)
-                treeWAS.run_association_one_region(ts_object=trees, variants=variants, tree_obj=tree_obj, inds=inds,
-                                                   out=outname, logfile=logfile, covariance_type=covariance_type,
-                                                   skip_first_tree=args.skip_first_tree)
-
-            treeWAS.write_to_file(trees, outname, logfile)
-
-            logfile.sub()
-
-    logfile.sub()
 
 
 class TAssociationTesting:
@@ -288,7 +231,7 @@ class TAssociationTesting:
         return tmp
 
 
-class TAssociationTesting_GWAS(TAssociationTesting):
+class TAssociationTestingGWAS(TAssociationTesting):
     """
     SNP based association testing using Ordinary Least Squares regression
     """
@@ -534,15 +477,14 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
     def __init__(self, phenotypes, num_associations):
         super().__init__(phenotypes, num_associations)
 
-    def run_association(self, covariance, index, out, logfile):
+    def run_association(self, index, out):
         self.run_association_one_window_gcta(index=index, out=out)
-        logfile.info("- Done running associations")
 
     def run_association_one_window_gcta(self, index, out):
         raise ValueError("function run_association_one_window_gcta not implemented in base class")
 
 
-class TAssociationTesting_trees_gcta_HE(TAssociationTestingRegionsGCTA):
+class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
     """
     tree-based association testing using GCTA Haseman-Elston algorithm
     """
@@ -574,6 +516,9 @@ class TAssociationTesting_trees_gcta_HE(TAssociationTestingRegionsGCTA):
         self.V_G_over_Vp_SE_Jackknife_HECP.fill(np.nan)
         self.V_G_over_Vp_SE_Jackknife_HESD = np.empty(self.num_associations)
         self.V_G_over_Vp_SE_Jackknife_HESD.fill(np.nan)
+
+    def run_association(self, index, out):
+        self.run_association_one_window_gcta(index=index, out=out)
 
     def run_association_one_window_gcta(self, index, out):
         # create gcta input files, run gcta and parse output
@@ -650,7 +595,7 @@ class TAssociationTesting_trees_gcta_HE(TAssociationTestingRegionsGCTA):
         logfile.info("- Wrote stats from HE to '" + out + "_trees_HE_stats.csv'")
 
 
-class TAssociationTesting_trees_gcta_REML(TAssociationTestingRegionsGCTA):
+class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
     """
     tree-based association testing using CGTA REML algorithm
     """
@@ -686,6 +631,9 @@ class TAssociationTesting_trees_gcta_REML(TAssociationTestingRegionsGCTA):
         self.V_G_over_Vp_SE = np.empty(self.num_associations)
         self.V_G_over_Vp_SE.fill(np.nan)
 
+    def run_association(self, index, out):
+        self.run_association_one_window_gcta(index=index, out=out)
+
     def run_association_one_window_gcta(self, index, out):
         # create gcta input files, run gcta and parse output
         exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_REML.sh", out])
@@ -694,12 +642,12 @@ class TAssociationTesting_trees_gcta_REML(TAssociationTestingRegionsGCTA):
         result = pd.read_table(out + "_REML.hsq")
         result_pvalue = float(result['Variance'][result['Source'] == 'Pval'])
         if result_pvalue < 0:
-            raise ValueError("Negative p-value for tree starting at " + str(tree.interval.left))
+            raise ValueError("Negative p-value for window with index " + str(index))
         if result_pvalue > 1:
-            raise ValueError("p-value larger than 1 for tree starting at " + str(tree.interval.left))
+            raise ValueError("p-value larger than 1 for window with index " + str(index))
 
         self.p_values[index] = result_pvalue
-        if (result_pvalue < 0):
+        if result_pvalue < 0:
             raise ValueError("window index", index, "produced negative p-value with REML")
 
         self.V_G[index] = float(result['Variance'][result['Source'] == 'V(G)'])
@@ -746,7 +694,7 @@ class TAssociationTesting_trees_gcta_REML(TAssociationTestingRegionsGCTA):
         logfile.info("- Wrote stats from tree association tests to '" + name + "_trees_REML_stats.csv'")
 
 
-class TTreeAssociation_Mantel(TAssociationTestingRegions):
+class TTreeAssociationMantel(TAssociationTestingRegions):
 
     def __init__(self, ts_object, phenotypes):
 
@@ -774,12 +722,12 @@ class TTreeAssociation_Mantel(TAssociationTestingRegions):
                 print(tmrca)
                 raise ValueError("p-value is negative")
 
-# def runLimix(self, ts_object, N, y, F, random):   
+# def runLimix(self, ts_object, N, y, F, random):
 # self.lrt = np.empty(self.num_associations)
 
 #     raise ValueError("Limix not currently implemented")
 
-#     G = np.zeros(N).reshape(N,1) 
+#     G = np.zeros(N).reshape(N,1)
 #     # G = np.random.binomial(1, 0.5, N).reshape(N,1)
 #     # Inter = np.zeros(N).reshape(N,1)
 #     Inter = None
@@ -790,7 +738,7 @@ class TTreeAssociation_Mantel(TAssociationTestingRegions):
 #         # if tree.index % 1000 == 0:
 #         print("tree index: ",tree.index)
 #         tree_obj = tt.TTree(tree, N)
-#         lmm = LMMCore(y, F, tree_obj.solving_function)    
+#         lmm = LMMCore(y, F, tree_obj.solving_function)
 #         lmm.process(G, Inter) #this needs step param to produce only one p-value per tree. for this i need the number of sites per tree, or just use 1?
 #         self.p_values[tree.index] = lmm.getPv()
 #         print("p-value", self.p_values[tree.index])

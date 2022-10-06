@@ -65,6 +65,9 @@ class TCovariance:
                 iid = inds.names[idx]
                 grmfile.write("\t".join([str(fid), str(iid)]) + os.linesep)
 
+    def clear(self):
+        self.covariance_matrix = None
+
 
 class TCovarianceeGRM(TCovariance):
     def __init__(self):
@@ -72,14 +75,21 @@ class TCovarianceeGRM(TCovariance):
 
         self.covariance_type = "eGRM"
         self.covariance_matrix = None
+        self.mu = None
 
-    def write(self, out):
+    def clear(self):
+        self.covariance_matrix = None
+        self.mu = None
+
+    def write(self, out, inds):
         if self.covariance_matrix is None:
             return None
-        self.write_for_gcta(covariance_matrix=self.covariance_matrix, mu=mu, inds=inds, out=out)
+        if self.mu is None:
+            raise ValueError("mu is not defined but covariance matrix is, this should not happen")
+        self.write_for_gcta(covariance_matrix=self.covariance_matrix, mu=self.mu, inds=inds, out=out)
 
-    def add_tree(self, tree_obj, variants, inds):
-        covariance, mu = tree_obj.get_GRM(variants=variants, inds=inds)
+    def add_tree(self, tree_obj, inds):
+        self.covariance_matrix, self.mu = tree_obj.get_eGRM(tree_obj=tree_obj, inds=inds)
 
         # def run_association_one_region(self, ts_object, variants, tree_obj, inds, out, logfile, covariance_type,
         #                                skip_first_tree):
