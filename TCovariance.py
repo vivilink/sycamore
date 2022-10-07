@@ -31,7 +31,7 @@ def get_covariance_object(covariance_name):
 class TCovariance:
     def __init__(self):
         self.covariance_type = "base"
-        self.covariance_matrix = None
+        self.covariance_matrix_haploid = None
 
     def write_for_gcta(self, covariance_matrix, mu, inds, out):
         """
@@ -66,7 +66,7 @@ class TCovariance:
                 grmfile.write("\t".join([str(fid), str(iid)]) + os.linesep)
 
     def clear(self):
-        self.covariance_matrix = None
+        self.covariance_matrix_haploid = None
 
 
 class TCovarianceeGRM(TCovariance):
@@ -82,21 +82,40 @@ class TCovarianceeGRM(TCovariance):
         self.mu = None
 
     def write(self, out, inds):
+        """
+        Write covariance matrix to file so it can be used to test for association. In the case of eGRM, association
+        testing is done with GCTA.
+
+        @param out: str
+        @param inds: TInds
+        """
         if self.covariance_matrix is None:
-            return None
+            return False
         if self.mu is None:
             raise ValueError("mu is not defined but covariance matrix is, this should not happen")
         self.write_for_gcta(covariance_matrix=self.covariance_matrix, mu=self.mu, inds=inds, out=out)
 
+        return True
+
     def add_tree(self, tree_obj, proportion, inds):
-        cov, mu = tree_obj.get_eGRM(tree_obj=tree_obj, inds=inds)
+        """
+        Get the unnormalized eGRM (=cov) so that it can be added to window eGRM, and also its number of expected mutations.
+
+        @param tree_obj: TTree
+        @param proportion: proportion of tree that is within window (necessary to calculate l(e), see Fan et al.)
+        @param inds: TInds
+        @return: np.array, float
+        """
+
+        cov, mu = tree_obj.get_unnormalized_eGRM(tree_obj=tree_obj, inds=inds)
         if cov is None:
             return None
         if self.covariance_matrix is None:
             self.covariance_matrix = proportion * cov
+            self.mu = proportion * mu
         else:
             self.covariance_matrix += proportion * cov
-
+            self.mu += proportion * mu
 
 class TCovarianceGRM(TCovariance):
     def __init__(self):
@@ -105,9 +124,9 @@ class TCovarianceGRM(TCovariance):
         self.covariance_type = "GRM"
         self.covariance_matrix = None
 
-    def write(self, out, inds, mu, logfile):
+    def write(self, out, inds, logfile):
         if self.covariance_matrix is None:
-            return None
+            return False
         if np.trace(self.covariance_matrix) < 0:
             raise ValueError("Trace of matrix cannot be negative")
         if inds.ploidy == 1 and not math.isclose(np.trace(self.covariance_matrix), inds.num_inds):
@@ -115,7 +134,9 @@ class TCovarianceGRM(TCovariance):
             # are not in perfect HWE)
             logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
                 inds.num_inds) + " but obtained " + str(np.trace(self.covariance_matrix)))
-        self.write_for_gcta(covariance_matrix=self.covariance_matrix, mu=mu, inds=inds, out=out)
+        self.write_for_gcta(covariance_matrix=self.covariance_matrix, mu=self.mu, inds=inds, out=out)
+
+        return True
 
     def get_GRM(self, window_beginning, window_end, variants, inds):
         """
@@ -167,81 +188,82 @@ class TCovarianceScaled(TCovariance):
         super().__init__()
 
         self.covariance_type = "scaled"
-        self.covariance_matrix = None
+        self.covariance_matrix_haploid = None
+        self.covariance_matrix_diploid = None
 
     def write_for_gcta(self, covariance_matrix, mu, inds, out):
-        if self.covariance_matrix is None:
-            return None
+        if self.covariance_matrix_haploid is None:
+            return False
 
         with open(out + '_GRM_covariance.txt', 'w') as f:
-            np.savetxt(f, self.covariance_matrix)
+            np.savetxt(f, self.covariance_matrix_haploid)
         f.close()
 
         subprocess.call(["Rscript", os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])
 
     def add_tree(self, tree_obj, proportion, inds):
         cov = tree_obj.get_covariance_scaled(inds=inds)
-        self.covariance_matrix += proportion * cov
+        self.covariance_matrix_haploid += proportion * cov
 
     # -----------------------------
 
-    def calculate_and_write_covariance_matrix_to_gcta_file(self, ts_object, variants, tree_obj, inds, covariance_type,
-                                                           out, skip_first_tree, logfile):
-        """
-        Writes covariance and other files necessary to run gcta. The program egrm does that automatically, the scaled
-
-        Parameters
-        ----------
-        ts_object : tskit.treeSequence
-        variants : TVariants
-        tree_obj : TTree.py
-        inds : TInds
-        covariance_type : str
-        out : str
-        skip_first_tree: bool
-        logfile : IndentedLoggerAdapter
-
-        Raises
-        ------
-        ValueError
-            If the covariance_type is not a recognized method.
-
-        Returns
-        -------
-        Covariance: ndarray(inds.num_inds, inds.num_inds).
-
-        """
-        if covariance_type == "scaled":
-            covariance = tree_obj.get_covariance_scaled(inds=inds)
-            write_covariance_matrix_R(covariance=covariance, out=out)
-
-        elif covariance_type == "eGRM":
-            # trees = ts_object.keep_intervals(np.array([[tree_obj.start, tree_obj.end]]), simplify=True)
-            covariance, mu = tree_obj.get_eGRM(tskit_obj=ts_object, tree_obj=tree_obj, inds=inds)
-            if covariance is None:
-                return None
-            write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
-
-            # if np.trace(covariance) != inds.num_inds:
-            # raise ValueError("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
-            # inds.num_inds) + " but obtained " + str(np.trace(covariance)))
-            # logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
-            #     inds.num_inds) + " but obtained " + str(np.trace(covariance)))
-
-        elif covariance_type == "GRM":
-            covariance, mu = tree_obj.get_GRM(variants=variants, inds=inds)
-            if covariance is None:
-                return None
-            if np.trace(covariance) < 0:
-                raise ValueError("Trace of matrix cannot be negative")
-            if inds.ploidy == 1 and not math.isclose(np.trace(covariance), inds.num_inds):
-                # trace for haploids is expected to be equal to number of individuals (not true for diploids if they
-                # are not in perfect HWE)
-                logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
-                    inds.num_inds) + " but obtained " + str(np.trace(covariance)))
-            write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
-
-        else:
-            raise ValueError("Did not recognize " + str(covariance_type) + " as a covariance type")
-
-        return covariance
+    # def calculate_and_write_covariance_matrix_to_gcta_file(self, ts_object, variants, tree_obj, inds, covariance_type,
+    #                                                        out, skip_first_tree, logfile):
+    #     """
+    #     Writes covariance and other files necessary to run gcta. The program egrm does that automatically, the scaled
+    #
+    #     Parameters
+    #     ----------
+    #     ts_object : tskit.treeSequence
+    #     variants : TVariants
+    #     tree_obj : TTree.py
+    #     inds : TInds
+    #     covariance_type : str
+    #     out : str
+    #     skip_first_tree: bool
+    #     logfile : IndentedLoggerAdapter
+    #
+    #     Raises
+    #     ------
+    #     ValueError
+    #         If the covariance_type is not a recognized method.
+    #
+    #     Returns
+    #     -------
+    #     Covariance: ndarray(inds.num_inds, inds.num_inds).
+    #
+    #     """
+    #     if covariance_type == "scaled":
+    #         covariance = tree_obj.get_covariance_scaled(inds=inds)
+    #         write_covariance_matrix_R(covariance=covariance, out=out)
+    #
+    #     elif covariance_type == "eGRM":
+    #         # trees = ts_object.keep_intervals(np.array([[tree_obj.start, tree_obj.end]]), simplify=True)
+    #         covariance, mu = tree_obj.get_eGRM(tskit_obj=ts_object, tree_obj=tree_obj, inds=inds)
+    #         if covariance is None:
+    #             return None
+    #         write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
+    #
+    #         # if np.trace(covariance) != inds.num_inds:
+    #         # raise ValueError("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
+    #         # inds.num_inds) + " but obtained " + str(np.trace(covariance)))
+    #         # logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
+    #         #     inds.num_inds) + " but obtained " + str(np.trace(covariance)))
+    #
+    #     elif covariance_type == "GRM":
+    #         covariance, mu = tree_obj.get_GRM(variants=variants, inds=inds)
+    #         if covariance is None:
+    #             return None
+    #         if np.trace(covariance) < 0:
+    #             raise ValueError("Trace of matrix cannot be negative")
+    #         if inds.ploidy == 1 and not math.isclose(np.trace(covariance), inds.num_inds):
+    #             # trace for haploids is expected to be equal to number of individuals (not true for diploids if they
+    #             # are not in perfect HWE)
+    #             logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
+    #                 inds.num_inds) + " but obtained " + str(np.trace(covariance)))
+    #         write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
+    #
+    #     else:
+    #         raise ValueError("Did not recognize " + str(covariance_type) + " as a covariance type")
+    #
+    #     return covariance

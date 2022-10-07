@@ -10,6 +10,7 @@ import pandas as pd
 import tskit
 from egrm import varGRM_C
 from egrm import varGRM
+from egrm import egrm_one_tree_no_normalization
 
 
 class TTrees:
@@ -261,7 +262,9 @@ class TTree:
 
         return self.eGRM, self.EK_relate_mu
 
-
+    def get_unnormalized_eGRM(self, tree_obj, inds):
+        cov, mu = egrm_one_tree_no_normalization(tree=tree_obj.tree, num_samples=inds.num_haplotypes)
+        return cov, mu
 
     def solving_function(self, array, inds):
         covariance = self.covariance(inds.num_haplotypes)
