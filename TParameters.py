@@ -136,8 +136,6 @@ class TParameters:
 
         # run associations
         assoc = parser.add_argument_group('running association tests')
-        # TODO: ass method aim method and covariance type should be given in one parameter, maybe a file. Some
-        #  combinations should be made impossible
         assoc.add_argument('--ass_method', nargs='+', type=str,
                            help="Provide association method [AIM, GWAS] and for AIM covariance type [eGRM, GRM, "
                                 "scaled] with the following format: 'method:covariance'")

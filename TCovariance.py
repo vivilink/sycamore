@@ -32,6 +32,7 @@ class TCovariance:
     def __init__(self):
         self.covariance_type = "base"
         self.covariance_matrix_haploid = None
+        self.covariance_matrix_diploid = None
 
     def write_for_gcta(self, covariance_matrix, mu, inds, out):
         """
@@ -74,12 +75,27 @@ class TCovarianceeGRM(TCovariance):
         super().__init__()
 
         self.covariance_type = "eGRM"
-        self.covariance_matrix = None
+        self.covariance_matrix_haploid = None
+        self.covariance_matrix_diploid = None
         self.mu = None
 
     def clear(self):
-        self.covariance_matrix = None
+        self.covariance_matrix_haploid = None
         self.mu = None
+
+    def finalize(self, inds):
+        if self.covariance_matrix_haploid is None:
+            return False
+        if self.mu is None:
+            raise ValueError("mu is not defined but covariance matrix is, this should not happen")
+
+        self.normalize()
+
+        if inds.ploidy == 2:
+            if self.covariance_matrix_diploid is None:
+                self.calculate_diploid()
+
+        return True
 
     def write(self, out, inds):
         """
@@ -89,17 +105,17 @@ class TCovarianceeGRM(TCovariance):
         @param out: str
         @param inds: TInds
         """
-        if self.covariance_matrix is None:
-            return False
-        if self.mu is None:
-            raise ValueError("mu is not defined but covariance matrix is, this should not happen")
-        self.write_for_gcta(covariance_matrix=self.covariance_matrix, mu=self.mu, inds=inds, out=out)
+        if inds.ploidy == 2:
+            self.write_for_gcta(covariance_matrix=self.covariance_matrix_diploid, mu=self.mu, inds=inds, out=out)
+        else:
+            self.write_for_gcta(covariance_matrix=self.covariance_matrix_haploid, mu=self.mu, inds=inds, out=out)
 
         return True
 
     def add_tree(self, tree_obj, proportion, inds):
         """
-        Get the unnormalized eGRM (=cov) so that it can be added to window eGRM, and also its number of expected mutations.
+        Calculate the unnormalized and haploid eGRM (=cov) so that it can be added to window eGRM, and also its
+        number of expected mutations.
 
         @param tree_obj: TTree
         @param proportion: proportion of tree that is within window (necessary to calculate l(e), see Fan et al.)
@@ -110,12 +126,35 @@ class TCovarianceeGRM(TCovariance):
         cov, mu = tree_obj.get_unnormalized_eGRM(tree_obj=tree_obj, inds=inds)
         if cov is None:
             return None
-        if self.covariance_matrix is None:
-            self.covariance_matrix = proportion * cov
+        if self.covariance_matrix_haploid is None:
+            self.covariance_matrix_haploid = proportion * cov
             self.mu = proportion * mu
         else:
-            self.covariance_matrix += proportion * cov
+            self.covariance_matrix_haploid += proportion * cov
             self.mu += proportion * mu
+
+    def calculate_diploid(self):
+        """
+        As in Fan et al. 2022
+        @return:
+        """
+        N = self.covariance_matrix_haploid.shape[0]
+        maternals = np.array(range(0, N, 2))
+        paternals = np.array(range(1, N, 2))
+        self.covariance_matrix_diploid = 0.5 * (self.covariance_matrix_haploid[maternals, :][:, maternals]
+                                                + self.covariance_matrix_haploid[maternals, :][:, paternals]
+                                                + self.covariance_matrix_haploid[paternals, :][:, maternals]
+                                                + self.covariance_matrix_haploid[paternals, :][:, paternals])
+
+    def normalize(self):
+        """
+        As in Fan et al. 2022, divide haploid matrix by total number of expected mutations in window and center by
+        column and row.
+        """
+        self.covariance_matrix_haploid /= self.mu
+        self.covariance_matrix_haploid -= self.covariance_matrix_haploid.mean(axis=0)
+        self.covariance_matrix_haploid -= self.covariance_matrix_haploid.mean(axis=1, keepdims=True)
+
 
 class TCovarianceGRM(TCovariance):
     def __init__(self):
@@ -123,6 +162,7 @@ class TCovarianceGRM(TCovariance):
 
         self.covariance_type = "GRM"
         self.covariance_matrix = None
+        self.mu = None
 
     def write(self, out, inds, logfile):
         if self.covariance_matrix is None:
@@ -140,7 +180,7 @@ class TCovarianceGRM(TCovariance):
 
     def get_GRM(self, window_beginning, window_end, variants, inds):
         """
-        Calculate GRM matrix based on variants
+        Calculate GRM matrix based on variants in a window (can bee tree interval)
 
         Parameters
         ----------
@@ -149,25 +189,21 @@ class TCovarianceGRM(TCovariance):
         variants : TVariantsFiltered
         inds : TInds
 
-        Returns
-        -------
-        np.array if there are variants that are typed and have allele freq > 0. Otherwise None.
-
         """
         # tree_variant_info = variants.info[(variants.info['tree_index'] == self.index) & (variants.info['typed'] == True) & (variants.info['allele_freq'] > 0.0)]
-        tree_variants = np.array(variants.variants)[
+        window_variants = np.array(variants.variants)[
             (variants.info['position'] >= window_beginning) &
             (variants.info['position'] < window_end) &
             (variants.info['typed'] == True) &
             (variants.info['allele_freq'] > 0.0)]
-        num_vars = tree_variants.shape[0]
+        num_vars = window_variants.shape[0]
         if num_vars == 0:
             return None, None
 
         # loop over variants
         M_sum = np.zeros(shape=(inds.num_inds, inds.num_inds))
         for v_i in range(num_vars):  # range(num_vars)
-            gt_haploid = tree_variants[v_i].genotypes
+            gt_haploid = window_variants[v_i].genotypes
             if inds.ploidy == 1:
                 gt = gt_haploid
             else:
@@ -180,7 +216,8 @@ class TCovarianceGRM(TCovariance):
             M = M / (inds.ploidy * af * (1 - af))
             M_sum += M
         M_window = M_sum / float(num_vars)
-        return M_window, num_vars
+        self.covariance_matrix = M_window
+        self.mu = num_vars
 
 
 class TCovarianceScaled(TCovariance):

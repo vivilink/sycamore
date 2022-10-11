@@ -28,8 +28,6 @@ def OLS(genotypes, phenotypes):
 
 
 def run_association_GWAS(trees, inds, variants, pheno, args, impute, logfile):
-    logfile.info("- GWAS:")
-    logfile.add()
     outname = args.out + "_GWAS"
 
     if args.imputation_ref_panel_tree_file is not None:
@@ -78,10 +76,8 @@ def run_association_GWAS(trees, inds, variants, pheno, args, impute, logfile):
         GWAS.write_to_file(variants, outname, logfile)
         # GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
 
-    logfile.sub()
 
-
-def get_association_test_object(test_name, phenotypes, num_associations):
+def get_AIM_test_object(test_name, phenotypes, num_associations):
     covariance_obj = None
     if test_name == "HE":
         test_obj = TAssociationTestingRegionsGCTA_HE(phenotypes, num_associations)
@@ -106,106 +102,140 @@ def get_window_ends(ts_object, window_size, trees_interval):
     return window_ends
 
 
-def run_association_ARGWAS(trees, inds, variants, pheno, args, covariance_types, association_method_names, window_size,
+def run_association_ARGWAS(trees, inds, variants, pheno, args, ass_method, window_size,
                            logfile):
-    logfile.info("- AIM:")
-    logfile.add()
-
     if args.AIM_method is None:
         raise ValueError("ERROR: No method for tree association provided. Use '--AIM_method' to set method.")
 
     logfile.info("- Reading tree estimations for tree-based association from " + args.tree_file)
-    logfile.info("- Running association test using covariance_matrix types " + str(covariance_types))
 
     # define number and coordinates of windows
     num_tests = trees.num_trees
-    window_ends = list(trees.breakpoints(as_array=True))
+
+    window_starts = trees.breakpoints(as_array=True)[
+                     0:trees.num_trees]  # otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
+    window_ends = trees.breakpoints(as_array=True)[1:]
     if window_size is not None:
         window_ends = get_window_ends(ts_object=trees, window_size=window_size, trees_interval=args.trees_interval)
+        num_tests = len(window_ends)
+    # determine covariance type
+    covariance = ass_method.split(':')[1]
+    if covariance not in ["scaled", "eGRM", "GRM"]:
+        raise ValueError("Unknown covariance method '" + covariance + "'. Must be one of 'scaled', 'eGRM', 'GRM'.")
+    logfile.info("- Writing output files with suffix '_" + covariance + "'")
+    outname = args.out + "_" + covariance
+    logfile.info("- Running associations tests using covariance type " + covariance + " for a sequence of trees")
 
-    # loop over covariance types
-    for covariance in covariance_types:
-        logfile.info("- Running associations tests using covariance type " + covariance + " for a sequence of trees")
-        logfile.info("- Writing output files with suffix '_" + covariance)
-        outname = args.out + "_" + covariance
-        logfile.add()
+    logfile.add()
 
-        # initialize and write phenotypes
-        pheno.find_causal_trees(trees)
-        if "eGRM" in covariance_types or "GRM" in covariance_types:
-            pheno.write_to_file_gcta_eGRM(inds=inds, out=outname, logfile=logfile)
-        else:
-            pheno.write_to_file_gcta_scaled(out=outname, logfile=logfile)
+    # initialize and write phenotypes
+    pheno.find_causal_trees(trees)
+    if covariance == "eGRM" or covariance == "GRM":
+        pheno.write_to_file_gcta_eGRM(inds=inds, out=outname, logfile=logfile)
+    else:
+        pheno.write_to_file_gcta_scaled(out=outname, logfile=logfile)
 
-        # create covariance type object
-        covariance_obj = cov.get_covariance_object(covariance)
+    # create covariance type object
+    covariance_obj = cov.get_covariance_object(covariance)
 
-        # create association method objects
-        logfile.info("- Running associations tests using test methods " + str(
-            association_method_names) + " for a sequence of trees")
-        association_methods = []
-        for m in association_method_names:
-            test_obj = get_association_test_object(m, phenotypes=pheno, num_associations=num_tests)
-            association_methods.append(test_obj)
+    # create association method objects
+    logfile.info("- Running associations tests using test methods " + str(
+        args.AIM_method) + " for a sequence of trees")
+    AIM_methods = []
+    for m in args.AIM_method:
+        test_obj = get_AIM_test_object(m, phenotypes=pheno, num_associations=num_tests)
+        AIM_methods.append(test_obj)
 
+    # variant based covariance
+    if covariance == "GRM":
         # log progress
         start = time.time()
 
-        # variant based covariance
-        if covariance == "GRM":
-            for w in range(num_tests):
-                window_end = window_ends[w]
-                covariance_obj.add_tree()
-                covariance_obj.write()
-                for m in association_methods:
-                    m.test_association(variants)
-                covariance_obj.clear()
+        for w in range(num_tests):
+            window_end = window_ends[w]
+            covariance_obj.get_GRM(window_beginning=window_end - window_size, window_end=window_end, variants=variants,
+                                   inds=inds)
+            written = covariance_obj.write(out=outname, inds=inds, logfile=logfile)
+            if written:
+                for m in AIM_methods:
+                    m.run_association(index=w, out=outname)
+            else:
+                raise ValueError("covariance matrix " + covariance_obj.covariance_type + " was not written to file")
+            covariance_obj.clear()
 
-        # tree based covariance
-        else:
-            # loop over trees
-            for tree in trees.trees():
-                # TODO: this condition is because if you extract a region from tskit sequence, the first tree goes
-                #  from zero to the first tree. This causes problems with eGRM. Needs to be investigated what the problem is
-                #  and a better condition needs to be found!
-                tree_obj = tt.TTree(tree)
-                if tree_obj.height != -1 and not (args.skip_first_tree and tree_obj.index == 0):
+            # log progress
+            if w % 10 == 0:
+                end = time.time()
+                logfile.info("- Ran AIM for " + str(w) + " windows in " + str(round(end - start)) + " s")
 
-                    # calculate one covariance matrix per region
-                    if window_size is not None:
-                        if tree_obj.end < window_ends[0]:
-                            # tree is completely within window, add to existing covariance
-                            covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=1.0)
-                        else:
-                            proportion = (tree_obj.end - window_ends[0]) / tree_obj.length
-                            covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=proportion)
-                            covariance_obj.normalize()
-                            written = covariance_obj.write(out=outname, inds=inds)
-                            if written:
-                                for m in association_methods:
-                                    m.run_association(index=tree_obj.index, out=outname)
-                                covariance_obj.clear()
+        for m in AIM_methods:
+            m.write_to_file(window_starts=[x - window_size for x in window_ends],
+                            window_ends=window_ends,
+                            out=outname,
+                            logfile=logfile)
 
-                            #add rest of tree to new window
-                            proportion = 1 - proportion
-                            covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=proportion)  # add rest of tree to next covariance
-                            window_ends.pop(0)
+    # tree based covariance
+    else:
+        # log progress
+        start = time.time()
 
-                    # calculate one covariance matrix per tree
+        # loop over trees
+        for tree in trees.trees():
+            # TODO: this condition is because if you extract a region from tskit sequence, the first tree goes
+            #  from zero to the first tree. This causes problems with eGRM. Needs to be investigated what the problem is
+            #  and a better condition needs to be found!
+            tree_obj = tt.TTree(tree)
+            if tree_obj.height != -1 and not (args.skip_first_tree and tree_obj.index == 0):
+
+                # calculate one covariance matrix per tree
+                if window_size is None:
+                    covariance_obj.add_tree(tree_obj=tree_obj, inds=inds)
+                    covariance_obj.write(out=outname, inds=inds)
+                    for m in AIM_methods:
+                        m.run_association(index=tree_obj.index, out=outname)
+                    covariance_obj.clear()
+
+                # calculate one covariance matrix per region
+                else:
+                    window_index = 0
+                    if tree_obj.end < window_ends[0]:
+                        # tree is completely within window, add to existing covariance
+                        covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=1.0)
                     else:
-                        for covariance_type in covariance_types:
-                            covariance_obj.add_tree(tree_obj=tree_obj, inds=inds)
-                            covariance_obj.write(out=outname, inds=inds)
-                            for m in association_methods:
-                                m.run_association(index=tree_obj.index, out=outname)
+                        proportion = (tree_obj.end - window_ends[0]) / tree_obj.length
+                        covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=proportion)
+                        finalized = covariance_obj.finalize(inds=inds)
+                        if not finalized:
+                            raise ValueError("could not finalize covariance obj")
+                        written = covariance_obj.write(out=outname, inds=inds)
+                        if written:
+                            for m in AIM_methods:
+                                m.run_association(index=window_index, out=outname)
                             covariance_obj.clear()
+                            window_index += 1
+                        else:
+                            raise ValueError(
+                                "covariance matrix " + covariance_obj.covariance_type + " was not written to file")
 
-                    # log progress
-                    if tree.index % 10 == 0:
-                        end = time.time()
-                        logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end - start)) + " s")
+                        # add rest of tree to new window
+                        proportion = 1 - proportion
+                        covariance_obj.add_tree(tree_obj=tree_obj, inds=inds,
+                                                proportion=proportion)  # add rest of tree to next covariance
+                        window_ends.pop(0)
 
-        logfile.sub()
+            # log progress
+            if tree.index % 10 == 0:
+                end = time.time()
+                logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end - start)) + " s")
+
+        # write association test results to file
+        for m in AIM_methods:
+            m.write_to_file(window_starts=[x - window_size for x in window_ends],
+                            window_ends=window_ends,
+                            out=outname,
+                            logfile=logfile)
+
+    logfile.sub()
 
 
 class TAssociationTesting:
@@ -560,11 +590,13 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         self.V_G_over_Vp_SE_Jackknife_HECP[index] = HE_CP["SE_Jackknife"][1]
         self.V_G_over_Vp_SE_Jackknife_HESD[index] = HE_SD["SE_Jackknife"][1]
 
-    def write_to_file(self, ts_object, out, logfile):
+    def write_to_file(self, window_starts, window_ends, out, logfile):
         table = pd.DataFrame()
-        table['start'] = ts_object.breakpoints(as_array=True)[
-                         0:self.num_associations]  # otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
-        table['end'] = table['start']
+        # table['start'] = ts_object.breakpoints(as_array=True)[
+        #                  0:self.num_associations]  # otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
+        # table['end'] = table['start']
+        table['start'] = window_starts
+        table['end'] = window_ends
 
         # p-values
         table['p_values_HECP_OLS'] = self.p_values_HECP_OLS
@@ -668,11 +700,10 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         self.Vp_SE[index] = float(result['SE'][result['Source'] == 'Vp'])
         self.V_G_over_Vp_SE[index] = float(result['SE'][result['Source'] == 'V(G)/Vp'])
 
-    def write_to_file(self, ts_object, name, logfile):
+    def write_to_file(self, window_starts, window_ends, out, logfile):
         table = pd.DataFrame()
-        table['start'] = ts_object.breakpoints(as_array=True)[
-                         0:self.num_associations]  # otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
-        table['end'] = ts_object.breakpoints(as_array=True)[1:]
+        table['start'] = window_starts
+        table['end'] = window_ends
         table['p_values'] = self.p_values
         table['V_G'] = self.V_G
         table['V_e'] = self.V_e
@@ -689,14 +720,14 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         table['causal'] = np.repeat("FALSE", self.num_associations)
         table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
 
-        table.to_csv(name + "_trees_REML_results.csv", index=False, header=True)
-        logfile.info("- Wrote results from tree association tests to '" + name + "_trees_REML_results.csv'")
+        table.to_csv(out + "_trees_REML_results.csv", index=False, header=True)
+        logfile.info("- Wrote results from tree association tests to '" + out + "_trees_REML_results.csv'")
 
         stats = pd.DataFrame({'min_p_value': [np.nanmin(self.p_values)],
                               'max_p_value': [np.nanmax(self.p_values)]
                               })
-        stats.to_csv(name + "_trees_REML_stats.csv", index=False, header=True)
-        logfile.info("- Wrote stats from tree association tests to '" + name + "_trees_REML_stats.csv'")
+        stats.to_csv(out + "_trees_REML_stats.csv", index=False, header=True)
+        logfile.info("- Wrote stats from tree association tests to '" + out + "_trees_REML_stats.csv'")
 
 
 class TTreeAssociationMantel(TAssociationTestingRegions):

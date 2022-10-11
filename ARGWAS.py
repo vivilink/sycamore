@@ -9,7 +9,7 @@ import tskit
 import TParameters as params
 import TRandomGenerator as rg
 import TPhenotypes as pt
-import TAssociationTesting as gwas
+import TAssociationTesting as at
 import TVariants as tvar
 import TIndividuals as tind
 import TSimulator as tsim
@@ -282,27 +282,26 @@ if args.task == "associate":
         method = m.split(':')[0]
         logger.info("- Running " + m + " for associating")
 
+        logger.add()
+
         if method == "GWAS":
-            gwas.run_association_GWAS(trees=trees, inds=inds, variants=variants, pheno=pheno, args=args, impute=impute,
-                                      logfile=logger)
+            at.run_association_GWAS(trees=trees, inds=inds, variants=variants, pheno=pheno, args=args, impute=impute,
+                                    logfile=logger)
 
         elif method == "AIM":
-            covariance_type = m.split(':')[1]
-            if covariance_type not in ["scaled", "eGRM", "GRM"]:
-                raise ValueError("Unknown association method '" + m + "'. Must be one of 'scaled', 'eGRM', 'GRM'.")
-            covariance_types.append(covariance_type)
-            gwas.run_association_ARGWAS(trees=trees,
-                                        inds=inds,
-                                        variants=variants,
-                                        pheno=pheno,
-                                        args=args,
-                                        covariance_types=covariance_types,
-                                        association_method_names=args.AIM_method,
-                                        window_size=args.ass_window_size,
-                                        logfile=logger)
+            at.run_association_ARGWAS(trees=trees,
+                                      inds=inds,
+                                      variants=variants,
+                                      pheno=pheno,
+                                      args=args,
+                                      ass_method=m,
+                                      window_size=args.ass_window_size,
+                                      logfile=logger)
 
         else:
             raise ValueError("Unknown association method '" + m + "'. Must be 'AIM' or 'GWAS'.")
+
+        logger.sub()
 
     logger.info("- Done running association tests")
 
