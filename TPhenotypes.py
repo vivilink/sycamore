@@ -30,6 +30,7 @@ class Phenotypes:
         self.causal_trees = []
         self.causal_variant_indeces = []
         self.causal_tree_indeces = []
+        self.causal_window_indeces = []
         self.filled = False
 
     @property
@@ -443,6 +444,12 @@ class Phenotypes:
         for v in self.causal_variants:
             causal_tree = ts_object.at(v.site.position)
             self.causal_tree_indeces.append(causal_tree.get_index())
+
+    def find_causal_windows(self, window_ends, window_starts):
+        for v in self.causal_variants:
+            for w in range(len(window_ends)):
+                if window_starts[w] <= v.site.position < window_ends[w]:
+                    self.causal_window_indeces.append(w)
 
     def diffs(self):
         cols = np.tile(self._y, (self.num_inds, 1))

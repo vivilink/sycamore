@@ -289,14 +289,14 @@ if args.task == "associate":
                                     logfile=logger)
 
         elif method == "AIM":
-            at.run_association_ARGWAS(trees=trees,
-                                      inds=inds,
-                                      variants=variants,
-                                      pheno=pheno,
-                                      args=args,
-                                      ass_method=m,
-                                      window_size=args.ass_window_size,
-                                      logfile=logger)
+            at.run_association_AIM(trees=trees,
+                                   inds=inds,
+                                   variants=variants,
+                                   pheno=pheno,
+                                   args=args,
+                                   ass_method=m,
+                                   window_size=args.ass_window_size,
+                                   logfile=logger)
 
         else:
             raise ValueError("Unknown association method '" + m + "'. Must be 'AIM' or 'GWAS'.")
