@@ -230,6 +230,7 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                                                       AIM_methods=AIM_methods,
                                                       outname=outname,
                                                       window_index=window_index)
+                window_index += 1
 
             # calculate one covariance matrix per region
             else:
@@ -283,6 +284,7 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                 logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end - start)) + " s")
         else:
             print("tree was not usable")
+            window_index += 1
 
     # write association test results to file
     for m in AIM_methods:
