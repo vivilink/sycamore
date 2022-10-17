@@ -514,20 +514,18 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
         if tree_obj.height != -1 and not (skip_first_tree and tree_obj.index == 0):
             # TODO: calculating and writing should be separate functions, only write if tree is valid and matrix is
             #  not empty. Only possible to do this when eGRM functionality runs internally
-            covariance = self.calculate_and_write_covariance_matrix_to_gcta_file(ts_object=ts_object,
-                                                                                 variants=variants,
+            covariance = self.calculate_and_write_covariance_matrix_to_gcta_file(variants=variants,
                                                                                  tree_obj=tree_obj,
                                                                                  inds=inds,
                                                                                  covariance_type=covariance_type,
                                                                                  out=out,
-                                                                                 logfile=logfile,
-                                                                                 skip_first_tree=skip_first_tree)
+                                                                                 logfile=logfile)
             if covariance is not None:
                 self.run_association_one_tree_gcta(tree_obj, out)
 
     # TODO: could be static?
-    def calculate_and_write_covariance_matrix_to_gcta_file(self, ts_object, variants, tree_obj, inds, covariance_type,
-                                                           out, skip_first_tree, logfile):
+    def calculate_and_write_covariance_matrix_to_gcta_file(self, variants, tree_obj, inds, covariance_type,
+                                                           out, logfile):
         """
         Writes covariance and other files necessary to run gcta. The program egrm does that automatically, the scaled
 
@@ -557,10 +555,9 @@ class TAssociationTesting_trees_gcta(TAssociationTesting_trees):
             write_covariance_matrix_R(covariance=covariance, out=out)
 
         elif covariance_type == "eGRM":
-            # trees = ts_object.keep_intervals(np.array([[tree_obj.start, tree_obj.end]]), simplify=True)
-            covariance, mu = tree_obj.get_eGRM(tskit_obj=ts_object, tree_obj=tree_obj, inds=inds)
+            covariance, mu = tree_obj.get_eGRM(tree_obj=tree_obj, inds=inds)
             if covariance is None:
-                return None
+                return None, None
             write_covariance_matrix_bin(covariance=covariance, mu=mu, inds=inds, out=out)
 
             # if np.trace(covariance) != inds.num_inds:

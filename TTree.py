@@ -229,7 +229,7 @@ class TTree:
 
             return self.covariance_diploid
 
-    def get_eGRM(self, tskit_obj, tree_obj, inds):
+    def get_eGRM(self, tree_obj, inds):
         """       
         Parameters
         ----------
@@ -247,8 +247,7 @@ class TTree:
         if self.eGRM is None:
             # extract tree and write to file
             # TTrees.extract_single_tree(tree_obj=tree_obj, out=out, logfile=logfile, position=self.start)
-
-            EK_relate, _, EK_relate_mu = varGRM(tskit_obj, tree_obj.tree)
+            EK_relate, EK_relate_mu = varGRM(tree=tree_obj.tree, num_samples=inds.num_haplotypes)
             self.eGRM = EK_relate
             self.EK_relate_mu = EK_relate_mu
 
