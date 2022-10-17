@@ -116,16 +116,21 @@ def get_proportion_of_tree_within_window(window_start, window_end, tree_start, t
     @return float: proportion
     """
     tree_length = tree_end - tree_start
-    window_length = window_end - window_start
     if (tree_start >= window_start and tree_end < window_end) \
             or (tree_start <= window_start and tree_end >= window_end):
         # tree is completely in window
         return 1.0
     elif tree_start < window_end < tree_end:
+        proportion = (window_end - tree_start) / tree_length
         # tree overlaps with window end
-        return (window_end - tree_start) / tree_length
+        if 0 > proportion or proportion > 1:
+            raise ValueError("Proportion " + str(proportion) + " out of bounds")
+        return proportion
     elif window_start < tree_end < window_end:
         # tree overlaps with window start
+        proportion = (tree_end - window_start) / tree_length
+        if 0 > proportion or proportion > 1:
+            raise ValueError("Proportion " + str(proportion) + " out of bounds")
         return (tree_end - window_start) / tree_length
     else:
         # there is no overlap
@@ -147,6 +152,146 @@ def write_and_test_window_for_association(covariance_obj, inds, AIM_methods, out
     print("tested window with index", window_index, "for association")
 
 
+def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, window_ends, window_starts, num_tests,
+                                         inds, logfile, outname):
+    """
+    Write covariance calculated based on variants within a window (can be one tree) to file and test it for association with
+    phenotypes. Currently, the only covariance type based on variants is GRM.
+
+    @param covariance_obj: TCovariance
+    @param AIM_methods: list
+    @param variants: TVariants
+    @param window_ends: list
+    @param window_starts: list
+    @param num_tests: int
+    @param inds: TInds
+    @param logfile: Tlogger
+    @param outname: str
+    @return: None
+    """
+    window_ends_copy = window_ends.copy()
+    window_starts_copy = window_starts.copy()
+
+    # log progress
+    start = time.time()
+
+    for w in range(num_tests):
+        tmpCov, tmpMu = covariance_obj.get_GRM(window_beginning=window_starts[w], window_end=window_ends[w], variants=variants,
+                               inds=inds)
+        if tmpCov is not None:
+            written = covariance_obj.write(out=outname, inds=inds, logfile=logfile)
+            if written:
+                for m in AIM_methods:
+                    m.run_association(index=w, out=outname)
+            else:
+                raise ValueError("Covariance matrix " + covariance_obj.covariance_type + " was not written to file")
+            covariance_obj.clear()
+
+        # log progress
+        if w % 10 == 0:
+            end = time.time()
+            logfile.info("- Ran AIM for " + str(w) + " windows in " + str(round(end - start)) + " s")
+
+    for m in AIM_methods:
+        m.write_to_file(window_starts=window_starts_copy,
+                        window_ends=window_ends_copy,
+                        out=outname,
+                        logfile=logfile)
+
+
+def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window_ends, window_starts,
+                                      window_size, skip_first_tree, inds, logfile, outname):
+
+    window_ends_copy = window_ends.copy()
+    window_starts_copy = window_starts.copy()
+
+    # log progress
+    start = time.time()
+
+    # loop over trees
+    window_index = 0
+    for tree in trees.trees():
+        tree_obj = tt.TTree(tree)
+
+        print("----------------")
+        print("tree_obj.start", tree_obj.start, ", tree_obj.end", tree_obj.end, ", window_index", window_index,
+              ", window_starts[0]", window_starts[0], ", window_ends[0]", window_ends[0])
+
+        if tree_obj.height != -1 and not (skip_first_tree and tree_obj.index == 0):
+            # TODO: this condition is because if you extract a region from tskit sequence, the first tree goes
+            #  from zero to the first tree. This causes problems with eGRM. Needs to be investigated what the
+            #  problem is and a better condition needs to be found!
+
+            # calculate one covariance matrix per tree
+            if window_size is None:
+                covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=1.0)
+                write_and_test_window_for_association(covariance_obj=covariance_obj,
+                                                      inds=inds,
+                                                      AIM_methods=AIM_methods,
+                                                      outname=outname,
+                                                      window_index=window_index)
+
+            # calculate one covariance matrix per region
+            else:
+                # increase window index until we get to the one the new tree starts in
+                if tree_obj.start >= window_ends[0]:
+                    raise ValueError("Tree start is >= window end. This should not happen")
+
+                # tree start is definitely within window based on previous while loop
+                proportion = get_proportion_of_tree_within_window(window_start=window_starts[0],
+                                                                  window_end=window_ends[0],
+                                                                  tree_start=tree_obj.start,
+                                                                  tree_end=tree_obj.end)
+                print("tree is in window with index", window_index, "with proportion", proportion)
+
+                if 0.0 < proportion <= 1.0:
+                    # part of tree is in this window, part in next --> needs to be added to both windows, and first
+                    # window needs to be tested
+                    covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=proportion)
+                    print("added first part of tree with proportion", proportion, "to window with index",
+                          window_index)
+
+                    # add rest of tree to next window. Tree might span multiple windows, so need while loop
+                    while (proportion < 1.0 and tree_obj.end >= window_ends[0]) \
+                            or (proportion == 1.0 and tree_obj.end >= window_ends[0]):
+                        write_and_test_window_for_association(covariance_obj=covariance_obj,
+                                                              inds=inds,
+                                                              AIM_methods=AIM_methods,
+                                                              outname=outname,
+                                                              window_index=window_index)
+
+                        if len(window_ends) == 1:  # that was the last window
+                            break
+
+                        # move to next window
+                        window_ends.pop(0)
+                        window_starts.pop(0)
+                        window_index += 1
+
+                        proportion = get_proportion_of_tree_within_window(window_start=window_starts[0],
+                                                                          window_end=window_ends[0],
+                                                                          tree_start=tree_obj.start,
+                                                                          tree_end=tree_obj.end)
+                        covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=proportion)
+
+                        print("added next part of tree to window with index", window_index, "coordinates",
+                              window_starts[0], window_ends[0], "and proportion", proportion)
+
+            # log progress
+            if tree.index % 10 == 0:
+                end = time.time()
+                logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end - start)) + " s")
+        else:
+            print("tree was not usable")
+
+    # write association test results to file
+    for m in AIM_methods:
+        m.write_to_file(window_starts=window_starts_copy,
+                        window_ends=window_ends_copy,
+                        out=outname,
+                        logfile=logfile)
+
+
 def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_size,
                         logfile):
     # ----------------
@@ -165,14 +310,13 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     logfile.info("- Writing output files with suffix '_" + covariance + "'")
     outname = args.out + "_" + covariance
     logfile.info("- Running associations tests using covariance type " + covariance + " for a sequence of trees")
-
     logfile.add()
 
     # define number and coordinates of windows
     num_tests = trees.num_trees
 
-    window_starts = trees.breakpoints(as_array=True)[
-                    0:trees.num_trees]  # otherwise the next start is included, i think this tree is removed due to incompleteness when taking tree subset
+    # remove the next start that is included, i think this tree is removed due to incompleteness when taking tree subset
+    window_starts = trees.breakpoints(as_array=True)[0:trees.num_trees]
     window_ends = trees.breakpoints(as_array=True)[1:]
 
     if window_size is not None:
@@ -180,12 +324,9 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
         window_starts = [x - window_size for x in window_ends]
         num_tests = len(window_ends)
 
-    window_ends_copy = window_ends.copy()
-    window_starts_copy = window_starts.copy()
-
     # initialize and write phenotypes
     pheno.find_causal_trees(trees)
-    pheno.find_causal_windows(window_ends=window_ends_copy, window_starts=window_starts)
+    pheno.find_causal_windows(window_ends=window_ends, window_starts=window_starts)
     if covariance == "eGRM" or covariance == "GRM":
         pheno.write_to_file_gcta_eGRM(inds=inds, out=outname, logfile=logfile)
     else:
@@ -208,138 +349,28 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
 
     # variant based covariance
     if covariance == "GRM":
-        # log progress
-        start = time.time()
-
-        for w in range(num_tests):
-            window_end = window_ends[w]
-            covariance_obj.get_GRM(window_beginning=window_end - window_size, window_end=window_end, variants=variants,
-                                   inds=inds)
-            written = covariance_obj.write(out=outname, inds=inds, logfile=logfile)
-            if written:
-                for m in AIM_methods:
-                    m.run_association(index=w, out=outname)
-            else:
-                raise ValueError("covariance matrix " + covariance_obj.covariance_type + " was not written to file")
-            covariance_obj.clear()
-
-            # log progress
-            if w % 10 == 0:
-                end = time.time()
-                logfile.info("- Ran AIM for " + str(w) + " windows in " + str(round(end - start)) + " s")
-
-        for m in AIM_methods:
-            m.write_to_file(window_starts=window_starts,
-                            window_ends=window_ends_copy,
-                            out=outname,
-                            logfile=logfile)
+        run_variant_based_covariance_testing(covariance_obj=covariance_obj,
+                                             AIM_methods=AIM_methods,
+                                             variants=variants,
+                                             window_ends=window_ends,
+                                             window_starts=window_starts,
+                                             num_tests=num_tests,
+                                             inds=inds,
+                                             logfile=logfile,
+                                             outname=outname)
 
     # tree based covariance
     else:
-        # log progress
-        start = time.time()
-
-        # loop over trees
-        window_index = 0
-        for tree in trees.trees():
-            tree_obj = tt.TTree(tree)
-
-            print("----------------")
-            print("tree_obj.start", tree_obj.start, ", tree_obj.end", tree_obj.end, ", window_index", window_index,
-                  ", window_starts[0]", window_starts[0], ", window_ends[0]", window_ends[0])
-
-            if tree_obj.height != -1 and not (args.skip_first_tree and tree_obj.index == 0):
-                # TODO: this condition is because if you extract a region from tskit sequence, the first tree goes
-                #  from zero to the first tree. This causes problems with eGRM. Needs to be investigated what the
-                #  problem is and a better condition needs to be found!
-
-                # calculate one covariance matrix per tree
-                if window_size is None:
-                    covariance_obj.add_tree(tree_obj=tree_obj, inds=inds)
-                    write_and_test_window_for_association(covariance_obj=covariance_obj,
-                                                          inds=inds,
-                                                          AIM_methods=AIM_methods,
-                                                          outname=outname,
-                                                          window_index=window_index)
-
-                # calculate one covariance matrix per region
-                else:
-                    # increase window index until we get to the one the new tree starts in
-                    if tree_obj.start >= window_ends[0]:
-                        raise ValueError("I think this should not happen")
-                        # print("tree_obj.start >= window_ends[0]")
-                        # # is previous window's covariance matrix full? -> test for association
-                        #
-                        # print("window index", window_index, "window start", window_starts[0], "window_ends[0]",
-                        #       window_ends[0])
-                        # if covariance_obj.covariance_matrix_haploid is not None:
-                        #     write_and_test_window_for_association(covariance_obj=covariance_obj,
-                        #                                           inds=inds,
-                        #                                           AIM_methods=AIM_methods,
-                        #                                           outname=outname,
-                        #                                           window_index=window_index)
-                        #
-                        # # move to next window
-                        # window_ends.pop(0)
-                        # window_starts.pop(0)
-                        # window_index += 1
-
-                    # tree start is definitely within window based on previous while loop
-                    proportion = get_proportion_of_tree_within_window(window_start=window_starts[0],
-                                                                      window_end=window_ends[0],
-                                                                      tree_start=tree_obj.start,
-                                                                      tree_end=tree_obj.end)
-                    print("tree is in window with index", window_index, "with proportion", proportion)
-                    if 0 > proportion or proportion > 1:
-                        raise ValueError("Proportion " + str(proportion) + " out of bounds")
-
-                    if 0.0 < proportion <= 1.0:
-                        # part of tree is in this window, part in next --> needs to be added to both windows, and first
-                        # window needs to be tested
-                        covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=proportion)
-                        print("added first part of tree with proportion", proportion, "to window with index",
-                              window_index)
-
-                        # TODO: need to add rest of tree to next window!!
-
-                        # add rest of tree to next window. Tree might span multiple windows, so need while loop
-                        while (proportion < 1.0 and tree_obj.end >= window_ends[0]) \
-                                or (proportion == 1.0 and tree_obj.end >= window_ends[0]):
-                            write_and_test_window_for_association(covariance_obj=covariance_obj,
-                                                                  inds=inds,
-                                                                  AIM_methods=AIM_methods,
-                                                                  outname=outname,
-                                                                  window_index=window_index)
-
-                            if len(window_ends) == 1: #that was the last window
-                                break
-
-                            # move to next window
-                            window_ends.pop(0)
-                            window_starts.pop(0)
-                            window_index += 1
-
-                            proportion = get_proportion_of_tree_within_window(window_start=window_starts[0],
-                                                                              window_end=window_ends[0],
-                                                                              tree_start=tree_obj.start,
-                                                                              tree_end=tree_obj.end)
-                            covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=proportion)
-
-                            print("added next part of tree to window with index", window_index, "coordinates", window_starts[0], window_ends[0], "and proportion", proportion)
-
-                # log progress
-                if tree.index % 10 == 0:
-                    end = time.time()
-                    logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end - start)) + " s")
-            else:
-                print("tree was not usable")
-
-        # write association test results to file
-        for m in AIM_methods:
-            m.write_to_file(window_starts=window_starts_copy,
-                            window_ends=window_ends_copy,
-                            out=outname,
-                            logfile=logfile)
+        run_tree_based_covariance_testing(trees=trees,
+                                          covariance_obj=covariance_obj,
+                                          AIM_methods=AIM_methods,
+                                          window_ends=window_ends,
+                                          window_starts=window_starts,
+                                          window_size=window_size,
+                                          inds=inds,
+                                          skip_first_tree=args.skip_first_tree,
+                                          logfile=logfile,
+                                          outname=outname)
 
     logfile.sub()
 

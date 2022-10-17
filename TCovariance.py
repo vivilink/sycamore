@@ -105,6 +105,8 @@ class TCovarianceeGRM(TCovariance):
         @param out: str
         @param inds: TInds
         """
+        if self.covariance_matrix_haploid is None:
+            return False
         if inds.ploidy == 2:
             self.write_for_gcta(covariance_matrix=self.covariance_matrix_diploid, mu=self.mu, inds=inds, out=out)
         else:
@@ -178,8 +180,8 @@ class TCovarianceGRM(TCovariance):
             # are not in perfect HWE)
             logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
                 inds.num_inds) + " but obtained " + str(np.trace(self.covariance_matrix)))
-        self.write_for_gcta(covariance_matrix=self.covariance_matrix, mu=self.mu, inds=inds, out=out)
 
+        self.write_for_gcta(covariance_matrix=self.covariance_matrix, mu=self.mu, inds=inds, out=out)
         return True
 
     def get_GRM(self, window_beginning, window_end, variants, inds):
@@ -221,6 +223,8 @@ class TCovarianceGRM(TCovariance):
         M_window = M_sum / float(num_vars)
         self.covariance_matrix = M_window
         self.mu = num_vars
+
+        return self.covariance_matrix, self.mu
 
     def finalize(self):
         pass
