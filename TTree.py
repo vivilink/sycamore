@@ -280,3 +280,12 @@ class TTree:
         tmp = np.dot(inv, array)
         # print("shape of my dot product",np.shape(tmp))
         return (tmp)
+
+    def is_testable(self, skip_first_tree):
+        # TODO: this condition is because if you extract a region from tskit sequence, the first tree goes
+        #  from zero to the first tree. This causes problems with eGRM. Needs to be investigated what the
+        #  problem is and a better condition needs to be found!
+        if self.height != -1 and not (skip_first_tree and self.index == 0):
+            return True
+        else:
+            return False

@@ -41,18 +41,19 @@ class TestAssociationTesting:
         # get windows when skipping first tree, sequence length is not multiple of window_size
         assert window_ends == window_ends_true
 
-
     @pytest.mark.parametrize(
         "window_start, window_end, tree_start, tree_end, proportion_true",
-        [(2000, 3000, 2000, 2020, 1.0),
-         (2000, 3000, 1980, 2000, 0.0),
-         (2000, 3000, 1980, 2001, 1/21),
-         (2000, 3000, 1980, 3020, 1.0),
-         (2000, 3000, 3000, 3020, 0.0),
-         (2000, 3000, 2500, 3500, 0.5),
+        [(2000, 3000, 2000, 2020, 1.0),  # overlaps start
+         (2000, 3000, 1980, 2000, 0.0),  # before start
+         (2000, 3000, 1980, 2001, 1 / 21),  # overlaps start
+         (2000, 3000, 1980, 3020, 1.0),  # overlaps whole window
+         (2000, 3000, 3000, 3020, 0.0),  # starts after window
+         (2000, 3000, 2500, 3500, 0.5),  # overlaps part of window
+         (2000, 3000, 2500, 3000, 1.0),  # goes up to end of window
          ],
     )
-    def test_get_proportion_of_tree_within_window(self, window_start, window_end, tree_start, tree_end, proportion_true):
+    def test_get_proportion_of_tree_within_window(self, window_start, window_end, tree_start, tree_end,
+                                                  proportion_true):
         proportion = at.get_proportion_of_tree_within_window(window_start=window_start,
                                                              window_end=window_end,
                                                              tree_start=tree_start,
