@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Aug 16 17:37:12 2021
-
 @author: linkv
 """
 import numpy as np
@@ -156,7 +155,6 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
     """
     Write covariance calculated based on variants within a window (can be one tree) to file and test it for association with
     phenotypes. Currently, the only covariance type based on variants is GRM.
-
     @param covariance_obj: TCovariance
     @param AIM_methods: list
     @param variants: TVariants
@@ -529,16 +527,13 @@ class TAssociationTestingGWAS(TAssociationTesting):
             Number of SNPs that are used to calculate lowess smoothing. The default is 0, meaning that no lowess curve is plotted
         *args : TYPE
             DESCRIPTION.
-
         Raises
         ------
         ValueError
             The variant index within the variant class (so after filtering) must be between zero and the max.
-
         Returns
         -------
         None.
-
         """
         if index_min < 0 or index_max < 0:
             raise ValueError("data subset indeces for manhattan plotting must be positive")
@@ -620,16 +615,13 @@ class TAssociationTestingRegions(TAssociationTesting):
             Number of SNPs that are used to calculate lowess smoothing. The default is 0, meaning that no lowess curve is plotted
         *args : TYPE
             DESCRIPTION.
-
         Raises
         ------
         ValueError
             The variant index within the variant class (so after filtering) must be between zero and the max.
-
         Returns
         -------
         None.
-
         """
 
         if index_min < 0 or index_max < 0:
