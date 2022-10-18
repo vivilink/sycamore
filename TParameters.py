@@ -59,6 +59,12 @@ class TParameters:
                                  "filter).")
         parser.add_argument('--trees_interval', nargs='+', type=int,
                             help="Only test the trees and variants in this interval for association")
+        parser.add_argument('--trees_interval_start', type=int,
+                            help="Only test the trees and variants starting with trees_interval_start and the orginial "
+                                 "end for association")
+        parser.add_argument('--trees_interval_end', type=int,
+                            help="Only test the trees and variants starting with trees_interval_end and the orginial "
+                                 "start for association")
 
         # simulating trees
         sim = parser.add_argument_group('simulating trees')

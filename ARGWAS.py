@@ -113,17 +113,25 @@ if args.task == "simulateMoreMutations":
 # ---------------------
 # read tree file
 # ---------------------
-def read_trees():
-    logger.info("- Reading tree from " + args.tree_file)
-    trees = tskit.load(args.tree_file)
-    if args.trees_interval is not None:
-        logger.info(
-            "- Running association only on the trees overlapping the following interval: " + str(args.trees_interval))
-        trees = trees.keep_intervals([args.trees_interval], simplify=True)
-    else:
-        args.trees_interval = [0, trees.sequence_length]
+def read_trees(tree_file, trees_interval, trees_interval_start, trees_interval_end):
+    logger.info("- Reading tree from " + tree_file)
+    trees_full = tskit.load(tree_file)
+    # if args.trees_interval is not None and (args.trees_interval_start is not None or args.trees_interval_end is not None):
+    #     raise ValueError("Cannot set 'trees_interval' and 'trees_interval_start' or 'trees_interval_end' at the same "
+    #                      "time.")
+    if trees_interval is None:
+        trees_interval = [0, trees_full.sequence_length]
+    if trees_interval_start:
+        trees_interval[0] = trees_interval_start
+    if trees_interval_end:
+        trees_interval[1] = trees_interval_end
 
-    return trees
+    logger.info(
+        "- Running association only on the trees overlapping the following interval: " + str(trees_interval))
+    trees_extract = trees_full.keep_intervals([trees_interval], simplify=True)
+    args.trees_interval = trees_interval
+
+    return trees_extract, trees_interval
 
 
 # -----------------------
@@ -131,7 +139,10 @@ def read_trees():
 # -----------------------
 if args.task == "ARGStatistics":
     logger.info("- TASK: ARGStatistics")
-    trees = read_trees()
+    trees, args.trees_interval = read_trees(tree_file=args.tree_file,
+                                            trees_interval=args.trees_interval,
+                                            trees_interval_start=args.trees_interval_start,
+                                            trees_interval_end=args.trees_interval_end)
 
     trees_class = tt.TTrees(ts_object=trees)
     trees_class.writeStats(ts_object=trees, out=args.out, logfile=logger)
@@ -141,7 +152,10 @@ if args.task == "ARGStatistics":
 # -----------------------
 if args.task == "getTreeAtPosition":
     logger.info("- TASK: getTreeAtPosition")
-    trees = read_trees()
+    trees, args.trees_interval = read_trees(tree_file=args.tree_file,
+                                            trees_interval=args.trees_interval,
+                                            trees_interval_start=args.trees_interval_start,
+                                            trees_interval_end=args.trees_interval_end)
     trees_class = tt.TTrees(trees)
     trees_class.extract_single_tree(trees, args.out, logger, position=args.test_only_tree_at)
 
@@ -152,7 +166,10 @@ if args.task == "downsampleVariantsWriteShapeit":
     if args.prop_typed_variants is None:
         raise ValueError("Must provide downsampling probability to task 'downsampleVariantsWriteShapeit'")
     logger.info("- TASK: Downsampling variants")
-    trees = read_trees()
+    trees, args.trees_interval = read_trees(tree_file=args.tree_file,
+                                            trees_interval=args.trees_interval,
+                                            trees_interval_start=args.trees_interval_start,
+                                            trees_interval_end=args.trees_interval_end)
     sample_ids = trees.samples()
     N = len(sample_ids)
 
@@ -224,7 +241,10 @@ if args.task == "associate":
 
     logger.info(
         "- Reading tree used for Aim's association testing, and for defining variants to be tested by GWAS, from " + args.tree_file)
-    trees = read_trees()
+    trees, args.trees_interval = read_trees(tree_file=args.tree_file,
+                                            trees_interval=args.trees_interval,
+                                            trees_interval_start=args.trees_interval_start,
+                                            trees_interval_end=args.trees_interval_end)
 
     if trees_orig.num_samples != trees.num_samples:
         raise ValueError(
@@ -304,7 +324,6 @@ if args.task == "associate":
         logger.sub()
 
     logger.info("- Done running association tests")
-
 
 # if __name__ == "__main__":
 #     sys.exit(main(sys.argv[1:]))
