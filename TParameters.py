@@ -147,6 +147,8 @@ class TParameters:
                                 "scaled] with the following format: 'method:covariance'")
         assoc.add_argument('--AIM_method', type=str, nargs='+',
                            help="Use either Haseman-Elston or REML to test trees for association")
+        assoc.add_argument('--no_clean_up', action='store_true',
+                           help="don't clean up temporary files created during association testing")
         assoc.add_argument('--test_only_tree_at', type=float,
                            help="Only test tree that is overlapping the given position for association")
         assoc.add_argument('--skip_first_tree', action='store_true',

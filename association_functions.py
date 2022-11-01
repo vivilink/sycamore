@@ -18,6 +18,7 @@ import TIndividuals as tind
 import TPhenotypes as pt
 import TAssociationTesting as at
 import TImputation as impute
+import glob
 
 
 def run_association_testing(args, random, logfile):
@@ -112,7 +113,6 @@ def run_association_testing(args, random, logfile):
     # --------------------------------
     # run association tests and plot
     # --------------------------------
-    covariance_types = []
     for m in args.ass_method:
         method = m.split(':')[0]
         logfile.info("- Running " + m + " for associating")
@@ -143,6 +143,22 @@ def run_association_testing(args, random, logfile):
         logfile.sub()
 
     logfile.info("- Done running association tests")
+
+    # --------------------------------
+    # clean up
+    # --------------------------------
+    if not args.no_clean_up:
+        remove_files_with_pattern(args.out + '*HE-CP_result.txt')
+        remove_files_with_pattern(args.out + '*HE-SD_result.txt')
+        remove_files_with_pattern(args.out + '*.HEreg')
+        remove_files_with_pattern(args.out + '*tmp.out')
+        remove_files_with_pattern(args.out + '*phenotypes.phen')
+        remove_files_with_pattern(args.out + '*REML_result.txt')
+        remove_files_with_pattern(args.out + '*REML.hsq')
+        remove_files_with_pattern(args.out + '*REML.log')
+        remove_files_with_pattern(args.out + '*.grm.id')
+        remove_files_with_pattern(args.out + '*.grm.bin')
+        remove_files_with_pattern(args.out + '*.grm.N.bin')
 
 
 def OLS(genotypes, phenotypes):
@@ -530,6 +546,19 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
         covariances_picklefile.close()
 
     logfile.sub()
+
+
+def remove_files_with_pattern(pattern):
+    """
+
+    @param pattern: str, can contain '*'
+    @return:
+    """
+    fileList = glob.glob(pattern)
+    for file in fileList:
+        if os.path.exists(file):
+            os.remove(file)
+
 
 def run_covariance_correlation(args, logfile):
     """
