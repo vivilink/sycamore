@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import subprocess
 import os
 import sys
-
+import association_functions as af
 
 
 class TAssociationTesting:
@@ -74,7 +74,7 @@ class TAssociationTestingGWAS(TAssociationTesting):
                 else:
                     genotypes = variant.genotypes
 
-                PVALUE = OLS(genotypes=genotypes, phenotypes=self.phenotypes)
+                PVALUE = af.OLS(genotypes=genotypes, phenotypes=self.phenotypes)
                 self.p_values[i] = PVALUE
                 i += 1
         logfile.info("- Ran OLS for " + str(variants.num_typed) + " variants")

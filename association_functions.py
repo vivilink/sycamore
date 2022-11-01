@@ -36,6 +36,8 @@ def run_association_testing(args, random, logfile):
             "Both the simulated and estimated trees need to be provided with 'tree_file_simulated' and 'tree_file'.")
 
     logfile.info("- TASK: Associate")
+    logfile.add()
+
     logfile.info("- Reading simulated tree used for simulating phenotypes from " + args.tree_file_simulated)
     trees_orig = tskit.load(args.tree_file_simulated)
 
@@ -159,6 +161,8 @@ def run_association_testing(args, random, logfile):
         remove_files_with_pattern(args.out + '*.grm.id')
         remove_files_with_pattern(args.out + '*.grm.bin')
         remove_files_with_pattern(args.out + '*.grm.N.bin')
+
+    logfile.sub()
 
 
 def OLS(genotypes, phenotypes):
