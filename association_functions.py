@@ -419,7 +419,8 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                                                               inds=inds,
                                                               AIM_methods=AIM_methods,
                                                               outname=outname,
-                                                              window_index=window_index)
+                                                              window_index=window_index,
+                                                              covariances_picklefile=covariances_picklefile)
 
                         if len(window_ends) == 1:  # that was the last window
                             break
