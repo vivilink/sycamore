@@ -21,7 +21,7 @@ class TParameters:
         # general arguments
         parser.add_argument('--task', required=True,
                             choices=['simulate', 'impute', 'associate', 'downsampleVariantsWriteShapeit', 'ARGStatistics',
-                                     'getTreeAtPosition', 'simulateMoreMutations'],
+                                     'getTreeAtPosition', 'simulateMoreMutations', 'covarianceCorrelations'],
                             help='The task to be executed (simulate or associate)')
         parser.add_argument('--out', required=True, type=str,
                             help='Prefix of all output files')
@@ -163,6 +163,11 @@ class TParameters:
                            help="genetic map with columns for Position [bp], Rate [cM/Mb] and Map [cM]")
         assoc.add_argument('--ass_window_size', type=int,
                            help="window size for region-based association tests")
+        assoc.add_argument('--write_covariance_picklefiles', action='store_true',
+                           help="write covariances from association tests to picklefile")
+        assoc.add_argument('--covariance_picklefiles', type=str, nargs='+',
+                           help="calculate correlation between covariances along the genome (user must verify that "
+                                "windows have same coordinates)")
 
         args = parser.parse_args()
 

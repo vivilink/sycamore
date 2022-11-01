@@ -14,6 +14,30 @@ from egrm import varGRM
 from egrm import egrm_one_tree_no_normalization
 
 
+# ---------------------
+# read tree file
+# ---------------------
+def read_trees(tree_file, trees_interval, trees_interval_start, trees_interval_end, logfile):
+    logfile.info("- Reading tree from " + tree_file)
+    trees_full = tskit.load(tree_file)
+    # if args.trees_interval is not None and (args.trees_interval_start is not None or args.trees_interval_end is not None):
+    #     raise ValueError("Cannot set 'trees_interval' and 'trees_interval_start' or 'trees_interval_end' at the same "
+    #                      "time.")
+    if trees_interval is None:
+        trees_interval = [0, trees_full.sequence_length]
+    if trees_interval_start:
+        trees_interval[0] = trees_interval_start
+    if trees_interval_end:
+        trees_interval[1] = trees_interval_end
+
+    logfile.info(
+        "- Running association only on the trees overlapping the following interval: " + str(trees_interval))
+    trees_extract = trees_full.keep_intervals([trees_interval], simplify=True)
+    # args.trees_interval = trees_interval
+
+    return trees_extract, trees_interval
+
+
 class TTrees:
     def __init__(self, ts_object):
         # self.trees = ts_object.trees()

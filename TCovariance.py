@@ -12,6 +12,7 @@ import sys
 import os
 import struct
 import math
+import pickle
 
 
 def get_covariance_object(covariance_name):
@@ -97,11 +98,13 @@ class TCovarianceeGRM(TCovariance):
 
         return True
 
-    def write(self, out, inds):
+    def write(self, out, inds, covariances_picklefile):
         """
         Write covariance matrix to file so it can be used to test for association. In the case of eGRM, association
         testing is done with GCTA.
 
+        @param covariances_picklefile: pickle file with covariances calculated for all windows
+        @param write_covariance_picklefiles:
         @param out: str
         @param inds: TInds
         """
@@ -109,8 +112,12 @@ class TCovarianceeGRM(TCovariance):
             return False
         if inds.ploidy == 2:
             self.write_for_gcta(covariance_matrix=self.covariance_matrix_diploid, mu=self.mu, inds=inds, out=out)
+            if covariances_picklefile is not None:
+                pickle.dump(self.covariance_matrix_diploid, covariances_picklefile)
         else:
             self.write_for_gcta(covariance_matrix=self.covariance_matrix_haploid, mu=self.mu, inds=inds, out=out)
+            if covariances_picklefile is not None:
+                pickle.dump(self.covariance_matrix_haploid, covariances_picklefile)
 
         return True
 
@@ -170,7 +177,7 @@ class TCovarianceGRM(TCovariance):
         self.covariance_matrix = None
         self.mu = None
 
-    def write(self, out, inds, logfile):
+    def write(self, out, inds, covariances_picklefile, logfile):
         if self.covariance_matrix is None:
             return False
         if np.trace(self.covariance_matrix) < 0:
@@ -182,6 +189,8 @@ class TCovarianceGRM(TCovariance):
                 inds.num_inds) + " but obtained " + str(np.trace(self.covariance_matrix)))
 
         self.write_for_gcta(covariance_matrix=self.covariance_matrix, mu=self.mu, inds=inds, out=out)
+        if covariances_picklefile is not None:
+            pickle.dump(self.covariance_matrix, covariances_picklefile)
         return True
 
     def get_GRM(self, window_beginning, window_end, variants, inds):
