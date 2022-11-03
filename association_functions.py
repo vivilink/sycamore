@@ -530,7 +530,6 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                              covariances_picklefile=covariances_picklefile,
                                              logfile=logfile,
                                              outname=outname)
-        covariances_picklefile.close()
 
     # tree based covariance
     else:
