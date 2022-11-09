@@ -444,6 +444,8 @@ class Phenotypes:
         for v in self.causal_variants:
             causal_tree = ts_object.at(v.site.position)
             self.causal_tree_indeces.append(causal_tree.get_index())
+        #remove duplicates
+        self.causal_tree_indeces = set(self.causal_tree_indeces)
 
     def find_causal_windows(self, window_ends, window_starts):
         for v in self.causal_variants:
@@ -463,7 +465,8 @@ class Phenotypes:
 
     def write_to_file_gcta_eGRM(self, inds, out, logfile):
         """
-        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format will match the binary output created with plinkFile R package.
+        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
+        will match the binary output created with plinkFile R package.
 
         Returns
         -------

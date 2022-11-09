@@ -223,7 +223,7 @@ class TCovarianceGRM(TCovariance):
             else:
                 gt = inds.get_diploid_genotypes(gt_haploid)
             # need unmirrored allele freq
-            af = np.sum(gt) / (2 * inds.num_inds)
+            af = np.sum(gt) / (inds.num_haplotypes)
             first = np.array([gt - inds.ploidy * af]).T
             second = np.array([gt - inds.ploidy * af])
             M = np.dot(first, second)
