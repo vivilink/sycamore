@@ -87,7 +87,7 @@ class TAssociationTestingGWAS(TAssociationTesting):
         positions_sample = set(variants_sample.info['position'].values)
         for v in range(X.shape[1]):
             genotypes = X[:, v]
-            PVALUE = OLS(genotypes=genotypes, phenotypes=self.phenotypes)
+            PVALUE = af.OLS(genotypes=genotypes, phenotypes=self.phenotypes)
             self.p_values[v] = PVALUE
             if not (positions[v] in positions_sample):
                 self.imputed_status[v] = True

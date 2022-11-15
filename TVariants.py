@@ -138,13 +138,14 @@ class TVariants:
         # log progress
         start = time.time()
 
-        #write line by line
+        # write line by line
         haps_file = open(out + ".gen", "a")
         i = 0
         for v, var in enumerate(self._variants):
             if v % 10000 == 0:
                 end = time.time()
-                logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(round(end - start)) + " s")
+                logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(
+                    round(end - start)) + " s")
 
             n_gen = int(inds.num_inds * 3)
             if self._info.iloc[v]['typed']:
@@ -204,7 +205,8 @@ class TVariants:
         for v, var in enumerate(self._variants):
             if v % 10000 == 0:
                 end = time.time()
-                logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(round(end - start)) + " s")
+                logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(
+                    round(end - start)) + " s")
             # print(v, self._info.iloc[v]['typed'])
             if self._info.iloc[v]['typed']:
                 # if self._info.iloc[v]['position'] == None :
@@ -325,10 +327,6 @@ class TVariantsFiltered(TVariants):
         logfile.info("- Writing variant info to file '" + out + "_filtered_sample_variants.csv'")
         self._info.to_csv(out + "_filtered_sample_variants.csv", header=True, index=False)
 
-
-
-
-
     def find_variant(self, typed, freq, interval, subplot, random, logfile):
         """
         Find a variant that fits criteria to simulate fixed genotype depending on only one variant
@@ -357,13 +355,14 @@ class TVariantsFiltered(TVariants):
 
         # check if interval is valid
         logfile.info("Searching for variant with correct allele frequency in the following interval: " + str(interval))
-        num_lines = self._info[(self._info['position'] >= interval[0]) & (self._info['position'] <= interval[1])].shape[0]
+        num_lines = self._info[(self._info['position'] >= interval[0]) & (self._info['position'] <= interval[1])].shape[
+            0]
         if num_lines == 0:
             raise ValueError("The interval " + str(interval) + " contains no variants")
 
         # make subset of variants in interval
-        info_interval = self._info.loc[
-            (self._info['position'] >= interval[0]) & (self._info['position'] <= interval[1])]
+        info_interval = self._info.loc[(self._info['position'] >= interval[0])
+                                       & (self._info['position'] <= interval[1])]
         # info_interval['index'] = range(self._info[(self._info['position'] >= interval[0]) & (self._info['position'] <= interval[1])].shape[0])
         # info_interval.set_index(info_interval['index'], drop=True, inplace=True)
 

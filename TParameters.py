@@ -110,14 +110,17 @@ class TParameters:
                               "order to satisfy the request.")
         pty.add_argument('--pty_sim_method',
                          choices=['null', 'uniform', 'fixed', 'singleTyped', 'singleUntyped', "allelicHetero",
-                                  "oneTree"],
+                                  "oneTree", "oneRegion"],
                          help="Phenotype simulations method")
         pty.add_argument('--pty_prop_causal_mutations', type=float, default=0,
                          help="Proportion of causal mutations to simulate at uniformly distributed positions if "
-                              "pt.sim_method is set to 'uniform'. If set to 0, there will be no causal mutations "
-                              "simulated randomly")
-        pty.add_argument('--pty_sd_beta_causal_mutations', type=float,
-                         help="Std. dev. for betas of causal mutations if pty_sim_method is set to 'uniform'.")
+                              "pty_sim_method is set to 'uniform'. If set to 0, there will be no causal mutations.")
+        pty.add_argument('--pty_sd_beta_causal_mutations', type=str,
+                         help="Std. dev. for betas of causal mutations if pty_sim_method is set to 'uniform', "
+                              "'oneTree' or 'oneWindow'. If it can be converted to a float, betas will sampled from "
+                              "N(0, pty_sd_beta_causal_mutations). If set to 'standardized', betas will be sampled "
+                              "from N(0, [2 * f * (1 - f)]^{-0.5} * h2g / p), where h2g is the heritability of the "
+                              "trait and p is the number of causal SNPs.")
         pty.add_argument('--pty_fixed_betas', nargs='+', type=float,
                          help="Fixed betas of causal mutations if pt.sim_method is set to 'fixed_variants'.")
         pty.add_argument('--pty_fixed_variant_indeces', nargs='+', type=int,
@@ -135,6 +138,8 @@ class TParameters:
         pty.add_argument('--causal_tree_pos', type=int,
                          help="Simulate phenotype with allelic heterogeneity by making all mutations of the local "
                               "tree covering this genomic position causal")
+        pty.add_argument('--causal_region_coordinates', type=float, nargs='+',
+                         help="Coordinates of causal region (must be list of length 2). End is not included.")
         pty.add_argument('--min_allele_freq_causal', type=float, default=0.0,
                          help="Simulate phenotype with all variants in a region with this min allele freq to be causal")
         pty.add_argument('--max_allele_freq_causal', type=float, default=1.0,

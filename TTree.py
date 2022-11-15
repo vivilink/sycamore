@@ -214,7 +214,8 @@ class TTree:
             self.covariance = -TMRCA + self.height
 
         if self.covariance_scaled.covariance_matrix_haploid is None:
-            self.covariance_scaled.covariance_matrix_haploid = self.covariance * float(inds.num_haplotypes) / np.trace(self.covariance)
+            self.covariance_scaled.covariance_matrix_haploid = self.covariance * float(inds.num_haplotypes) / np.trace(
+                self.covariance)
 
         if inds.ploidy == 1:
             return self.covariance_scaled.covariance_matrix_haploid
@@ -236,8 +237,10 @@ class TTree:
                     for j in range(i + 1, inds.num_inds):
                         j1 = j * 2
                         j2 = j1 + 1
-                        self.covariance_scaled.covariance_matrix_diploid[i, j] = self.covariance[i1, j1] + self.covariance[i1, j2] + \
-                                                        self.covariance[i2, j1] + self.covariance[i2, j2]
+                        self.covariance_scaled.covariance_matrix_diploid[i, j] = self.covariance[i1, j1] + \
+                                                                                 self.covariance[i1, j2] + \
+                                                                                 self.covariance[i2, j1] + \
+                                                                                 self.covariance[i2, j2]
 
                 # lower triangle
                 self.covariance_diploid = self.covariance_scaled.covariance_matrix_diploid \
@@ -251,7 +254,8 @@ class TTree:
 
                 self.covariance_scaled.covariance_matrix_diploid = self.covariance_scaled.covariance_matrix_diploid \
                                                                    * float(inds.num_inds) \
-                                                                   / np.trace(self.covariance_scaled.covariance_matrix_diploid)
+                                                                   / np.trace(
+                    self.covariance_scaled.covariance_matrix_diploid)
 
                 # logfile.sub()
 
@@ -287,8 +291,8 @@ class TTree:
         else:
             return self.eGRM.covariance_matrix_haploid, self.EK_relate_mu
 
-
-    def get_unnormalized_eGRM(self, tree_obj, inds):
+    @staticmethod
+    def get_unnormalized_eGRM(tree_obj, inds):
         cov, mu = egrm_one_tree_no_normalization(tree=tree_obj.tree, num_samples=inds.num_haplotypes)
         return cov, mu
 

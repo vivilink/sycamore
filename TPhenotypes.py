@@ -197,10 +197,39 @@ class Phenotypes:
                 args.causal_tree_pos))
             self.simulate_causal_region(variants_orig, inds, left_bound=causal_tree.interval.left,
                                         right_bound=causal_tree.interval.right,
-                                        sd_beta_causal_mutations=args.pty_sd_beta_causal_mutations, random=r,
+                                        causal_mutations_effect_size_def=args.pty_sd_beta_causal_mutations,
+                                        random=r,
+                                        local_heritability=args.pty_h_squared,
+                                        min_allele_freq_causal=args.min_allele_freq_causal,
+                                        prop_causal_mutations=args.pty_prop_causal_mutations,
+                                        max_allele_freq_causal=args.max_allele_freq_causal,
+                                        logfile=logfile)
+
+        elif args.pty_sim_method == "oneRegion":
+            if args.causal_region_coordinates is None or len(args.causal_region_coordinates) != 2:
+                raise ValueError("Must provide start and end coordinates of causal window using "
+                                 "'causal_region_coordinates'")
+            if args.pty_prop_causal_mutations is None or 1 < args.pty_prop_causal_mutations < 0:
+                raise ValueError("Must provide proportion of causal variants between 0 and 1 using "
+                                 "'pty_prop_causal_mutations'")
+            if args.pty_sd_beta_causal_mutations is None:
+                raise ValueError("Must provide sd for causal mutation effect size using "
+                                 "'pty_sd_beta_causal_mutations'")
+            logfile.info("- Simulating phenotypes based on variants within region with coordinates " + str(
+                args.causal_region_coordinates))
+
+            self.simulate_causal_region(variants=variants_orig,
+                                        inds=inds,
+                                        left_bound=args.causal_region_coordinates[0],
+                                        right_bound=args.causal_region_coordinates[1],
+                                        causal_mutations_effect_size_def=args.pty_sd_beta_causal_mutations,
+                                        local_heritability=args.pty_h_squared,
+                                        random=r,
+                                        prop_causal_mutations=args.pty_prop_causal_mutations,
                                         min_allele_freq_causal=args.min_allele_freq_causal,
                                         max_allele_freq_causal=args.max_allele_freq_causal,
                                         logfile=logfile)
+
 
         elif args.pty_sim_method == 'allelicHetero':
             if args.allelic_hetero_file is None:
@@ -395,42 +424,80 @@ class Phenotypes:
             len(self.causal_variants)) + " causal variants out of a total of " + str(variants.number) + ".")
         self.filled = True
 
-    def simulate_causal_region(self, variants, inds, left_bound, right_bound, sd_beta_causal_mutations, random,
-                               min_allele_freq_causal, max_allele_freq_causal, logfile):
+    def simulate_causal_region(self, variants, inds, left_bound, right_bound, causal_mutations_effect_size_def,
+                               local_heritability, prop_causal_mutations, random, min_allele_freq_causal,
+                               max_allele_freq_causal, logfile, prevent_typed=True):
         """
-
+        Simulate causal effect sizes for variants with
+        @param prop_causal_mutations: float [0,1]
+        @param local_heritability: float [0,1]
         @param variants: TVariants
         @param inds: TInds
         @param left_bound: float. Left bound of causal region (included)
         @param right_bound: Right bound of causal region (included)
-        @param sd_beta_causal_mutations: Betas for causal mutations simulated according to N(0, sd_beta_causal_mutations)
+        @param causal_mutations_effect_size_def: str, Std. dev. for betas of causal mutations . If it can be converted to a
+                                        float, betas will sampled from N(0, pty_sd_beta_causal_mutations). If set to
+                                        'standardized', betas will be sampled from
+                                        N(0, [2 * f * (1 - f)]^{-0.5} * h2g / p),
+                                        where h2g is the heritability of the trait and p is the number of causal SNPs.
         @param random: TRandom
         @param min_allele_freq_causal: float. Only variants with freq higher than this can be causal
         @param max_allele_freq_causal: Only variants with freq lower than this can be causal
         @param logfile:
         @return:
         """
-        # add phenotypic effect to mutations that are uniformly distributed
-        for v, var in enumerate(variants.variants):
-            # is the variant in the tree
-            if left_bound <= variants.info.loc[v]['position'] <= right_bound \
-                    and min_allele_freq_causal <= variants.info.loc[v]['allele_freq'] <= max_allele_freq_causal:
 
-                # define beta
-                beta = random.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)[0]
+        # define causal variants
+        info_window = variants.info.loc[(left_bound <= variants.info['position'])
+                                        & (variants.info['position'] < right_bound)
+                                        & (min_allele_freq_causal <= variants.info['allele_freq'])
+                                        & (variants.info['allele_freq'] <= max_allele_freq_causal)]
+
+        # remove typed variants
+        if prevent_typed:
+            info_window = info_window.loc[info_window['typed'] == False]
+
+        print("info_window", info_window)
+
+        if len(info_window.index) < 1:
+            raise ValueError("Found no variants in causal region")
+
+        # info_window['index'] = range(len(info_window.index))
+        # info_window.set_index(info_window['index'], drop=True, inplace=True)
+        tmp = random.random.uniform(0, 1, len(info_window.index))
+        causal = np.zeros(len(info_window.index))
+        causal[tmp < prop_causal_mutations] = 1
+        num_causal_vars = np.count_nonzero(causal == 1)
+
+        # add phenotypic effect to mutations that are uniformly distributed
+        for v_i, v in enumerate(info_window['var_index']):
+            if causal[v_i] == 1:
+                # get beta
+                sd = None
+                # get effect size sd
+                try:
+                    sd = float(causal_mutations_effect_size_def)
+                except ValueError:
+                    causal_mutations_effect_size_def = causal_mutations_effect_size_def
+                    if causal_mutations_effect_size_def != "standardized":
+                        raise ValueError("'sd_beta_causal_mutations' is set to unknown option. Must be a float or "
+                                         "'standardized'")
+                    f = variants.info['allele_freq'][v]
+                    sd = (local_heritability / num_causal_vars) / np.sqrt(2 * f * (1 - f))
+
+                beta = self.get_beta_normal(random, sd)
                 self.betas[v] = beta
 
                 # simulate phenotype
                 if inds.ploidy == 1:
-                    self._y[var.genotypes == 1] += beta
-                    self._y[var.genotypes == 2] += 2.0 * beta
+                    self._y[variants.variants[v].genotypes == 1] += beta
                 else:
-                    genotypes = inds.get_diploid_genotypes(var.genotypes)
+                    genotypes = inds.get_diploid_genotypes(variants.variants[v].genotypes)
                     self._y[genotypes == 1] += beta
                     self._y[genotypes == 2] += 2.0 * beta
 
                 # save causal position
-                self.causal_variants.append(var)
+                self.causal_variants.append(variants.variants[v])
                 self.causal_betas.append(beta)
                 allele_freq = variants.info['allele_freq'][v]
                 self.causal_power.append(beta ** 2 * allele_freq * (1 - allele_freq))
@@ -440,12 +507,24 @@ class Phenotypes:
             len(self.causal_variants)) + " causal variants out of a total of " + str(variants.number) + ".")
         self.filled = True
 
+    @staticmethod
+    def get_beta_normal(random, sd_beta_causal_mutations):
+        """
+        Draw effect size from normal distribution
+
+        @param sd_beta_causal_mutations: float
+        @param random: TRandom
+        @return: float
+        """
+        beta = random.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)[0]
+        return beta
+
     def find_causal_trees(self, ts_object):
         for v in self.causal_variants:
             causal_tree = ts_object.at(v.site.position)
             self.causal_tree_indeces.append(causal_tree.get_index())
-        #remove duplicates
-        self.causal_tree_indeces = set(self.causal_tree_indeces)
+        # remove duplicates
+        self.causal_tree_indeces = list(set(self.causal_tree_indeces))
 
     def find_causal_windows(self, window_ends, window_starts):
         for v in self.causal_variants:

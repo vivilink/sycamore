@@ -1,7 +1,6 @@
 library("amap")
 library("ade4")
 library("vegan")
-library("RAINBOWR")
 
 # data
 pheno <- c(0,1,1,2,2,0,0)
@@ -18,6 +17,20 @@ h2_as <- h2 %*% t(h2)
 h3_as <- h3 %*% t(h3)
 
 # GRM
+calc_cov_mut <- function(haplotype){
+  allele_freq <- sum(haplotype) / length(haplotype)
+  first <- t(haplotype - allele_freq)
+  second <- haplotype - allele_freq
+  cov_mut <-   second %*% first
+  cov_mut <- cov_mut / (allele_freq * (1 - allele_freq))
+  return(cov_mut)
+}
+
+# GRM <- matrix(nrow=7, ncol=7)
+GRM <- calc_cov_mut(haplotype=h1)
+GRM <- GRM + calc_cov_mut(haplotype=h2)
+GRM <- GRM + calc_cov_mut(haplotype=h3)
+GRM <- GRM / 3
 
 # mantel for individual allele sharing matrices
 
