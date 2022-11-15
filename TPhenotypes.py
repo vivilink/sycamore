@@ -457,13 +457,9 @@ class Phenotypes:
         if prevent_typed:
             info_window = info_window.loc[info_window['typed'] == False]
 
-        print("info_window", info_window)
-
         if len(info_window.index) < 1:
             raise ValueError("Found no variants in causal region")
 
-        # info_window['index'] = range(len(info_window.index))
-        # info_window.set_index(info_window['index'], drop=True, inplace=True)
         tmp = random.random.uniform(0, 1, len(info_window.index))
         causal = np.zeros(len(info_window.index))
         causal[tmp < prop_causal_mutations] = 1
