@@ -30,10 +30,12 @@ def read_trees(tree_file, trees_interval, trees_interval_start, trees_interval_e
     if trees_interval_end:
         trees_interval[1] = trees_interval_end
 
-    logfile.info(
-        "- Running association only on the trees overlapping the following interval: " + str(trees_interval))
-    trees_extract = trees_full.keep_intervals([trees_interval], simplify=True)
-    # args.trees_interval = trees_interval
+    if trees_interval != [0, trees_full.sequence_length]:
+        logfile.info(
+            "- Extracting trees overlapping the following interval: " + str(trees_interval))
+        trees_extract = trees_full.keep_intervals([trees_interval], simplify=True)
+    else:
+        trees_extract = trees_full.simplify()
 
     return trees_extract, trees_interval
 

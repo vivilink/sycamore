@@ -10,13 +10,13 @@ import pandas as pd
 import numpy as np
 
 class Individuals:
-    def __init__(self, ploidy, N):
+    def __init__(self, ploidy, num_haplotypes):
 
         if ploidy is None:
             raise ValueError("Must provide ploidy with --ploidy")
 
         self._ploidy = ploidy
-        self._num_haplotypes = N
+        self._num_haplotypes = num_haplotypes
         self._num_inds = int(self._num_haplotypes / self._ploidy)
         self._ind_assignment = pd.DataFrame()
         self._ind_assignment['haplotype'] = range(0, self._num_haplotypes)

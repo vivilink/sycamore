@@ -31,27 +31,31 @@ def run_association_testing(args, random, logfile):
     @param logfile:
     @return:
     """
-    if args.tree_file_simulated is None or args.tree_file is None:
-        raise ValueError(
-            "Both the simulated and estimated trees need to be provided with 'tree_file_simulated' and 'tree_file'.")
 
     logfile.info("- TASK: Associate")
     logfile.add()
 
-    logfile.info("- Reading simulated tree used for simulating phenotypes from " + args.tree_file_simulated)
-    trees_orig = tskit.load(args.tree_file_simulated)
+    # --------------------------------
+    # create phenotypes
+    # --------------------------------
+    if args.simulate_phenotypes is False:
+        pheno = pt.PhenotypesBMI(filename=args.pheno_file, logfile=logfile)
 
-    logfile.info(
-        "- Reading tree used for Aim's association testing, and for defining variants to be tested by GWAS, from " + args.tree_file)
+        # initialze pheno from file, maybe restrict tree to samples for which we have phenotypes here
+
+    # --------------------------------
+    # read ARG
+    # --------------------------------
+    if args.tree_file is None:
+        raise ValueError("The estimated trees need to be provided with 'tree_file'.")
+
     trees, args.trees_interval = tt.read_trees(tree_file=args.tree_file,
                                                trees_interval=args.trees_interval,
                                                trees_interval_start=args.trees_interval_start,
                                                trees_interval_end=args.trees_interval_end,
                                                logfile=logfile)
 
-    if trees_orig.num_samples != trees.num_samples:
-        raise ValueError(
-            "The trees provided with params 'tree_file_simulated' and 'tree_file' must have the same number of samples")
+
 
     plots_dir = args.out + "_plots/"
     if not os.path.exists(plots_dir):
@@ -76,6 +80,7 @@ def run_association_testing(args, random, logfile):
     #  do not provide variant file here but have it estimated from tree, otherwise variants and tree
     #  won't match (tree only contains typed variants). The variant file is only useful for simulating phenotypes to
     #  be able to keep track of untyped variants (i.e. for variants_orig)
+    logfile.info("- Compiling variant info from trees file")
     variants = tvar.TVariantsFiltered(ts_object=trees,
                                       samp_ids=sample_ids,
                                       min_allele_freq=args.min_allele_freq,
@@ -87,30 +92,46 @@ def run_association_testing(args, random, logfile):
                                       filtered_variants_file=None)
     variants.write_variant_info(out=args.out + "_sample", logfile=logfile)
 
-    # variants_orig are used to simulate phenotypes. They need to be consistent with original tree and the typed
-    # status that might have been defined earlier with a variants file. The causal mutation should not be affected by
-    # a freq filter
-    variants_orig = tvar.TVariantsFiltered(ts_object=trees_orig,
-                                           samp_ids=sample_ids,
-                                           min_allele_freq=0,
-                                           max_allele_freq=1,
-                                           prop_typed_variants=1,
-                                           pos_float=args.pos_float,
-                                           random=random,
-                                           logfile=logfile,
-                                           filtered_variants_file=args.variants_file)
-
     # --------------------------------
     # create phenotypes
     # --------------------------------
-    logfile.info("- Phenotypes:")
-    logfile.add()
 
-    pheno = pt.Phenotypes(variants=variants_orig, inds=inds, logfile=logfile)
+    if args.simulate_phenotypes is True:
 
-    pheno.simulate(args=args, r=random, logfile=logfile, variants_orig=variants_orig, trees=trees, inds=inds,
-                   plots_dir=plots_dir)
-    logfile.sub()
+        if args.tree_file_simulated is None:
+            raise ValueError("To simulate phenotypes based on untyped variants the simulated trees need to be "
+                             "provided with 'tree_file_simulated'.")
+
+        logfile.info("- Reading simulated tree used for simulating phenotypes from " + args.tree_file_simulated)
+        trees_orig = tskit.load(args.tree_file_simulated)
+
+        if trees_orig.num_samples != trees.num_samples:
+            raise ValueError("The trees provided with params 'tree_file_simulated' and 'tree_file' must have the same "
+                             "number of samples")
+
+        # variants_orig are used to simulate phenotypes. They need to be consistent with original tree and the typed
+        # status that might have been defined earlier with a variants file. The causal mutation should not be affected
+        # by a freq filter
+        variants_orig = tvar.TVariantsFiltered(ts_object=trees_orig,
+                                               samp_ids=sample_ids,
+                                               min_allele_freq=0,
+                                               max_allele_freq=1,
+                                               prop_typed_variants=1,
+                                               pos_float=args.pos_float,
+                                               random=random,
+                                               logfile=logfile,
+                                               filtered_variants_file=args.variants_file)
+
+        logfile.info("- Phenotypes:")
+        logfile.add()
+
+        pheno = pt.Phenotypes(variants=variants_orig, inds=inds, logfile=logfile)
+
+        pheno.simulate(args=args, r=random, logfile=logfile, variants_orig=variants_orig, trees=trees, inds=inds,
+                       plots_dir=plots_dir)
+        logfile.sub()
+
+
 
     # --------------------------------
     # run association tests and plot

@@ -10,18 +10,57 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 # TODO: being typed or not should be an option for all causal variants
-import numpy as np
 
 
 class Phenotypes:
     _y: np.ndarray
+    _num_inds: int
+
+    def __init__(self):
+        pass
+
+    @property
+    def y(self):
+        return self._y
+
+    @y.setter
+    def y(self, y: np.ndarray):
+        self._y = y
+
+
+class PhenotypesBMI(Phenotypes):
+    _sample_IDs: np.ndarray
+
+    def __init__(self, filename, logfile):
+        super().__init__()
+        self.initialize_from_file(filename, logfile)
+
+    def initialize_from_file(self, filename, logfile):
+        logfile.info("- Reading BMI phenotype information from " + filename)
+        pheno_df = pd.read_csv(filename, names=["ID", "sex", "age", "BMI"])
+        removed = pheno_df.dropna(axis="index", how="any", inplace=True)
+        # print("removed", removed)
+        # print(len(pheno_df['ID']))
+        # logfile.info("- Removed " + str(len(removed['ID'])) + " entries from phenotype table due to missing data")
+
+        self._num_inds = len(pheno_df['ID'])
+        self._y = np.zeros(self._num_inds)
+        self._sample_IDs = pheno_df['ID']
+
+    @property
+    def sample_IDs(self):
+        return self._sample_IDs
+
+
+class PhenotypesSimulated(Phenotypes):
     _genetic_variance: float
 
-    def __init__(self, variants, inds, logfile):
-        self.num_inds = inds.num_inds
-        self._y = np.zeros(self.num_inds)
-        self._random_noise = np.zeros(self.num_inds)
+    def __init__(self, variants, num_inds):
+        super().__init__()
+
+        self._random_noise = np.zeros(num_inds)
         self._genetic_variance = -1.0
         self.betas = [0] * variants.number
         self.causal_variants = []
@@ -32,14 +71,6 @@ class Phenotypes:
         self.causal_tree_indeces = []
         self.causal_window_indeces = []
         self.filled = False
-
-    @property
-    def y(self):
-        return self._y
-
-    @y.setter
-    def y(self, y: np.ndarray):
-        self._y = y
 
     @property
     def genetic_variance(self):

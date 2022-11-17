@@ -101,8 +101,13 @@ class TParameters:
                               "continuous genome, so if pos_int is true, the simulated positions are rounded and if "
                               "one position overlaps the previous, it is moved to the next position in the genome.")
 
-        # simulating phenotypes
-        pty = parser.add_argument_group('simulating phenotypes')
+        # phenotypes
+        pty = parser.add_argument_group('phenotypes')
+        pty.add_argument('--pheno_file', type=str,
+                         help="File with BMI phenotypes")
+        pty.add_argument('--simulate_phenotypes', action='store_true',
+                         help="If set to true, phenotypes will be simulated. If set to false, they will be read from "
+                              "file.")
         pty.add_argument('--pty_sd_envNoise', type=float,
                          help="Std. dev. for environmental noise. If set to 0, no noise will be simulated.")
         pty.add_argument('--pty_h_squared', type=float,
