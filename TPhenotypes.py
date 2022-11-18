@@ -203,7 +203,7 @@ class Phenotypes:
                                         min_allele_freq_causal=args.min_allele_freq_causal,
                                         prop_causal_mutations=args.pty_prop_causal_mutations,
                                         max_allele_freq_causal=args.max_allele_freq_causal,
-                                        allow_typed_causal_variants=args.prevent_typed_causal_variants,
+                                        allow_typed_causal_variants=args.allow_typed_causal_variants,
                                         logfile=logfile)
 
         elif args.pty_sim_method == "oneRegion":
@@ -229,7 +229,7 @@ class Phenotypes:
                                         prop_causal_mutations=args.pty_prop_causal_mutations,
                                         min_allele_freq_causal=args.min_allele_freq_causal,
                                         max_allele_freq_causal=args.max_allele_freq_causal,
-                                        allow_typed_causal_variants=args.prevent_typed_causal_variants,
+                                        allow_typed_causal_variants=args.allow_typed_causal_variants,
                                         logfile=logfile)
 
         elif args.pty_sim_method == 'allelicHetero':
