@@ -1,4 +1,4 @@
-setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/relate_trees/window_based")
+setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/relate_trees/window_based/5k")
 
 reps <- 300
 cutoff_rep <- 0.05 * reps
@@ -32,7 +32,7 @@ for(i in 1:length(covariance_types)){
   for(rep in 1:reps){
     # read REML results
     df_REML <- read.csv(paste("cutoff_sims_", rep, "_", covariance_types[i], "_trees_REML_results.csv", sep=''))
-    df_REML <- df_REML[-1,]
+    # df_REML <- df_REML[-1,]
     df_REML <- df_REML[which(df_REML$start > position_interval[1] & df_REML$start < position_interval[2]),]
     # df_REML <- df_REML[-nrow(df_REML),]
 
@@ -44,12 +44,12 @@ for(i in 1:length(covariance_types)){
     df_HE$p_values_HESD_Jackknife[df_HE$p_values_HESD_Jackknife == 0] <- .Machine$double.xmin
     df_HE$p_values_HECP_Jackknife[df_HE$p_values_HECP_Jackknife == 0] <- .Machine$double.xmin
 
-    m_results_VC[[i]]$REML[rep] <- -log10(min(df_REML$p_values))
-    m_results_VC[[i]]$index_min_REML[rep] <- which(df_REML$p_values == min(df_REML$p_values))[1]
-    m_results_VC[[i]]$HE_SD[rep] <- -log10(min(df_HE$p_values_HESD_Jackknife))
-    m_results_VC[[i]]$index_min_HESD[rep] <- which(df_HE$p_values_HESD_Jackknife == min(df_HE$p_values_HESD_Jackknife))[1]
-    m_results_VC[[i]]$HE_CP[rep] <- -log10(min(df_HE$p_values_HECP_Jackknife))
-    m_results_VC[[i]]$index_min_HECP[rep] <- which(df_HE$p_values_HECP_Jackknife == min(df_HE$p_values_HECP_Jackknife))[1]
+    m_results_VC[[i]]$REML[rep] <- -log10(min(df_REML$p_values, na.rm=TRUE))
+    m_results_VC[[i]]$index_min_REML[rep] <- which(df_REML$p_values == min(df_REML$p_values, na.rm=TRUE))[1]
+    m_results_VC[[i]]$HE_SD[rep] <- -log10(min(df_HE$p_values_HESD_Jackknife, na.rm=TRUE))
+    m_results_VC[[i]]$index_min_HESD[rep] <- which(df_HE$p_values_HESD_Jackknife == min(df_HE$p_values_HESD_Jackknife, na.rm=TRUE))[1]
+    m_results_VC[[i]]$HE_CP[rep] <- -log10(min(df_HE$p_values_HECP_Jackknife, na.rm=TRUE))
+    m_results_VC[[i]]$index_min_HECP[rep] <- which(df_HE$p_values_HECP_Jackknife == min(df_HE$p_values_HECP_Jackknife, na.rm=TRUE))[1]
 
     m_results_VC[[i]]$REML_equal0.5[rep] <- sum(df_REML$p_values == 0.5)/nrow(df_REML)
     
@@ -85,7 +85,7 @@ for(i in 1:length(covariance_types)){
   hist(m_results_VC[[i]]$index_min_HESD, xlab ="index of min p-value in ARG HE SD eGRM", breaks=20, main="")
   hist(m_results_VC[[i]]$index_min_HECP, xlab ="index of min p-value in ARG HE CP GRM", breaks=20, main="")
   dev.off()
-  
+
   #--------------------------
   # qqplots
   #--------------------------

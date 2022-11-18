@@ -112,6 +112,9 @@ class TParameters:
                          choices=['null', 'uniform', 'fixed', 'singleTyped', 'singleUntyped', "allelicHetero",
                                   "oneTree", "oneRegion"],
                          help="Phenotype simulations method")
+        pty.add_argument('--allow_typed_causal_variants', action='store_true',
+                         help="By default only non-typed variants will be simulated to be causal with "
+                              "pty_sim_method='oneRegion' or 'oneTree'")
         pty.add_argument('--pty_prop_causal_mutations', type=float, default=0,
                          help="Proportion of causal mutations to simulate at uniformly distributed positions if "
                               "pty_sim_method is set to 'uniform'. If set to 0, there will be no causal mutations.")
@@ -151,7 +154,7 @@ class TParameters:
                            help="Provide association method [AIM, GWAS] and for AIM covariance type [eGRM, GRM, "
                                 "scaled] with the following format: 'method:covariance'")
         assoc.add_argument('--AIM_method', type=str, nargs='+',
-                           help="Use either Haseman-Elston or REML to test trees for association")
+                           help="Use Haseman-Elston or REML or both to test trees for association")
         assoc.add_argument('--no_clean_up', action='store_true',
                            help="don't clean up temporary files created during association testing")
         assoc.add_argument('--test_only_tree_at', type=float,

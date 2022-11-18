@@ -203,6 +203,7 @@ class Phenotypes:
                                         min_allele_freq_causal=args.min_allele_freq_causal,
                                         prop_causal_mutations=args.pty_prop_causal_mutations,
                                         max_allele_freq_causal=args.max_allele_freq_causal,
+                                        allow_typed_causal_variants=args.prevent_typed_causal_variants,
                                         logfile=logfile)
 
         elif args.pty_sim_method == "oneRegion":
@@ -228,8 +229,8 @@ class Phenotypes:
                                         prop_causal_mutations=args.pty_prop_causal_mutations,
                                         min_allele_freq_causal=args.min_allele_freq_causal,
                                         max_allele_freq_causal=args.max_allele_freq_causal,
+                                        allow_typed_causal_variants=args.prevent_typed_causal_variants,
                                         logfile=logfile)
-
 
         elif args.pty_sim_method == 'allelicHetero':
             if args.allelic_hetero_file is None:
@@ -426,9 +427,10 @@ class Phenotypes:
 
     def simulate_causal_region(self, variants, inds, left_bound, right_bound, causal_mutations_effect_size_def,
                                local_heritability, prop_causal_mutations, random, min_allele_freq_causal,
-                               max_allele_freq_causal, logfile, prevent_typed=True):
+                               max_allele_freq_causal, logfile, allow_typed_causal_variants):
         """
         Simulate causal effect sizes for variants with
+        @param allow_typed_causal_variants: If true, only also typed variants can be causal
         @param prop_causal_mutations: float [0,1]
         @param local_heritability: float [0,1]
         @param variants: TVariants
@@ -453,12 +455,15 @@ class Phenotypes:
                                         & (min_allele_freq_causal <= variants.info['allele_freq'])
                                         & (variants.info['allele_freq'] <= max_allele_freq_causal)]
 
+        print("info_window", info_window)
+
         # remove typed variants
-        if prevent_typed:
+        if not allow_typed_causal_variants:
             info_window = info_window.loc[info_window['typed'] == False]
 
         if len(info_window.index) < 1:
-            raise ValueError("Found no variants in causal region")
+            raise ValueError("Found no variants in causal region. Are you restricting to only typed or untyped "
+                             "variants?")
 
         tmp = random.random.uniform(0, 1, len(info_window.index))
         causal = np.zeros(len(info_window.index))

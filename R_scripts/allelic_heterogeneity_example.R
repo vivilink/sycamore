@@ -33,11 +33,10 @@ GRM <- GRM + calc_cov_mut(haplotype=h3)
 GRM <- GRM / 3
 
 # mantel for individual allele sharing matrices
-
 mantel(pheno_dist, h1_as)
 mantel(pheno_dist, h2_as)
 mantel(pheno_dist, h3_as)
-
+mantel(pheno_dist, GRM)
 
 
 

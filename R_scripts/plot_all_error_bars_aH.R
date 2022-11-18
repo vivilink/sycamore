@@ -1,6 +1,7 @@
 #scp linkv@RRI403-PC04.dts.usc.edu:/data/ARGWAS/power_sims/stdpopsim/high_mut_trees/oneTree/eGRM/h0.1/power_*txt .
 
-setwd("/data/ARGWAS/power_sims/stdpopsim/high_mut_trees/oneTree/eGRM_and_GRM/")
+# setwd("/data/ARGWAS/power_sims/stdpopsim/high_mut_trees/oneTree/eGRM_and_GRM/")
+setwd("/data/ARGWAS/power_sims/stdpopsim/relate_trees/oneRegion/eGRM_GRM/window_based/")
 nreps=200
 
 hs <- c(0.02,0.04,0.06,0.08, 0.1)
@@ -9,13 +10,14 @@ offset <- 0
 
 pdf("power_aH_erorBars_window_based.pdf", height=5, width=15)
 par(mfrow=c(1,3))
-for(ws in c("10k", "20k", "50k")){
+for(ws in c("5k", "10k")){  #, "20k", "50k"
   plot(0, type='n', ylim=c(0, 1), xlim=c(min(1)-offset, length(hs)+offset), ylab="power", xlab='local heritability', xaxt='n', main=ws)
   axis(side=1, at=1:length(hs), labels=hs)
   for(h in hs){
     print(paste("h",h))
     x_pos <- which(hs == h)
-    power_results <- read.table(paste("relate_trees/window_based/", ws, "/h", h, "/power_results.txt", sep=''), header=TRUE)
+    # power_results <- read.table(paste("relate_trees/window_based/", ws, "/h", h, "/power_results.txt", sep=''), header=TRUE)
+    power_results <- read.table(paste(ws, "/h", h, "/power_results.txt", sep=''), header=TRUE)
     
     #GWAS
     points(y=power_results$power_GWAS, x=x_pos-offset, pch=1, col="orange2")
