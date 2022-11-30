@@ -37,7 +37,7 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   
   out_dir = paste(folder,"/h", hsquared, sep='')
   
-  position_interval <- c(49000000, 49988000)
+  position_interval <- c(49000000, 50000000)
   # position_interval <- c(49350000, 49650000)
   
 

@@ -26,7 +26,6 @@ calc_cov_mut <- function(haplotype){
   return(cov_mut)
 }
 
-# GRM <- matrix(nrow=7, ncol=7)
 GRM <- calc_cov_mut(haplotype=h1)
 GRM <- GRM + calc_cov_mut(haplotype=h2)
 GRM <- GRM + calc_cov_mut(haplotype=h3)

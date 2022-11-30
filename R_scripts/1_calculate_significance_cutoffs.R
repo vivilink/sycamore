@@ -1,4 +1,4 @@
-setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/relate_trees/window_based/5k")
+setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/true_trees/window_based/5k")
 
 reps <- 300
 cutoff_rep <- 0.05 * reps
