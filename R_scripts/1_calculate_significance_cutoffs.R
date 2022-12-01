@@ -1,4 +1,4 @@
-setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/true_trees/window_based/5k")
+setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/relate_trees/window_based/5k")
 
 reps <- 300
 cutoff_rep <- 0.05 * reps
@@ -6,8 +6,8 @@ position_interval <- c(49000000, 50000000)
 
 covariance_types <- c("eGRM", "GRM")
 m_results_VC <- list()
-m_results_GWAS <- matrix(nrow=reps, ncol=2)
-colnames(m_results_GWAS) <- c( "GWAS", "index_min_GWAS")
+m_results_GWAS <- matrix(nrow=reps, ncol=3)
+colnames(m_results_GWAS) <- c( "GWAS", "index_min_GWAS", "p_value_10")
 m_results_GWAS <- data.frame(m_results_GWAS)
 tmp <- matrix(nrow=reps, ncol=7)
 colnames(tmp) <- c("REML", "HE_SD", "HE_CP","REML_equal0.5", "index_min_REML", "index_min_HESD", "index_min_HECP")
@@ -90,14 +90,11 @@ for(i in 1:length(covariance_types)){
   # qqplots
   #--------------------------
   
-  pdf(paste("p_values_REML_", covariance_types[i], "_qqplot.pdf", sep=""), width=16, height=4)
+  pdf(paste("p_values_REML_", covariance_types[i], "_qqplot.pdf", sep=""), width=4, height=4)
   par(mfrow=c(1,1))
   
   uniform <- (runif(1000))
-  qqplot(uniform, (m_p_values_REML$p_value_10), ylab="tree index 10")
-  abline(0,1)
-  
-  # qqplot(uniform, (m_p_values_REML$p_value_100), ylab="tree index 100")
+  qqplot(uniform, (m_p_values_REML$p_value_10), ylab="window index 10", las=2)
   abline(0,1)
 
   dev.off()
@@ -105,7 +102,7 @@ for(i in 1:length(covariance_types)){
   pdf(paste("p_values_HESD_", covariance_types[i], "_qqplot.pdf", sep=""), width=15, height=5)
   par(mfrow=c(1,1))
   
-  qqplot(uniform, (m_p_values_HESD$p_value_10), ylab="tree index 10")
+  qqplot(uniform, (m_p_values_HESD$p_value_10), ylab="window index 10", las=2)
   abline(0,1)
   
   # qqplot(uniform, (m_p_values_HESD$p_value_100), ylab="tree index 100")
@@ -139,6 +136,7 @@ for(rep in 1:reps){
   df_GWAS <- df_GWAS[which(df_GWAS$start > position_interval[1] & df_GWAS$start < position_interval[2]),]
   m_results_GWAS$GWAS[rep] <- -log10(min(df_GWAS$p_value))
   m_results_GWAS$index_min_GWAS[rep] <- which(df_GWAS$p_value == min(df_GWAS$p_value))[1]
+  m_results_GWAS$p_value_10[rep] <- df_GWAS$p_value[10]
 }
 
 pdf(paste("hist_lowest_pvalue_index_", "GWAS", ".pdf", sep=""), width=8, height=8)
@@ -147,6 +145,15 @@ dev.off()
 
 cutoff_p_GWAS <- sort(m_results_GWAS[,"GWAS"], decreasing=T)[cutoff_rep]
 write.csv(cutoff_p_GWAS, file=paste("p_value_cutoffs_", "GWAS", sep='', ".csv"), row.names=FALSE, quote=FALSE)
+
+pdf(paste("p_values_GWAS_qqplot.pdf", sep=""), width=4, height=4)
+par(mfrow=c(1,1))
+
+uniform <- (runif(1000))
+qqplot(uniform, m_results_GWAS$p_value_10, ylab="window index 10", las=2)
+abline(0,1)
+
+dev.off()
 
 #--------------------------
 # cutoff plot

@@ -58,7 +58,7 @@ for(ws in c("5k", "10k")){  #, "20k", "50k"
     std <- sqrt(power*(1-power)/nreps)
     segments(x0=x_pos+offset, y0=power - std, y1=power + std, col="maroon2")
   }
-  legend(x="bottomright", legend=c("truth","Relate / typed", "local eGRM", "local GRM", "GWAS"), pch=c(19, 1, 15, 15, 15), col=c("black","black","dodgerblue", "maroon2", "orange2"), bty='n')
+  legend(x="bottomright", legend=c("true trees / all variants","Relate / typed variants", "local eGRM", "local GRM", "GWAS"), pch=c(19, 1, 15, 15, 15), col=c("black","black","dodgerblue", "maroon2", "orange2"), bty='n')
 }
 
 dev.off()

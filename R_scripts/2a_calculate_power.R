@@ -1,20 +1,21 @@
 setwd("/data/ARGWAS/power_sims/stdpopsim")
-source("power_one_experiment_oneVariant.R")
+source("~/git/argwas/R_scripts/2b_calculate_power_one_experiment.R")
 library("pwr")
 options(scipen = 100, digits = 4)
 hs_all <- c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
-region_type="window_based"
+region_type <- "window_based"
+window_size <- "10k"
 
 #--------------------------
 #read low freq true trees
 #--------------------------
 power_results_trueTrees_lowFreq <- data.frame()
 for(hs in hs_all){
-  folder=paste("true_trees/oneVariant/rareVariant/eGRM_GRM/",region_type,"/", sep='')
+  folder=paste("true_trees/oneVariant/rareVariant/eGRM_GRM/",region_type,"/",window_size, "/", sep='')
   results_file <- paste(folder, "h", hs, "/power_results.txt", sep='')
   print(paste(hs, file.exists(results_file)))
   # if(file.exists(results_file) == FALSE){
-    power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type="relate_trees", region_type=region_type)
+    power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type="true_trees", region_type=region_type, window_size = window_size)
     print("finished creating results file")
   # }
   t <- read.table(results_file, header=TRUE)
@@ -27,13 +28,13 @@ rownames(power_results_trueTrees_lowFreq) = hs_all
 #--------------------------
 power_results_trueTrees_highFreq <- data.frame()
 for(hs in hs_all){
-  folder=paste("true_trees/oneVariant/commonVariant/eGRM_GRM/",region_type,"/", sep='')
+  folder=paste("true_trees/oneVariant/commonVariant/eGRM_GRM/",region_type,"/",window_size,"/", sep='')
   results_file <- paste(folder, "h", hs, "/power_results.txt", sep='')
   print(paste(hs, file.exists(results_file)))
-  if(file.exists(results_file) == FALSE){
-    power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type="true_trees", region_type=region_type)
+  # if(file.exists(results_file) == FALSE){
+    power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type="true_trees", region_type=region_type, window_size = window_size)
     print("finished creating results file")
-  }
+  # }
   t <- read.table(results_file, header=TRUE)
   power_results_trueTrees_highFreq <- rbind(power_results_trueTrees_highFreq, t)
 }
@@ -44,11 +45,11 @@ rownames(power_results_trueTrees_highFreq) = hs_all
 #--------------------------
 power_results_relateTrees_lowFreq <- data.frame()
 for(hs in hs_all){
-  folder=paste("relate_trees/oneVariant/rareVariant/eGRM_GRM/",region_type,"/", sep='')
+  folder=paste("relate_trees/oneVariant/rareVariant/eGRM_GRM/",region_type,"/", window_size, "/", sep='')
   results_file <- paste(folder, "h", hs, "/power_results.txt", sep='')
   print(paste(hs, file.exists(results_file)))
   # if(file.exists(results_file) == FALSE){
-    power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type="relate_trees", region_type=region_type)
+    power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type="relate_trees", region_type=region_type, window_size = window_size)
     print("finished creating results file")
   # }
   t <- read.table(results_file, header=TRUE)
@@ -61,11 +62,11 @@ rownames(power_results_relateTrees_lowFreq) = hs_all
 #--------------------------
 power_results_relateTrees_highFreq <- data.frame()
 for(hs in hs_all){
-  folder=paste("relate_trees/oneVariant/commonVariant/eGRM_GRM/",region_type,"/", sep='')
+  folder=paste("relate_trees/oneVariant/commonVariant/eGRM_GRM/",region_type,"/", window_size, "/", sep='')
   results_file <- paste(folder, "h", hs, "/power_results.txt", sep='')
   print(paste(hs, file.exists(results_file)))
   # if(file.exists(results_file) == FALSE){
-    power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type="relate_trees", region_type=region_type)
+    power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type="relate_trees", region_type=region_type, window_size = window_size)
     print("finished creating results file")
   # }
   t <- read.table(results_file, header=TRUE)
@@ -147,45 +148,6 @@ plot_freq <- function(freq, trueTreeResult, relateTreeResults){
 plot_freq(freq=0.02, trueTreeResult=power_results_trueTrees_lowFreq, relateTreeResult=power_results_relateTrees_lowFreq)
 plot_freq(freq=0.2, trueTreeResult=power_results_trueTrees_highFreq, relateTreeResult=power_results_relateTrees_highFreq)
 
-#--------------------------
-# plot power error bars
-#--------------------------
-setwd("/data/ARGWAS/power_sims/stdpopsim/")
-nreps=200
-
-hs <- c(0.02)
-# hs <- c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
-offset <- 0
-
-pdf("power_oneVariant_erorBars.pdf", height=5, width=5)
-plot(0, type='n', ylim=c(0, 1), xlim=c(min(1)-offset, 3+offset), ylab="power", xlab='', xaxt='n')
-for(h in hs){
-
-  #GWAS relate
-  power_results <- read.table(paste("/data/ARGWAS/power_sims/stdpopsim/relate_trees/oneVariant/commonVariant/eGRM_GRM/h", h, "/power_results.txt", sep=''), header=TRUE)
-  points(y=power_results$power_GWAS, x=1-offset, pch=1, col="orange2")
-  power <- power_results$power_GWAS
-  std <- sqrt(power*(1-power)/nreps)
-  segments(x0=1-offset, y0=power - std, y1=power + std, col="orange2")	
-  
-  #REML eGRM relate
-  power_results <- read.table(paste("/data/ARGWAS/power_sims/stdpopsim/relate_trees/oneVariant/commonVariant/eGRM_GRM/h", h, "/power_results.txt", sep=''), header=TRUE)
-  points(y=power_results$power_REML_eGRM, x=2+offset, pch=1, col="dodgerblue")
-  power <- power_results$power_REML_eGRM
-  std <- sqrt(power*(1-power)/nreps)
-  segments(x0=2+offset, y0=power - std, y1=power + std, col="dodgerblue")
-  
-  #REML true tree
-  power_results <- read.table(paste("/data/ARGWAS/power_sims/stdpopsim/true_trees/oneVariant/commonVariant/eGRM_GRM/h", h, "/power_results.txt", sep=''), header=TRUE)
-  points(y=power_results$power_REML_GRM, x=3+offset, pch=19, col="dodgerblue")
-  power <- power_results$power_REML_GRM
-  std <- sqrt(power*(1-power)/nreps)
-  segments(x0=3+offset, y0=power - std, y1=power + std, col="dodgerblue")
-  
-}
-
-# legend(x="bottomright", legend=c("local REML eGRM", "local REML GRM", "GWAS"), pch=c(1, 1), col=c("dodgerblue","black", "orange2"), bty='n')
-dev.off()
 
 #--------------------------
 # power files allelic heterogeneity
