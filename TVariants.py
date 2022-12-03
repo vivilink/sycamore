@@ -60,6 +60,7 @@ class TVariants:
 
         # set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
         self._info['tree_index'] = np.digitize(self._info['position'], ts_object.breakpoints(as_array=True)) - 1
+        self._info['causal_region'] = "FALSE"
 
     @property
     def variants(self):
@@ -314,6 +315,7 @@ class TVariantsFiltered(TVariants):
 
         # set number typed for both cases (built from scratch or file)
         self._number_typed = self._info['typed'].value_counts()[True]
+        self._info['causal_region'] = "FALSE"
 
     def print_genotypes(self, index):
         file = "genotypes_variant" + str(index) + ".txt"
