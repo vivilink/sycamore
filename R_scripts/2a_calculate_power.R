@@ -160,24 +160,24 @@ library("pwr")
 options(scipen = 100, digits = 4)
 hs_all <- c(0.02, 0.04,  0.06,  0.08, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
 # hs_all <- c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
-
+propCausal <- 0.1
 
 #read low freq true trees
 for(tree_type in c("relate_trees", "true_trees")){ #, 
   for(region_type in c("window_based")){
-    for(ws in c("10k", "5k")){ #, "20k", "50k"
+    for(ws in c("10k")){ #, "20k", "50k" , "5k"
       power_results_aH <- data.frame()
       for(hs in hs_all){
         # folder=paste("/data/ARGWAS/power_sims/stdpopsim/high_mut_trees/oneTree/eGRM_and_GRM/", tree_type, "/", region_type, "/", ws, "/",sep="")
-        folder=paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneRegion/eGRM_GRM/", region_type, "/", ws, "/",sep="")
+        folder=paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneRegion/eGRM_GRM/", region_type, "/", ws, "/propCausal", propCausal, "/" ,sep="")
     
         results_file <- paste(folder, "h", hs, "/power_results.txt", sep='')
         print(paste(hs, file.exists(results_file)))
-        if(file.exists(results_file) == FALSE){
+        # if(file.exists(results_file) == FALSE){
           power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type=tree_type, region_type=region_type, window_size=ws)
           # power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type="high_mut_trees")
           # print("finished creating results file")
-        }
+        # }
         t <- read.table(results_file, header=TRUE)
         power_results_aH <- rbind(power_results_aH, t)
       }
