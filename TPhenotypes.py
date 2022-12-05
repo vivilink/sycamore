@@ -457,10 +457,8 @@ class Phenotypes:
                                         & (min_allele_freq_causal <= variants.info['allele_freq'])
                                         & (variants.info['allele_freq'] <= max_allele_freq_causal)]
 
-        print(variants.info)
-
         variants.info.loc[(left_bound <= variants.info['position'])
-                                        & (variants.info['position'] < right_bound)]["causal_region"] = "TRUE"
+                                        & (variants.info['position'] < right_bound), "causal_region"] = "TRUE"
 
         # remove typed variants
         if not allow_typed_causal_variants:
