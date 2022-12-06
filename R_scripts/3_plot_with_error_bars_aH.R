@@ -3,7 +3,7 @@
 # setwd("/data/ARGWAS/power_sims/stdpopsim/high_mut_trees/oneTree/eGRM_and_GRM/")
 setwd("/data/ARGWAS/power_sims/stdpopsim/")
 nreps=200
-propCausal=0.8
+propCausal=0.5
 
 hs <- c(0.02,0.04,0.06,0.08, 0.1)
 # hs <- c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
@@ -11,7 +11,7 @@ offset <- 0.08
 
 pdf(paste("power_aH_erorBars_window_based_propCausal", propCausal, ".pdf", sep=''), height=5, width=10)
 par(mfrow=c(1,2))
-for(ws in c("5k","10k")){  # , "20k", "50k"
+for(ws in c("5k")){  # , "20k", "50k" ,"10k"
   plot(0, type='n', ylim=c(0, 1), xlim=c(min(1)-offset, length(hs)+offset), ylab="power", xlab='local heritability', xaxt='n', main=ws, bty='n', las=2)
   axis(side=1, at=1:length(hs), labels=hs)
   for(h in hs){
@@ -40,19 +40,19 @@ for(ws in c("5k","10k")){  # , "20k", "50k"
     
     #true
     power_results <- read.table(paste("true_trees/oneRegion/eGRM_GRM/window_based/", ws, "/propCausal", propCausal, "/h", h, "/power_results.txt", sep=''), header=TRUE)
-    
+
     # REML GWAS
     points(y=power_results$power_GWAS, x=x_pos-offset, pch=19, col="orange2")
     power <- power_results$power_GWAS
     std <- sqrt(power*(1-power)/nreps)
     segments(x0=x_pos-offset, y0=power - std, y1=power + std, col="orange2")
-    
-    # REML eGRM 
+
+    # REML eGRM
     points(y=power_results$power_REML_eGRM, x=x_pos+0*offset, pch=19, col="dodgerblue")
     power <- power_results$power_REML_eGRM
     std <- sqrt(power*(1-power)/nreps)
     segments(x0=x_pos+0*offset, y0=power - std, y1=power + std, col="dodgerblue")
-    
+
     # REML GRM
     points(y=power_results$power_REML_GRM, x=x_pos+offset, pch=19, col="maroon2")
     power <- power_results$power_REML_GRM

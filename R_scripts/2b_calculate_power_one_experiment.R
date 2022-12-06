@@ -65,7 +65,7 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   }
   result_matrices[["GWAS"]] <- m_results_GWAS
   
-  for(rep in c(1:23, 28:38, 40:132, 134:176, 178:reps)){
+  for(rep in c(1:48, 50:84, 86:165, 169:178, 180:189, 191:reps)){
     print(rep)
     #read phenotype specs
     df_pheno <- read.csv(paste(out_dir,"/rep", rep,"/power_sims_", rep, "_pheno_causal_vars.csv", sep=''))

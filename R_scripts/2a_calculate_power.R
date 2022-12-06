@@ -160,12 +160,12 @@ library("pwr")
 options(scipen = 100, digits = 4)
 hs_all <- c(0.02, 0.04,  0.06,  0.08, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
 # hs_all <- c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
-propCausal <- 0.1
+propCausal <- 0.2
 
 #read low freq true trees
 for(tree_type in c("relate_trees", "true_trees")){ #, 
   for(region_type in c("window_based")){
-    for(ws in c("10k")){ #, "20k", "50k" , "5k"
+    for(ws in c("5k")){ #, "20k", "50k" , "10k"
       power_results_aH <- data.frame()
       for(hs in hs_all){
         # folder=paste("/data/ARGWAS/power_sims/stdpopsim/high_mut_trees/oneTree/eGRM_and_GRM/", tree_type, "/", region_type, "/", ws, "/",sep="")
