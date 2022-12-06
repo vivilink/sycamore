@@ -9,8 +9,9 @@ Created on Wed Oct 20 15:43:16 2021
 import pandas as pd
 import numpy as np
 
+
 class Individuals:
-    def __init__(self, ploidy, num_haplotypes):
+    def __init__(self, ploidy, num_haplotypes, relate_sample_names_file):
 
         if ploidy is None:
             raise ValueError("Must provide ploidy with --ploidy")
@@ -29,7 +30,14 @@ class Individuals:
             if i % 2 == 0:
                 assignment += 1
             self._ind_assignment['individual'][i] = assignment
-        self._names = ["id_" + str(i) for i in np.arange(0, self._num_inds)]
+        if relate_sample_names_file is None:
+            self._names = ["id_" + str(i) for i in np.arange(0, self._num_inds)]
+        else:
+            names_in_file = pd.read_csv(relate_sample_names_file, sep=' ').iloc[1:, :]
+            if len(names_in_file['ID_1']) != self._num_inds:
+                raise ValueError("There are " + str(self._num_inds) + " haplotypes in tree but " +
+                                 str(len(names_in_file['ID_1'])) + " in " + relate_sample_names_file)
+            self._names = names_in_file['ID_1']
 
     @property
     def ploidy(self):

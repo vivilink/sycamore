@@ -55,8 +55,6 @@ def run_association_testing(args, random, logfile):
                                                trees_interval_end=args.trees_interval_end,
                                                logfile=logfile)
 
-
-
     plots_dir = args.out + "_plots/"
     if not os.path.exists(plots_dir):
         os.mkdir(plots_dir)
@@ -66,7 +64,7 @@ def run_association_testing(args, random, logfile):
     # --------------------------------
     sample_ids = trees.samples()
     N = len(sample_ids)
-    inds = tind.Individuals(args.ploidy, N)
+    inds = tind.Individuals(args.ploidy, N, relate_sample_names_file=args.relate_sample_names)
     trees = tt.TTrees.remove_monomorphic(trees)
 
     # TODO: trees_orig and variants_orig should be initialized at the same time, e.g. together in one function. We
@@ -130,8 +128,6 @@ def run_association_testing(args, random, logfile):
         pheno.simulate(args=args, r=random, logfile=logfile, variants_orig=variants_orig, trees=trees, inds=inds,
                        plots_dir=plots_dir)
         logfile.sub()
-
-
 
     # --------------------------------
     # run association tests and plot

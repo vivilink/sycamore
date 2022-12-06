@@ -184,6 +184,10 @@ class TParameters:
                            help="calculate correlation between covariances along the genome (user must verify that "
                                 "windows have same coordinates)")
 
+        # associations with real data
+        assoc.add_argument('--relate_sample_names', type=str,
+                           help="file with sample names used to run Relate")
+
         args = parser.parse_args()
 
 
