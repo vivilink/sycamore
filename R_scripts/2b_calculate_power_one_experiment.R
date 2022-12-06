@@ -65,7 +65,7 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   }
   result_matrices[["GWAS"]] <- m_results_GWAS
   
-  for(rep in 1:reps){
+  for(rep in c(1:48, 50:84, 86:165, 169:178, 180:189, 191:reps)){
     print(rep)
     #read phenotype specs
     df_pheno <- read.csv(paste(out_dir,"/rep", rep,"/power_sims_", rep, "_pheno_causal_vars.csv", sep=''))
@@ -158,9 +158,9 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   #--------------------------
   # power
   #--------------------------
-  power_REML_eGRM <- sum(result_matrices[["eGRM"]][,"REML"] > cutoff_files[["eGRM"]]$cutoff_p_REML) / reps
-  power_REML_GRM <- sum(result_matrices[["GRM"]][,"REML"] > cutoff_files[["GRM"]]$cutoff_p_REML) / reps
-  power_GWAS <- sum(result_matrices[["GWAS"]][,"GWAS"] > cutoff_GWAS) / reps
+  power_REML_eGRM <- sum(result_matrices[["eGRM"]][,"REML"] > cutoff_files[["eGRM"]]$cutoff_p_REML, na.rm = TRUE) / reps
+  power_REML_GRM <- sum(result_matrices[["GRM"]][,"REML"] > cutoff_files[["GRM"]]$cutoff_p_REML, na.rm = TRUE) / reps
+  power_GWAS <- sum(result_matrices[["GWAS"]][,"GWAS"] > cutoff_GWAS, na.rm = TRUE) / reps
 
   
   # power_REML_region <- sum(m_results[,"REML"] > cutoffs$cutoff_p_REML & abs(m_results[,"pos_min_REML"] - m_results[, "pos_causal"]) < 5000) / reps

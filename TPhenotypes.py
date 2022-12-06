@@ -349,6 +349,8 @@ class PhenotypesSimulated(Phenotypes):
         :return noise: np.array
         """
         V_G = self._genetic_variance
+        if V_G == 0:
+            raise ValueError("Genetic variance is zero")
         V_E = V_G * (1 - requested_hsquared) / requested_hsquared
         sd_random_noise = np.sqrt(V_E)
         noise = random.random.normal(loc=0, scale=sd_random_noise, size=self.num_inds)
@@ -486,7 +488,8 @@ class PhenotypesSimulated(Phenotypes):
                                         & (min_allele_freq_causal <= variants.info['allele_freq'])
                                         & (variants.info['allele_freq'] <= max_allele_freq_causal)]
 
-        print("info_window", info_window)
+        variants.info.loc[(left_bound <= variants.info['position'])
+                                        & (variants.info['position'] < right_bound), "causal_region"] = "TRUE"
 
         # remove typed variants
         if not allow_typed_causal_variants:
@@ -500,6 +503,9 @@ class PhenotypesSimulated(Phenotypes):
         causal = np.zeros(len(info_window.index))
         causal[tmp < prop_causal_mutations] = 1
         num_causal_vars = np.count_nonzero(causal == 1)
+
+        if num_causal_vars < 1:
+            logfile.info("- WARNING: Number of causal variants is 0!")
 
         # add phenotypic effect to mutations that are uniformly distributed
         for v_i, v in enumerate(info_window['var_index']):
@@ -630,6 +636,7 @@ class PhenotypesSimulated(Phenotypes):
         table['typed'] = variants.info['typed']
         table['causal'] = np.repeat("FALSE", variants.number)
         table.loc[self.causal_variant_indeces, 'causal'] = "TRUE"
+        table['causal_region'] = variants.info['causal_region']
         table['betas'] = self.betas
         table['power'] = 0
         table.loc[self.causal_variant_indeces, 'power'] = self.causal_power

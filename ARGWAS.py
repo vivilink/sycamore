@@ -104,19 +104,16 @@ if args.task == "simulateMoreMutations":
     logger.info("- TASK: simulateMoreMutations")
     tsim.TSimulator.simulate_more_mutations(arguments=args, logfile=logger)
 
-
-
-
 # -----------------------
 # ARG statistics
 # -----------------------
 if args.task == "ARGStatistics":
     logger.info("- TASK: ARGStatistics")
     trees, args.trees_interval = tt.read_trees(tree_file=args.tree_file,
-                                            trees_interval=args.trees_interval,
-                                            trees_interval_start=args.trees_interval_start,
-                                            trees_interval_end=args.trees_interval_end,
-                                            logfile=logger)
+                                               trees_interval=args.trees_interval,
+                                               trees_interval_start=args.trees_interval_start,
+                                               trees_interval_end=args.trees_interval_end,
+                                               logfile=logger)
 
     trees_class = tt.TTrees(ts_object=trees)
     trees_class.writeStats(ts_object=trees, out=args.out, logfile=logger)
@@ -127,9 +124,10 @@ if args.task == "ARGStatistics":
 if args.task == "getTreeAtPosition":
     logger.info("- TASK: getTreeAtPosition")
     trees, args.trees_interval = tt.read_trees(tree_file=args.tree_file,
-                                            trees_interval=args.trees_interval,
-                                            trees_interval_start=args.trees_interval_start,
-                                            trees_interval_end=args.trees_interval_end)
+                                               trees_interval=args.trees_interval,
+                                               trees_interval_start=args.trees_interval_start,
+                                               trees_interval_end=args.trees_interval_end,
+                                               logfile=logger)
     trees_class = tt.TTrees(trees)
     trees_class.extract_single_tree(trees, args.out, logger, position=args.test_only_tree_at)
 
@@ -141,9 +139,10 @@ if args.task == "downsampleVariantsWriteShapeit":
         raise ValueError("Must provide downsampling probability to task 'downsampleVariantsWriteShapeit'")
     logger.info("- TASK: Downsampling variants")
     trees, args.trees_interval = tt.read_trees(tree_file=args.tree_file,
-                                            trees_interval=args.trees_interval,
-                                            trees_interval_start=args.trees_interval_start,
-                                            trees_interval_end=args.trees_interval_end)
+                                               trees_interval=args.trees_interval,
+                                               trees_interval_start=args.trees_interval_start,
+                                               trees_interval_end=args.trees_interval_end,
+                                               logfile=logger)
     sample_ids = trees.samples()
     N = len(sample_ids)
 
@@ -168,8 +167,9 @@ if args.task == "impute":
     if args.imputation_ref_panel_tree_file is None:
         raise ValueError("Most provide reference panel tree file using --imputation_ref_panel_tree_file")
 
-    logger.info(
-        "-  Imputing genotypes from " + args.tree_file + " with reference panel trees from " + args.imputation_ref_panel_tree_file)
+    logger.info("-  Imputing genotypes from " + args.tree_file
+                + " with reference panel trees from "
+                + args.imputation_ref_panel_tree_file)
 
     # TODO: this needs to be standardized and used in all tasks
     trees = tskit.load(args.tree_file)
@@ -212,9 +212,6 @@ if args.task == "associate":
 
 if args.task == "writeToPlink":
     raise ValueError("task 'writeToPlink' is planned but not yet implemented")
-
-
-
 
 # if __name__ == "__main__":
 #     sys.exit(main(sys.argv[1:]))
