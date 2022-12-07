@@ -25,6 +25,8 @@ class TVariants:
         self._info = pd.DataFrame(index=range(self._number), columns=self._info_columns)
 
     def fill_info(self, ts_object, samp_ids, pos_float, logfile):
+        if len(list(ts_object.variants(samples=samp_ids))) < 1:
+            raise ValueError("Found no variants in tree file")
         for v, var in enumerate(list(ts_object.variants(samples=samp_ids))):
             tmp = sum(var.genotypes) / len(var.genotypes)
 
@@ -314,6 +316,8 @@ class TVariantsFiltered(TVariants):
             self._info['typed'].iloc[self._info['allele_freq'] > max_allele_freq] = False
 
         # set number typed for both cases (built from scratch or file)
+        if len(self._info.index) < 1:
+            raise ValueError("Variant info table is empty")
         self._number_typed = self._info['typed'].value_counts()[True]
         self._info['causal_region'] = "FALSE"
 

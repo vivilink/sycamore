@@ -35,13 +35,6 @@ def run_association_testing(args, random, logfile):
     logfile.info("- TASK: Associate")
     logfile.add()
 
-    # --------------------------------
-    # create phenotypes
-    # --------------------------------
-    if args.simulate_phenotypes is False:
-        pheno = pt.PhenotypesBMI(filename=args.pheno_file, logfile=logfile)
-
-        # initialze pheno from file, maybe restrict tree to samples for which we have phenotypes here
 
     # --------------------------------
     # read ARG
@@ -54,6 +47,10 @@ def run_association_testing(args, random, logfile):
                                                trees_interval_start=args.trees_interval_start,
                                                trees_interval_end=args.trees_interval_end,
                                                logfile=logfile)
+
+    # interval = np.array([173584350,175000000])
+    # trees_tmp = trees.keep_intervals([interval], simplify=True)
+    # trees_tmp.dump("/data/ARGWAS/hawaiians/chr5.part-05_1mb.trees")
 
     plots_dir = args.out + "_plots/"
     if not os.path.exists(plots_dir):
@@ -94,7 +91,13 @@ def run_association_testing(args, random, logfile):
     # create phenotypes
     # --------------------------------
 
-    if args.simulate_phenotypes is True:
+    if args.simulate_phenotypes is False:
+        pheno = pt.PhenotypesBMI(filename=args.pheno_file, inds=inds, logfile=logfile)
+        print("pheno.y", pheno.y)
+
+        # initialze pheno from file, maybe restrict tree to samples for which we have phenotypes here
+
+    else:
 
         if args.tree_file_simulated is None:
             raise ValueError("To simulate phenotypes based on untyped variants the simulated trees need to be "
@@ -227,6 +230,7 @@ def run_association_GWAS(trees, inds, variants, pheno, args, logfile):
         GWAS = at.TAssociationTestingGWAS(phenotypes=pheno, num_typed_variants=gt_matrix_imputed.shape[1])
         GWAS.test_with_positions_from_X_matrix(X=gt_matrix_imputed, positions=pos,
                                                variants_sample=variants,
+                                               phenotypes=pheno,
                                                logfile=logfile)
         GWAS.write_to_file_with_X_matrix(positions=pos, name=outname, logfile=logfile)
 
@@ -234,7 +238,7 @@ def run_association_GWAS(trees, inds, variants, pheno, args, logfile):
         logfile.info("- Using genotypes from tree file for GWAS:")
         # run association tests
         GWAS = at.TAssociationTestingGWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
-        GWAS.test_with_variants_object(variants, inds, logfile)
+        GWAS.test_with_variants_object(variants=variants, phenotypes=pheno, inds=inds, logfile=logfile)
         GWAS.write_to_file(variants, outname, logfile)
         # GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
 

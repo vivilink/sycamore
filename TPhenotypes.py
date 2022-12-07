@@ -33,21 +33,55 @@ class Phenotypes:
 class PhenotypesBMI(Phenotypes):
     _sample_IDs: np.ndarray
 
-    def __init__(self, filename, logfile):
+    def __init__(self, filename, inds, logfile):
         super().__init__()
-        self.initialize_from_file(filename, logfile)
+        self.initialize_from_file(filename, inds, logfile)
 
-    def initialize_from_file(self, filename, logfile):
+    def initialize_from_file(self, filename, inds, logfile):
         logfile.info("- Reading BMI phenotype information from " + filename)
         pheno_df = pd.read_csv(filename, names=["ID", "sex", "age", "BMI"])
-        removed = pheno_df.dropna(axis="index", how="any", inplace=True)
+        # removed = pheno_df.dropna(axis="index", how="any", inplace=True)
         # print("removed", removed)
         # print(len(pheno_df['ID']))
         # logfile.info("- Removed " + str(len(removed['ID'])) + " entries from phenotype table due to missing data")
 
+        missing_in_phenotypes, added_in_phenotypes = self.find_missing_individuals(inds.names, pheno_df['ID'])
+        logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
+            "and " + str(len(added_in_phenotypes)) + "individuals added. Will add missing ones with NA and "
+            "remove added ones.")
+
+        for i in missing_in_phenotypes:
+            pheno_df.loc[len(pheno_df.index)] = [i, np.nan, np.nan, np.nan]
+
+        for i in added_in_phenotypes:
+            indexInd = pheno_df[(pheno_df['ID'] == i)].index
+            pheno_df.drop(indexInd, inplace=True)
+
+        pheno_df = self.sortPhenotypes(names_correct_order=inds.names, pheno_df=pheno_df)
+
         self._num_inds = len(pheno_df['ID'])
-        self._y = np.zeros(self._num_inds)
-        self._sample_IDs = pheno_df['ID']
+        self._sample_IDs = np.array(pheno_df['ID'])
+        self._y = np.array(pheno_df['BMI'])
+
+    @staticmethod
+    def sortPhenotypes(names_correct_order, pheno_df):
+        df_mapping = pd.DataFrame({'names_correct_order': names_correct_order, })
+        sort_mapping = df_mapping.reset_index().set_index('names_correct_order')
+        pheno_df['ind_num'] = pheno_df['ID'].map(sort_mapping['index'])
+        pheno_df = pheno_df.sort_values('ind_num')
+        print(names_correct_order)
+        print(pheno_df)
+
+        return pheno_df
+
+    @staticmethod
+    def find_missing_individuals(inds_tree, inds_phenotype):
+        set_tree = set(inds_tree)
+        set_phenotype = set(inds_phenotype)
+        missing_in_phenotypes = list(sorted(set_tree - set_phenotype))
+        added_in_phenotypes = list(sorted(set_phenotype - set_tree))
+
+        return missing_in_phenotypes, added_in_phenotypes
 
     @property
     def sample_IDs(self):
@@ -489,7 +523,7 @@ class PhenotypesSimulated(Phenotypes):
                                         & (variants.info['allele_freq'] <= max_allele_freq_causal)]
 
         variants.info.loc[(left_bound <= variants.info['position'])
-                                        & (variants.info['position'] < right_bound), "causal_region"] = "TRUE"
+                          & (variants.info['position'] < right_bound), "causal_region"] = "TRUE"
 
         # remove typed variants
         if not allow_typed_causal_variants:

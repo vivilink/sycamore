@@ -22,7 +22,7 @@ import association_functions as af
 class TAssociationTesting:
     def __init__(self, phenotypes):
         self.name = "base"
-        self.phenotypes = phenotypes
+        # self.phenotypes = phenotypes
         self.num_associations = -1
         self.p_values = np.empty(0)
         self.p_values.fill(np.nan)
@@ -38,9 +38,9 @@ class TAssociationTesting:
     #   raise ValueError( "Phenotype object must contain same number of samples as ts_object to create a GWAS object.
     #                       Phenotype: " + str(phenotypes.N) + " and ts_object: " + str(ts_object.num_samples))
 
-    def p_value_dist(self, subplot, num_bins):
+    def p_value_dist(self, subplot, num_bins, phenotypes):
         subplot.hist(self.p_values, bins=num_bins)
-        subplot.set(xlabel='p-values', ylabel='density', title=self.phenotypes.name)
+        subplot.set(xlabel='p-values', ylabel='density', title=phenotypes.name)
 
     def chi_squared(self, num_bins):
         h, bin_edges = np.histogram(self.p_values, num_bins)
@@ -64,7 +64,7 @@ class TAssociationTestingGWAS(TAssociationTesting):
         self.p_values = np.empty(self.num_associations)
         self.imputed_status = np.repeat(False, self.num_associations)
 
-    def test_with_variants_object(self, variants, inds, logfile):
+    def test_with_variants_object(self, variants, phenotypes, inds, logfile):
         # counter respective to typed variants
         i = 0
         for v, variant in enumerate(variants.variants):
@@ -74,12 +74,17 @@ class TAssociationTestingGWAS(TAssociationTesting):
                 else:
                     genotypes = variant.genotypes
 
-                PVALUE = af.OLS(genotypes=genotypes, phenotypes=self.phenotypes)
+                if len(genotypes) != len(phenotypes.y):
+                    # TODO: remove this after debugging on real data
+                    raise ValueError("Genotypes length (" + str(len(genotypes)) + ") is not same as phenotypes length ("
+                                     + str(len(phenotypes.y)) + ")")
+
+                PVALUE = af.OLS(genotypes=genotypes, phenotypes=phenotypes.y)
                 self.p_values[i] = PVALUE
                 i += 1
         logfile.info("- Ran OLS for " + str(variants.num_typed) + " variants")
 
-    def test_with_positions_from_X_matrix(self, X, positions, variants_sample, logfile):
+    def test_with_positions_from_X_matrix(self, X, positions, variants_sample, phenotypes, logfile):
         # counter respective to typed variants
         if len(positions) != X.shape[1]:
             raise ValueError("X genotype matrix does not have same number of columns (" + str(X.shape[1])
@@ -87,7 +92,7 @@ class TAssociationTestingGWAS(TAssociationTesting):
         positions_sample = set(variants_sample.info['position'].values)
         for v in range(X.shape[1]):
             genotypes = X[:, v]
-            PVALUE = af.OLS(genotypes=genotypes, phenotypes=self.phenotypes)
+            PVALUE = af.OLS(genotypes=genotypes, phenotypes=phenotypes)
             self.p_values[v] = PVALUE
             if not (positions[v] in positions_sample):
                 self.imputed_status[v] = True
@@ -139,7 +144,7 @@ class TAssociationTestingGWAS(TAssociationTesting):
         logfile.info("- Writing stats from OLS to '" + name + "_variants_stats.csv'")
         stats.to_csv(name + "_variants_stats.csv", index=False, header=True)
 
-    def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, size=1, n_snps_lowess=0,
+    def manhattan_plot_subset(self, variant_positions, phenotypes, subplot, index_min, index_max, size=1, n_snps_lowess=0,
                               *args):
         """
         Parameters
@@ -177,9 +182,9 @@ class TAssociationTestingGWAS(TAssociationTesting):
 
         subplot.scatter(variant_positions[index_min:index_max], q_values[index_min:index_max], s=size, *args)
         subplot.set(xlabel='variant position', ylabel='q-value', title="GWAS")
-        for v, var in enumerate(self.phenotypes.causal_variants):
+        for v, var in enumerate(phenotypes.causal_variants):
             # print("power " + str(self.phenotypes.causal_power[v]) + " pos " + str(var.site.position))
-            colscale = self.phenotypes.causal_power[v]
+            colscale = phenotypes.causal_power[v]
             subplot.axvline(x=var.site.position, color=str(0.3), alpha=0.5, lw=colscale * 100)
             subplot.axvline(x=var.site.position, color="black", lw=0.5)
 
@@ -224,7 +229,7 @@ class TAssociationTestingRegions(TAssociationTesting):
                                    index_max=self.num_associations, p_values=p_values,
                                    title_supplement=title_supplement)
 
-    def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, p_values,
+    def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, p_values, phenotypes,
                               title_supplement="", size=1, n_snps_lowess=0, *args):
         """
         Parameters
@@ -265,8 +270,8 @@ class TAssociationTestingRegions(TAssociationTesting):
         q_values = -np.log10(p_values)
 
         subplot.scatter(variant_positions[index_min:index_max], q_values[index_min:index_max], s=size, *args)
-        subplot.set(xlabel='tree index', ylabel='q-value', title=self.phenotypes.name + title_supplement)
-        for t in self.phenotypes.causal_tree_indeces:
+        subplot.set(xlabel='tree index', ylabel='q-value', title=phenotypes.name + title_supplement)
+        for t in phenotypes.causal_tree_indeces:
             # print("power " + str(self.phenotypes.causal_power[v]) + " pos " + str(var.site.position))
             # colscale = self.phenotypes.causal_power[v] 
             # subplot.axvline(x=t, color=str(0.3), alpha = 0.5, lw=colscale*100)
@@ -370,7 +375,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         self.V_G_over_Vp_SE_Jackknife_HECP[index] = HE_CP["SE_Jackknife"][1]
         self.V_G_over_Vp_SE_Jackknife_HESD[index] = HE_SD["SE_Jackknife"][1]
 
-    def write_to_file(self, window_starts, window_ends, out, logfile):
+    def write_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
         table = pd.DataFrame()
         table['start'] = window_starts
         table['end'] = window_ends
@@ -391,7 +396,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
 
         # causal or not
         table['causal'] = np.repeat("FALSE", self.num_associations)
-        table.loc[self.phenotypes.causal_window_indeces, 'causal'] = "TRUE"
+        table.loc[phenotypes.causal_window_indeces, 'causal'] = "TRUE"
         # table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
 
         table.to_csv(out + "_trees_HE_results.csv", index=False, header=True)
@@ -479,7 +484,7 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         self.Vp_SE[index] = float(result['SE'][result['Source'] == 'Vp'])
         self.V_G_over_Vp_SE[index] = float(result['SE'][result['Source'] == 'V(G)/Vp'])
 
-    def write_to_file(self, window_starts, window_ends, out, logfile):
+    def write_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
         table = pd.DataFrame()
         table['start'] = window_starts
         table['end'] = window_ends
@@ -497,7 +502,7 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         table['V_G_over_Vp_SE'] = self.V_G_over_Vp_SE
 
         table['causal'] = np.repeat("FALSE", self.num_associations)
-        table.loc[self.phenotypes.causal_window_indeces, 'causal'] = "TRUE"
+        table.loc[phenotypes.causal_window_indeces, 'causal'] = "TRUE"
 
         table.to_csv(out + "_trees_REML_results.csv", index=False, header=True)
         logfile.info("- Wrote results from tree association tests to '" + out + "_trees_REML_results.csv'")
