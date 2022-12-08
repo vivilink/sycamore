@@ -22,6 +22,7 @@ class Individuals:
         self._ind_assignment = pd.DataFrame()
         self._ind_assignment['haplotype'] = range(0, self._num_haplotypes)
         self._ind_assignment['individual'] = np.repeat(-1, self._num_haplotypes)
+        self._ind_has_phenotype = None
         # TODO: population assignment should come from tree file!
         # self._ind_assignment['population'] = np.append(np.repeat("sample", N_sample_pop), np.repeat("ref", N_ref_pop))
 
@@ -31,13 +32,13 @@ class Individuals:
                 assignment += 1
             self._ind_assignment['individual'][i] = assignment
         if relate_sample_names_file is None:
-            self._names = ["id_" + str(i) for i in np.arange(0, self._num_inds)]
+            self._names = np.array(["id_" + str(i) for i in np.arange(0, self._num_inds)])
         else:
             names_in_file = pd.read_csv(relate_sample_names_file, sep=' ').iloc[1:, :]
             if len(names_in_file['ID_1']) != self._num_inds:
                 raise ValueError("There are " + str(self._num_inds) + " haplotypes in tree but " +
                                  str(len(names_in_file['ID_1'])) + " in " + relate_sample_names_file)
-            self._names = names_in_file['ID_1']
+            self._names = np.array(names_in_file['ID_1'])
 
     @property
     def ploidy(self):
@@ -70,6 +71,14 @@ class Individuals:
     @names.setter
     def names(self, names):
         self._names = names
+
+    @property
+    def ind_has_phenotype(self):
+        return self._ind_has_phenotype
+
+    @ind_has_phenotype.setter
+    def ind_has_phenotype(self, ind_has_phenotype):
+        self._ind_has_phenotype = ind_has_phenotype
 
     def get_individual(self, haplotype):
         if haplotype > max(self._ind_assignment['haplotype']) or haplotype < min(self._ind_assignment['haplotype']):

@@ -93,10 +93,7 @@ def run_association_testing(args, random, logfile):
 
     if args.simulate_phenotypes is False:
         pheno = pt.PhenotypesBMI(filename=args.pheno_file, inds=inds, logfile=logfile)
-        print("pheno.y", pheno.y)
-
-        # initialze pheno from file, maybe restrict tree to samples for which we have phenotypes here
-
+        # TODO: maybe restrict tree to inds for which we have phenotypes here
     else:
 
         if args.tree_file_simulated is None:
@@ -188,7 +185,7 @@ def run_association_testing(args, random, logfile):
 def OLS(genotypes, phenotypes):
     # add intercept
     genotypes_test = sm.tools.add_constant(genotypes)
-    PVALUE = sm.OLS(phenotypes.y, genotypes_test).fit().pvalues[1]
+    PVALUE = sm.OLS(phenotypes, genotypes_test).fit().pvalues[1]
     return PVALUE
 
 
@@ -351,10 +348,10 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
             logfile.info("- Ran AIM for " + str(w) + " windows in " + str(round(end - start)) + " s")
 
     for m in AIM_methods:
-        m.write_to_file(window_starts=window_starts_copy,
-                        window_ends=window_ends_copy,
-                        out=outname,
-                        logfile=logfile)
+        m.write_sim_params_to_file(window_starts=window_starts_copy,
+                                   window_ends=window_ends_copy,
+                                   out=outname,
+                                   logfile=logfile)
 
 
 def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window_ends, window_starts,
@@ -473,10 +470,10 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
 
     # write association test results to file
     for m in AIM_methods:
-        m.write_to_file(window_starts=window_starts_copy,
-                        window_ends=window_ends_copy,
-                        out=outname,
-                        logfile=logfile)
+        m.write_sim_params_to_file(window_starts=window_starts_copy,
+                                   window_ends=window_ends_copy,
+                                   out=outname,
+                                   logfile=logfile)
 
 
 def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_size,
@@ -512,12 +509,13 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
         num_tests = len(window_ends)
 
     # initialize and write phenotypes
-    pheno.find_causal_trees(trees)
-    pheno.find_causal_windows(window_ends=window_ends, window_starts=window_starts)
     if covariance == "eGRM" or covariance == "GRM":
         pheno.write_to_file_gcta_eGRM(inds=inds, out=outname, logfile=logfile)
     else:
         pheno.write_to_file_gcta_scaled(out=outname, logfile=logfile)
+    if args.simulate_phenotypes is True:
+        pheno.find_causal_trees(trees)
+        pheno.find_causal_windows(window_ends=window_ends, window_starts=window_starts)
 
     # create association method objects
     logfile.info("- Running associations tests using test methods " + str(

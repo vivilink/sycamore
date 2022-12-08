@@ -49,6 +49,7 @@ class TCovariance:
         # mu = prefix_path.grm.N.bin; number of shared mutations between individuals on diagonal + lower diagonal
         # samples = prefix_path.grm.id; 2 column text = family_id individual_id
         n, n = covariance_matrix.shape
+        print("n in write for gcta", n)
         with open("{}.grm.bin".format(out), "wb") as grmfile:
             for idx in range(n):
                 for jdx in range(idx + 1):
@@ -69,6 +70,13 @@ class TCovariance:
 
     def clear(self):
         self.covariance_matrix_haploid = None
+
+    @staticmethod
+    def remove_inds_with_missing_phenotypes(covariance_matrix, inds):
+        indeces_to_remove = list(inds.ind_has_phenotype == True)
+        cleaned_covariance_matrix = (np.delete(np.delete(covariance_matrix, indeces_to_remove, 0), indeces_to_remove, 1))
+
+        return cleaned_covariance_matrix
 
 
 class TCovarianceeGRM(TCovariance):
@@ -230,6 +238,7 @@ class TCovarianceGRM(TCovariance):
             M = M / (inds.ploidy * af * (1 - af))
             M_sum += M
         M_window = M_sum / float(num_vars)
+        M_window = self.remove_inds_with_missing_phenotypes(covariance_matrix=M_window, inds=inds)
         self.covariance_matrix = M_window
         self.mu = num_vars
 

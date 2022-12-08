@@ -29,6 +29,53 @@ class Phenotypes:
     def y(self, y: np.ndarray):
         self._y = y
 
+    def diffs(self):
+        cols = np.tile(self._y, (self._num_inds, 1))
+        rows = cols.T
+        buffer = cols - rows
+        return np.abs(buffer)
+
+    def standardize(self, logfile):
+        logfile.info("- Standardizing phenotypes")
+        self._y = (self._y - np.mean(self._y)) / np.std(self._y)
+
+    def write_to_file_gcta_eGRM(self, inds, out, logfile):
+        """
+        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
+        will match the binary output created with plinkFile R package.
+
+        Returns
+        -------
+        None.
+
+        """
+        logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
+
+        tmp_pheno = pd.DataFrame()
+        tmp_pheno['1'] = np.repeat(0, self._num_inds)
+        tmp_pheno['2'] = inds.names
+        tmp_pheno['3'] = self._y
+
+        tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
+
+    def write_to_file_gcta_scaled(self, out, logfile):
+        """
+        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
+        will match the binary output created with egrm.
+
+        Returns
+        -------
+        None.
+        """
+        logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
+
+        tmp_pheno = pd.DataFrame()
+        tmp_pheno['1'] = np.arange(1, self._num_inds + 1)
+        tmp_pheno['2'] = tmp_pheno['1']
+        tmp_pheno['3'] = self._y
+
+        tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
+
 
 class PhenotypesBMI(Phenotypes):
     _sample_IDs: np.ndarray
@@ -47,7 +94,7 @@ class PhenotypesBMI(Phenotypes):
 
         missing_in_phenotypes, added_in_phenotypes = self.find_missing_individuals(inds.names, pheno_df['ID'])
         logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
-            "and " + str(len(added_in_phenotypes)) + "individuals added. Will add missing ones with NA and "
+            "and " + str(len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
             "remove added ones.")
 
         for i in missing_in_phenotypes:
@@ -63,14 +110,25 @@ class PhenotypesBMI(Phenotypes):
         self._sample_IDs = np.array(pheno_df['ID'])
         self._y = np.array(pheno_df['BMI'])
 
+        # inform inds object about which inds have missing phenotypes
+        print(pheno_df)
+        print(pheno_df[pheno_df.isna().any(axis=1)])
+        tmp = np.repeat(True, inds.num_inds)
+        tmp[pheno_df.isna().any(axis=1)] = False
+        inds.ind_has_phenotype = tmp
+
     @staticmethod
     def sortPhenotypes(names_correct_order, pheno_df):
+        """
+        Sort read-in phenotypes file according to sample names in sample file used to run Relate
+        @param names_correct_order: sample names in order of file used to run Relate
+        @param pheno_df: data frame from read-in phenotype file
+        @return: sorted pheno_df
+        """
         df_mapping = pd.DataFrame({'names_correct_order': names_correct_order, })
         sort_mapping = df_mapping.reset_index().set_index('names_correct_order')
         pheno_df['ind_num'] = pheno_df['ID'].map(sort_mapping['index'])
         pheno_df = pheno_df.sort_values('ind_num')
-        print(names_correct_order)
-        print(pheno_df)
 
         return pheno_df
 
@@ -152,7 +210,7 @@ class PhenotypesSimulated(Phenotypes):
         # self.standardize(logfile)
 
         # write phenotypes to file
-        self.write_to_file(variants_orig, inds, args.out, logfile)
+        self.write_sim_params_to_file(variants_orig, inds, args.out, logfile)
 
         self.filled = True
 
@@ -604,54 +662,7 @@ class PhenotypesSimulated(Phenotypes):
                 if window_starts[w] <= v.site.position < window_ends[w]:
                     self.causal_window_indeces.append(w)
 
-    def diffs(self):
-        cols = np.tile(self._y, (self.num_inds, 1))
-        rows = cols.T
-        buffer = cols - rows
-        return np.abs(buffer)
-
-    def standardize(self, logfile):
-        logfile.info("- Standardizing phenotypes")
-        self._y = (self._y - np.mean(self._y)) / np.std(self._y)
-
-    def write_to_file_gcta_eGRM(self, inds, out, logfile):
-        """
-        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
-        will match the binary output created with plinkFile R package.
-
-        Returns
-        -------
-        None.
-
-        """
-        logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
-
-        tmp_pheno = pd.DataFrame()
-        tmp_pheno['1'] = np.repeat(0, self.num_inds)
-        tmp_pheno['2'] = inds.names
-        tmp_pheno['3'] = self._y
-
-        tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
-
-    def write_to_file_gcta_scaled(self, out, logfile):
-        """
-        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
-        will match the binary output created with egrm.
-
-        Returns
-        -------
-        None.
-        """
-        logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
-
-        tmp_pheno = pd.DataFrame()
-        tmp_pheno['1'] = np.arange(1, self.num_inds + 1)
-        tmp_pheno['2'] = tmp_pheno['1']
-        tmp_pheno['3'] = self._y
-
-        tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
-
-    def write_to_file(self, variants, inds, out, logfile):
+    def write_sim_params_to_file(self, variants, inds, out, logfile):
         """
         Provide phenotypic variance partitioning information, and information related to each variant's phenotypic effect
 
