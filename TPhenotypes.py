@@ -56,6 +56,10 @@ class Phenotypes:
         tmp_pheno['2'] = inds.names
         tmp_pheno['3'] = self._y
 
+        # remove missing data
+        indeces_to_remove = inds.get_indeces_inds_no_phenotype()
+        tmp_pheno.drop(axis=0, index=indeces_to_remove, inplace=True)
+
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 
     def write_to_file_gcta_scaled(self, out, logfile):
@@ -73,6 +77,8 @@ class Phenotypes:
         tmp_pheno['1'] = np.arange(1, self._num_inds + 1)
         tmp_pheno['2'] = tmp_pheno['1']
         tmp_pheno['3'] = self._y
+
+        # TODO: remove inds with missing phenotype data!
 
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 

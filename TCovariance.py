@@ -73,7 +73,8 @@ class TCovariance:
 
     @staticmethod
     def remove_inds_with_missing_phenotypes(covariance_matrix, inds):
-        indeces_to_remove = list(inds.ind_has_phenotype == True)
+        print("indeces_to_remove", inds.get_indeces_inds_no_phenotype())
+        indeces_to_remove = inds.get_indeces_inds_no_phenotype()
         cleaned_covariance_matrix = (np.delete(np.delete(covariance_matrix, indeces_to_remove, 0), indeces_to_remove, 1))
 
         return cleaned_covariance_matrix

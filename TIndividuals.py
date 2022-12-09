@@ -90,7 +90,7 @@ class Individuals:
             raise ValueError("Individual out of bounds")
 
         tmp = self._ind_assignment['haplotype'].values[self._ind_assignment['individual'] == individual]
-        return (tmp)
+        return tmp
 
     def get_diploid_genotypes(self, haploid_genotypes):
         table = pd.DataFrame()
@@ -101,6 +101,11 @@ class Individuals:
             diploid_genotypes=pd.NamedAgg(column='haploid_genotypes', aggfunc=sum)
         )
         return table['diploid_genotypes']
+
+    def get_indeces_inds_no_phenotype(self):
+        if self._ind_has_phenotype is None:
+            raise ValueError("Do not know which individuals have missing phenotypes. Initiate _ind_has_phenotype!")
+        return list(np.arange(0, self._num_inds, 1, dtype=int)[self._ind_has_phenotype == False])
 
     def write_shapeit2(self, out, logfile):
         logfile.info("- Writing individuals in Shapeit2 format to file '" + out + "_inds.sample'")
