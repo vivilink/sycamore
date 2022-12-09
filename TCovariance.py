@@ -49,7 +49,6 @@ class TCovariance:
         # mu = prefix_path.grm.N.bin; number of shared mutations between individuals on diagonal + lower diagonal
         # samples = prefix_path.grm.id; 2 column text = family_id individual_id
         n, n = covariance_matrix.shape
-        print("n in write for gcta", n)
         with open("{}.grm.bin".format(out), "wb") as grmfile:
             for idx in range(n):
                 for jdx in range(idx + 1):
@@ -239,7 +238,7 @@ class TCovarianceGRM(TCovariance):
             M = M / (inds.ploidy * af * (1 - af))
             M_sum += M
         M_window = M_sum / float(num_vars)
-        M_window = self.remove_inds_with_missing_phenotypes(covariance_matrix=M_window, inds=inds)
+        # M_window = self.remove_inds_with_missing_phenotypes(covariance_matrix=M_window, inds=inds)
         self.covariance_matrix = M_window
         self.mu = num_vars
 

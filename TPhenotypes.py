@@ -9,6 +9,8 @@ Created on Mon Aug 16 17:52:46 2021
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
 
 
 # TODO: being typed or not should be an option for all causal variants
@@ -57,8 +59,8 @@ class Phenotypes:
         tmp_pheno['3'] = self._y
 
         # remove missing data
-        indeces_to_remove = inds.get_indeces_inds_no_phenotype()
-        tmp_pheno.drop(axis=0, index=indeces_to_remove, inplace=True)
+        # indeces_to_remove = inds.get_indeces_inds_no_phenotype()
+        # tmp_pheno.drop(axis=0, index=indeces_to_remove, inplace=True)
 
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 
@@ -85,6 +87,7 @@ class Phenotypes:
 
 class PhenotypesBMI(Phenotypes):
     _sample_IDs: np.ndarray
+    _pheno_df: pd.DataFrame
 
     def __init__(self, filename, inds, logfile):
         super().__init__()
@@ -111,14 +114,15 @@ class PhenotypesBMI(Phenotypes):
             pheno_df.drop(indexInd, inplace=True)
 
         pheno_df = self.sortPhenotypes(names_correct_order=inds.names, pheno_df=pheno_df)
+        self._pheno_df = pheno_df
 
         self._num_inds = len(pheno_df['ID'])
         self._sample_IDs = np.array(pheno_df['ID'])
         self._y = np.array(pheno_df['BMI'])
 
         # inform inds object about which inds have missing phenotypes
-        print(pheno_df)
-        print(pheno_df[pheno_df.isna().any(axis=1)])
+        # print(pheno_df)
+        # print(pheno_df[pheno_df.isna().any(axis=1)])
         tmp = np.repeat(True, inds.num_inds)
         tmp[pheno_df.isna().any(axis=1)] = False
         inds.ind_has_phenotype = tmp
@@ -150,6 +154,25 @@ class PhenotypesBMI(Phenotypes):
     @property
     def sample_IDs(self):
         return self._sample_IDs
+
+    def regression_on_age(self, phenotypes):
+        model = sm.OLS(y, sm.add_constant(X, prepend=False))
+        result_poly = smf.ols('length ~ age +' + 'I(age**2)', data=df).fit()
+        mod = smf.ols(formula='Lottery ~ Literacy + Wealth + Region', data=df)
+        fit = model.fit()
+        # create instance of influence
+        influence = model.get_influence()
+        res = model.df_resid
+        ypred = model.predict(x)
+        # obtain standardized residuals
+        standardized_residuals = influence.resid_studentized_internal
+
+        # display standardized residuals
+        print(standardized_residuals)
+
+    def standardize(self, logfile):
+        for sex in ['M', 'F']:
+            self.regression_on_age(self._y)
 
 
 class PhenotypesSimulated(Phenotypes):
