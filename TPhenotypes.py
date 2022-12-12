@@ -11,7 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
-
+from statsmodels.distributions.empirical_distribution import ECDF
 
 # TODO: being typed or not should be an option for all causal variants
 
@@ -52,6 +52,8 @@ class Phenotypes:
 
         """
         logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
+
+        self.standardize(logfile)
 
         tmp_pheno = pd.DataFrame()
         tmp_pheno['1'] = np.repeat(0, self._num_inds)
@@ -155,24 +157,40 @@ class PhenotypesBMI(Phenotypes):
     def sample_IDs(self):
         return self._sample_IDs
 
-    def regression_on_age(self, phenotypes):
-        model = sm.OLS(y, sm.add_constant(X, prepend=False))
-        result_poly = smf.ols('length ~ age +' + 'I(age**2)', data=df).fit()
-        mod = smf.ols(formula='Lottery ~ Literacy + Wealth + Region', data=df)
-        fit = model.fit()
-        # create instance of influence
-        influence = model.get_influence()
-        res = model.df_resid
-        ypred = model.predict(x)
-        # obtain standardized residuals
-        standardized_residuals = influence.resid_studentized_internal
+    def regression_on_age(self):
+        """
+        Normalize residuals according to McCaw et al. (2019) Operating characteristics of the rank-based inversenormal
+        transformation for quantitative trait analysisin genome-wide association studies :return:
+        """
+        # model = sm.OLS(y, sm.add_constant(X, prepend=False))
+        print(self._pheno_df)
+        results = smf.ols('BMI ~ sex + age +' + 'I(age**2)', data=self._pheno_df).fit()
+        # residuals = results.df_resid
+        residuals = results.predict()
 
-        # display standardized residuals
-        print(standardized_residuals)
+        print("self._pheno_df", self._pheno_df['BMI'])
+        print("resid.", results.resid)
+        print("predict", residuals)
+
+        ecdf = sm.distributions.ECDF(residuals)
+        quants = ecdf(residuals)
+        print(quants)
+        #
+        # mod = smf.ols(formula='Lottery ~ Literacy + Wealth + Region', data=df)
+        # fit = model.fit()
+        # # create instance of influence
+        # influence = model.get_influence()
+        # res = model.df_resid
+        # ypred = model.predict(x)
+        # # obtain standardized residuals
+        # standardized_residuals = influence.resid_studentized_internal
+        #
+        # # display standardized residuals
+        # print(standardized_residuals)
 
     def standardize(self, logfile):
-        for sex in ['M', 'F']:
-            self.regression_on_age(self._y)
+        for sex in [0, 1]:
+            self.regression_on_age()
 
 
 class PhenotypesSimulated(Phenotypes):
