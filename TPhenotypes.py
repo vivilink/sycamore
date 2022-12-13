@@ -13,6 +13,7 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.distributions.empirical_distribution import ECDF
 
+
 # TODO: being typed or not should be an option for all causal variants
 
 
@@ -37,7 +38,7 @@ class Phenotypes:
         buffer = cols - rows
         return np.abs(buffer)
 
-    def standardize(self, logfile):
+    def standardize(self, out, logfile):
         logfile.info("- Standardizing phenotypes")
         self._y = (self._y - np.mean(self._y)) / np.std(self._y)
 
@@ -53,7 +54,7 @@ class Phenotypes:
         """
         logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
 
-        self.standardize(logfile)
+        self.standardize(out=out, logfile=logfile)
 
         tmp_pheno = pd.DataFrame()
         tmp_pheno['1'] = np.repeat(0, self._num_inds)
@@ -105,8 +106,9 @@ class PhenotypesBMI(Phenotypes):
 
         missing_in_phenotypes, added_in_phenotypes = self.find_missing_individuals(inds.names, pheno_df['ID'])
         logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
-            "and " + str(len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
-            "remove added ones.")
+                                                                        "and " + str(
+            len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
+                                        "remove added ones.")
 
         for i in missing_in_phenotypes:
             pheno_df.loc[len(pheno_df.index)] = [i, np.nan, np.nan, np.nan]
@@ -157,25 +159,44 @@ class PhenotypesBMI(Phenotypes):
     def sample_IDs(self):
         return self._sample_IDs
 
-    def regression_on_age(self):
+    def regression_on_age_sex_find_outliers(self, out):
         """
         Normalize residuals according to McCaw et al. (2019) Operating characteristics of the rank-based inversenormal
         transformation for quantitative trait analysisin genome-wide association studies :return:
         """
-        # model = sm.OLS(y, sm.add_constant(X, prepend=False))
-        print(self._pheno_df)
-        results = smf.ols('BMI ~ sex + age +' + 'I(age**2)', data=self._pheno_df).fit()
-        # residuals = results.df_resid
-        residuals = results.predict()
+        self._pheno_df['residual'] = np.nan
+        self._pheno_df['outlier'] = False
+        self._pheno_df['rank_inv_transform'] = np.nan
 
-        print("self._pheno_df", self._pheno_df['BMI'])
-        print("resid.", results.resid)
-        print("predict", residuals)
+        for sex in [1.0, 2.0]:
+            # print("len df quants1 ", len(self._pheno_df.loc[self._pheno_df['sex'] == sex, 'rank_inv_transform']))
+            # print(self._pheno_df.loc[self._pheno_df['sex'] == sex, 'BMI'].isnull().sum())
 
-        ecdf = sm.distributions.ECDF(residuals)
-        quants = ecdf(residuals)
-        print(quants)
-        #
+            # perform linear regression and save residuals
+            results = smf.ols('BMI ~ sex + age +' + 'I(age**2)',
+                              data=self._pheno_df[self._pheno_df['sex'] == sex]).fit()
+            residuals = results.resid
+            self._pheno_df.loc[
+                (self._pheno_df['sex'] == sex) & (self._pheno_df['BMI'].notnull()), 'residual'] = residuals
+
+            # define outliers
+            sd = np.std(residuals)
+            mn = np.mean(residuals)
+            self._pheno_df.loc[(self._pheno_df['sex'] == sex) & (self._pheno_df['residual'] > (mn + 6.0 * sd))
+                               | ((self._pheno_df['sex'] == sex) & (self._pheno_df['residual'] < (mn - 6.0 * sd)))
+                                , "outlier"] = True
+
+            # do rank-based inversement transformation
+            # TODO: should I exclude outliers from this?
+            ecdf = sm.distributions.ECDF(residuals)
+            quants = ecdf(residuals)
+            self._pheno_df.loc[
+                (self._pheno_df['sex'] == sex) & (self._pheno_df['BMI'].notnull()), 'rank_inv_transform'] = quants
+
+        # print("self._pheno_df", self._pheno_df['BMI'])
+        # print("resid.", results.resid)
+        # print("predict", results.predict())
+
         # mod = smf.ols(formula='Lottery ~ Literacy + Wealth + Region', data=df)
         # fit = model.fit()
         # # create instance of influence
@@ -188,9 +209,24 @@ class PhenotypesBMI(Phenotypes):
         # # display standardized residuals
         # print(standardized_residuals)
 
-    def standardize(self, logfile):
-        for sex in [0, 1]:
-            self.regression_on_age()
+        # set phenotype of outliers to NaN
+        self._pheno_df.loc[
+            (self._pheno_df['BMI'].isnull()), 'rank_inv_transform'] = np.nan
+        self._pheno_df.loc[
+            (self._pheno_df['outlier'] == True), 'rank_inv_transform'] = np.nan
+
+        # write to file and set necessary parameters
+        self._pheno_df.to_csv(out + "_standardized_pheno_df.csv")
+        self._y = np.array(self._pheno_df['rank_inv_transform'])
+
+    def standardize(self, out, logfile):
+        """
+
+        @param logfile:
+        @return:
+        """
+        logfile.info("- standardizing phenotypes with indirect rank inverse transformation")
+        self.regression_on_age_sex_find_outliers(out)
 
 
 class PhenotypesSimulated(Phenotypes):

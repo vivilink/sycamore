@@ -15,12 +15,12 @@ class TParameters:
 
     @staticmethod
     def initialize():
-
         parser = argparse.ArgumentParser(description='Running association tests on variants and trees.')
 
         # general arguments
         parser.add_argument('--task', required=True,
-                            choices=['simulate', 'impute', 'associate', 'downsampleVariantsWriteShapeit', 'ARGStatistics',
+                            choices=['simulate', 'impute', 'associate', 'downsampleVariantsWriteShapeit',
+                                     'ARGStatistics',
                                      'getTreeAtPosition', 'simulateMoreMutations', 'covarianceCorrelations'],
                             help='The task to be executed (simulate or associate)')
         parser.add_argument('--out', required=True, type=str,
@@ -189,6 +189,5 @@ class TParameters:
                            help="file with sample names used to run Relate")
 
         args = parser.parse_args()
-
 
         return args

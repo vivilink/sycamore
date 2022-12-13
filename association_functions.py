@@ -312,7 +312,7 @@ def write_and_test_window_for_association(covariance_obj, inds, AIM_methods, out
 
 
 def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, window_ends, window_starts, num_tests,
-                                         inds, covariances_picklefile, logfile, outname):
+                                         inds, simulate_phenotypes, covariances_picklefile, logfile, outname):
     """
     Write covariance calculated based on variants within a window (can be one tree) to file and test it for association with
     phenotypes. Currently, the only covariance type based on variants is GRM.
@@ -347,15 +347,16 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
             end = time.time()
             logfile.info("- Ran AIM for " + str(w) + " windows in " + str(round(end - start)) + " s")
 
-    for m in AIM_methods:
-        m.write_sim_params_to_file(window_starts=window_starts_copy,
-                                   window_ends=window_ends_copy,
-                                   out=outname,
-                                   logfile=logfile)
+    if simulate_phenotypes:
+        for m in AIM_methods:
+            m.write_sim_params_to_file(window_starts=window_starts_copy,
+                                       window_ends=window_ends_copy,
+                                       out=outname,
+                                       logfile=logfile)
 
 
 def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window_ends, window_starts,
-                                      window_size, skip_first_tree, inds, covariances_picklefile, logfile, outname):
+                                      window_size, skip_first_tree, inds, simulate_phenotypes, covariances_picklefile, logfile, outname):
     """
 
     @param trees:
@@ -469,11 +470,12 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
             #     print("tree was not usable")
 
     # write association test results to file
-    for m in AIM_methods:
-        m.write_sim_params_to_file(window_starts=window_starts_copy,
-                                   window_ends=window_ends_copy,
-                                   out=outname,
-                                   logfile=logfile)
+    if simulate_phenotypes:
+        for m in AIM_methods:
+            m.write_sim_params_to_file(window_starts=window_starts_copy,
+                                       window_ends=window_ends_copy,
+                                       out=outname,
+                                       logfile=logfile)
 
 
 def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_size,
@@ -546,6 +548,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                              window_starts=window_starts,
                                              num_tests=num_tests,
                                              inds=inds,
+                                             simulate_phenotypes=args.simulate_phenotypes,
                                              covariances_picklefile=covariances_picklefile,
                                              logfile=logfile,
                                              outname=outname)
@@ -560,6 +563,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                           window_size=window_size,
                                           inds=inds,
                                           skip_first_tree=args.skip_first_tree,
+                                          simulate_phenotypes=args.simulate_phenotypes,
                                           covariances_picklefile=covariances_picklefile,
                                           logfile=logfile,
                                           outname=outname)
