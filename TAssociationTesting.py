@@ -484,7 +484,7 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         self.Vp_SE[index] = float(result['SE'][result['Source'] == 'Vp'])
         self.V_G_over_Vp_SE[index] = float(result['SE'][result['Source'] == 'V(G)/Vp'])
 
-    def write_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
+    def write_association_results_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
         table = pd.DataFrame()
         table['start'] = window_starts
         table['end'] = window_ends

@@ -38,7 +38,7 @@ class Phenotypes:
         buffer = cols - rows
         return np.abs(buffer)
 
-    def standardize(self, out, logfile):
+    def standardize(self, out, inds, logfile):
         logfile.info("- Standardizing phenotypes")
         self._y = (self._y - np.mean(self._y)) / np.std(self._y)
 
@@ -54,7 +54,7 @@ class Phenotypes:
         """
         logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
 
-        self.standardize(out=out, logfile=logfile)
+        self.standardize(out=out, inds=inds, logfile=logfile)
 
         tmp_pheno = pd.DataFrame()
         tmp_pheno['1'] = np.repeat(0, self._num_inds)
@@ -62,8 +62,8 @@ class Phenotypes:
         tmp_pheno['3'] = self._y
 
         # remove missing data
-        # indeces_to_remove = inds.get_indeces_inds_no_phenotype()
-        # tmp_pheno.drop(axis=0, index=indeces_to_remove, inplace=True)
+        indeces_to_remove = inds.get_indeces_inds_no_phenotype()
+        tmp_pheno.drop(axis=0, index=indeces_to_remove, inplace=True)
 
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 
@@ -127,8 +127,15 @@ class PhenotypesBMI(Phenotypes):
         # inform inds object about which inds have missing phenotypes
         # print(pheno_df)
         # print(pheno_df[pheno_df.isna().any(axis=1)])
+        self.set_missing_phenotype_status(inds=inds)
+
+    def set_missing_phenotype_status(self, inds):
         tmp = np.repeat(True, inds.num_inds)
-        tmp[pheno_df.isna().any(axis=1)] = False
+        print("setting missing phenotype status", self._pheno_df[self._pheno_df.isna().any(axis=1)])
+        print(self._pheno_df[self._pheno_df['ID'] == "M060853"])
+        tmp[self._pheno_df.isna().any(axis=1)] = False
+        if "outlier" in self._pheno_df.columns:
+            tmp[self._pheno_df["outlier"] == True] = False
         inds.ind_has_phenotype = tmp
 
     @staticmethod
@@ -159,7 +166,7 @@ class PhenotypesBMI(Phenotypes):
     def sample_IDs(self):
         return self._sample_IDs
 
-    def regression_on_age_sex_find_outliers(self, out):
+    def regression_on_age_sex_find_outliers(self, inds, out):
         """
         Normalize residuals according to McCaw et al. (2019) Operating characteristics of the rank-based inversenormal
         transformation for quantitative trait analysisin genome-wide association studies :return:
@@ -209,24 +216,26 @@ class PhenotypesBMI(Phenotypes):
         # # display standardized residuals
         # print(standardized_residuals)
 
-        # set phenotype of outliers to NaN
-        self._pheno_df.loc[
-            (self._pheno_df['BMI'].isnull()), 'rank_inv_transform'] = np.nan
-        self._pheno_df.loc[
-            (self._pheno_df['outlier'] == True), 'rank_inv_transform'] = np.nan
+        # # set phenotype of outliers to NaN
+        # self._pheno_df.loc[
+        #     (self._pheno_df['BMI'].isnull()), 'rank_inv_transform'] = np.nan
+        # self._pheno_df.loc[
+        #     (self._pheno_df['outlier'] == True), 'rank_inv_transform'] = np.nan
 
         # write to file and set necessary parameters
+        self.set_missing_phenotype_status(inds=inds)
+        print("all where rank inv are null", self._pheno_df[self._pheno_df['rank_inv_transform'].isnull()])
         self._pheno_df.to_csv(out + "_standardized_pheno_df.csv")
         self._y = np.array(self._pheno_df['rank_inv_transform'])
 
-    def standardize(self, out, logfile):
+    def standardize(self, out, inds, logfile):
         """
 
         @param logfile:
         @return:
         """
         logfile.info("- standardizing phenotypes with indirect rank inverse transformation")
-        self.regression_on_age_sex_find_outliers(out)
+        self.regression_on_age_sex_find_outliers(out=out, inds=inds)
 
 
 class PhenotypesSimulated(Phenotypes):
