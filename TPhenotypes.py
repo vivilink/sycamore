@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.distributions.empirical_distribution import ECDF
-
+from scipy.stats import norm
 
 # TODO: being typed or not should be an option for all causal variants
 
@@ -22,7 +22,15 @@ class Phenotypes:
     _num_inds: int
 
     def __init__(self):
-        pass
+        self._genetic_variance = -1.0
+        self.causal_variants = []
+        self.causal_betas = []
+        self.causal_power = []
+        self.causal_trees = []
+        self.causal_variant_indeces = []
+        self.causal_tree_indeces = []
+        self.causal_window_indeces = []
+        self.filled = False
 
     @property
     def y(self):
@@ -197,8 +205,8 @@ class PhenotypesBMI(Phenotypes):
             # TODO: should I exclude outliers from this?
             ecdf = sm.distributions.ECDF(residuals)
             quants = ecdf(residuals)
-            self._pheno_df.loc[
-                (self._pheno_df['sex'] == sex) & (self._pheno_df['BMI'].notnull()), 'rank_inv_transform'] = quants
+            self._pheno_df.loc[(self._pheno_df['sex'] == sex) & (self._pheno_df['BMI'].notnull()), 'rank_inv_transform'] = norm.ppf(quants)
+
 
         # print("self._pheno_df", self._pheno_df['BMI'])
         # print("resid.", results.resid)
@@ -245,16 +253,7 @@ class PhenotypesSimulated(Phenotypes):
         super().__init__()
 
         self._random_noise = np.zeros(num_inds)
-        self._genetic_variance = -1.0
         self.betas = [0] * variants.number
-        self.causal_variants = []
-        self.causal_betas = []
-        self.causal_power = []
-        self.causal_trees = []
-        self.causal_variant_indeces = []
-        self.causal_tree_indeces = []
-        self.causal_window_indeces = []
-        self.filled = False
 
     @property
     def genetic_variance(self):
