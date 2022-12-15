@@ -184,7 +184,7 @@ def run_association_testing(args, random, logfile):
 def OLS(genotypes, phenotypes):
     # add intercept
     genotypes_test = sm.tools.add_constant(genotypes)
-    PVALUE = sm.OLS(phenotypes, genotypes_test).fit().pvalues[1]
+    PVALUE = sm.OLS(phenotypes, genotypes_test, missing='drop').fit().pvalues[1]
     return PVALUE
 
 
@@ -301,7 +301,6 @@ def get_proportion_of_tree_within_window(window_start, window_end, tree_start, t
 
 def write_and_test_window_for_association(covariance_obj, inds, AIM_methods, outname, window_index,
                                           covariances_picklefile):
-    print("in write_and_test_window_for_association")
     if covariance_obj.covariance_matrix_haploid is None:
         raise ValueError("trying to test empty covariance matrix for association at window index " + str(window_index))
     covariance_obj.finalize(inds=inds)
@@ -312,10 +311,11 @@ def write_and_test_window_for_association(covariance_obj, inds, AIM_methods, out
 
 
 def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, window_ends, window_starts, num_tests,
-                                         inds, covariances_picklefile, logfile, outname):
+                                         inds, covariances_picklefile, pheno, logfile, outname):
     """
     Write covariance calculated based on variants within a window (can be one tree) to file and test it for association with
     phenotypes. Currently, the only covariance type based on variants is GRM.
+    @param covariances_picklefile: write covariance matrix to a pickle file
     @param covariance_obj: TCovariance
     @param AIM_methods: list
     @param variants: TVariants
@@ -333,7 +333,7 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
     # log progress
     start = time.time()
 
-    for w in range(num_tests):
+    for w in range(num_tests): #
         tmpCov, tmpMu = covariance_obj.get_GRM(window_beginning=window_starts[w], window_end=window_ends[w],
                                                variants=variants, inds=inds)
         if tmpCov is not None:
@@ -350,12 +350,13 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
     for m in AIM_methods:
         m.write_association_results_to_file(window_starts=window_starts_copy,
                                             window_ends=window_ends_copy,
+                                            phenotypes=pheno,
                                             logfile=logfile,
                                             out=outname)
 
 
 def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window_ends, window_starts,
-                                      window_size, skip_first_tree, inds, covariances_picklefile,
+                                      window_size, skip_first_tree, inds, pheno, covariances_picklefile,
                                       logfile, outname):
     """
 
@@ -477,6 +478,7 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
         m.write_association_results_to_file(window_starts=window_starts_copy,
                                             window_ends=window_ends_copy,
                                             out=outname,
+                                            phenotypes=pheno,
                                             logfile=logfile)
 
 
@@ -551,6 +553,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                              num_tests=num_tests,
                                              inds=inds,
                                              covariances_picklefile=covariances_picklefile,
+                                             pheno=pheno,
                                              logfile=logfile,
                                              outname=outname)
 
@@ -565,6 +568,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                           inds=inds,
                                           skip_first_tree=args.skip_first_tree,
                                           covariances_picklefile=covariances_picklefile,
+                                          pheno=pheno,
                                           logfile=logfile,
                                           outname=outname)
 

@@ -107,16 +107,10 @@ class PhenotypesBMI(Phenotypes):
     def initialize_from_file(self, filename, inds, logfile):
         logfile.info("- Reading BMI phenotype information from " + filename)
         pheno_df = pd.read_csv(filename, names=["ID", "sex", "age", "BMI"])
-        # removed = pheno_df.dropna(axis="index", how="any", inplace=True)
-        # print("removed", removed)
-        # print(len(pheno_df['ID']))
-        # logfile.info("- Removed " + str(len(removed['ID'])) + " entries from phenotype table due to missing data")
-
         missing_in_phenotypes, added_in_phenotypes = self.find_missing_individuals(inds.names, pheno_df['ID'])
         logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
-                                                                        "and " + str(
-            len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
-                                        "remove added ones.")
+                        "and " + str(len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
+                        "remove added ones.")
 
         for i in missing_in_phenotypes:
             pheno_df.loc[len(pheno_df.index)] = [i, np.nan, np.nan, np.nan]
@@ -139,8 +133,6 @@ class PhenotypesBMI(Phenotypes):
 
     def set_missing_phenotype_status(self, inds):
         tmp = np.repeat(True, inds.num_inds)
-        print("setting missing phenotype status", self._pheno_df[self._pheno_df.isna().any(axis=1)])
-        print(self._pheno_df[self._pheno_df['ID'] == "M060853"])
         tmp[self._pheno_df.isna().any(axis=1)] = False
         if "outlier" in self._pheno_df.columns:
             tmp[self._pheno_df["outlier"] == True] = False
@@ -184,9 +176,6 @@ class PhenotypesBMI(Phenotypes):
         self._pheno_df['rank_inv_transform'] = np.nan
 
         for sex in [1.0, 2.0]:
-            # print("len df quants1 ", len(self._pheno_df.loc[self._pheno_df['sex'] == sex, 'rank_inv_transform']))
-            # print(self._pheno_df.loc[self._pheno_df['sex'] == sex, 'BMI'].isnull().sum())
-
             # perform linear regression and save residuals
             results = smf.ols('BMI ~ sex + age +' + 'I(age**2)',
                               data=self._pheno_df[self._pheno_df['sex'] == sex]).fit()
@@ -207,38 +196,13 @@ class PhenotypesBMI(Phenotypes):
             quants = ecdf(residuals)
             self._pheno_df.loc[(self._pheno_df['sex'] == sex) & (self._pheno_df['BMI'].notnull()), 'rank_inv_transform'] = norm.ppf(quants)
 
-
-        # print("self._pheno_df", self._pheno_df['BMI'])
-        # print("resid.", results.resid)
-        # print("predict", results.predict())
-
-        # mod = smf.ols(formula='Lottery ~ Literacy + Wealth + Region', data=df)
-        # fit = model.fit()
-        # # create instance of influence
-        # influence = model.get_influence()
-        # res = model.df_resid
-        # ypred = model.predict(x)
-        # # obtain standardized residuals
-        # standardized_residuals = influence.resid_studentized_internal
-        #
-        # # display standardized residuals
-        # print(standardized_residuals)
-
-        # # set phenotype of outliers to NaN
-        # self._pheno_df.loc[
-        #     (self._pheno_df['BMI'].isnull()), 'rank_inv_transform'] = np.nan
-        # self._pheno_df.loc[
-        #     (self._pheno_df['outlier'] == True), 'rank_inv_transform'] = np.nan
-
         # write to file and set necessary parameters
         self.set_missing_phenotype_status(inds=inds)
-        print("all where rank inv are null", self._pheno_df[self._pheno_df['rank_inv_transform'].isnull()])
         self._pheno_df.to_csv(out + "_standardized_pheno_df.csv")
         self._y = np.array(self._pheno_df['rank_inv_transform'])
 
     def standardize(self, out, inds, logfile):
         """
-
         @param logfile:
         @return:
         """
