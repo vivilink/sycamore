@@ -91,10 +91,10 @@ def run_association_testing(args, random, logfile):
     # --------------------------------
 
     if args.simulate_phenotypes is False:
-        pheno = pt.PhenotypesBMI(filename=args.pheno_file, inds=inds, logfile=logfile)
+        pheno = pt.PhenotypesBMI(filename=args.pheno_file, inds=inds, out=args.out, logfile=logfile)
         # TODO: maybe restrict tree to inds for which we have phenotypes here
-    else:
 
+    else:
         if args.tree_file_simulated is None:
             raise ValueError("To simulate phenotypes based on untyped variants the simulated trees need to be "
                              "provided with 'tree_file_simulated'.")
@@ -122,7 +122,7 @@ def run_association_testing(args, random, logfile):
         logfile.info("- Phenotypes:")
         logfile.add()
 
-        pheno = pt.Phenotypes(variants=variants_orig, inds=inds, logfile=logfile)
+        pheno = pt.PhenotypesSimulated(variants=variants_orig, num_inds=inds.num_inds)
 
         pheno.simulate(args=args, r=random, logfile=logfile, variants_orig=variants_orig, trees=trees, inds=inds,
                        plots_dir=plots_dir)
@@ -183,7 +183,18 @@ def run_association_testing(args, random, logfile):
 
 def OLS(genotypes, phenotypes):
     # add intercept
+    print("!!!!!len genotypes", len(genotypes))
+    print("!!!!!len phenotypes", len(phenotypes))
+    print("!!!!!len phenotypes nan", len(np.isnan(phenotypes)))
+    print("!!!!!len genotypes nan", len(np.isnan(genotypes)))
+    genotypes = genotypes[~np.isnan(genotypes)]
+    raise ValueError("here")
+    tmp = np.isnan(phenotypes)
+    print("tmp", (tmp))
+    np.delete(genotypes, tmp)
+
     genotypes_test = sm.tools.add_constant(genotypes)
+    phenotypes = np.delete(phenotypes, np.isnan(phenotypes))
     PVALUE = sm.OLS(phenotypes, genotypes_test, missing='drop').fit().pvalues[1]
     return PVALUE
 

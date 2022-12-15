@@ -18,10 +18,9 @@ from scipy.stats import norm
 
 
 class Phenotypes:
-    _y: np.ndarray
-    _num_inds: int
-
     def __init__(self):
+        self._y = np.ndarray
+        self._num_inds = -1
         self._genetic_variance = -1.0
         self.causal_variants = []
         self.causal_betas = []
@@ -100,14 +99,14 @@ class PhenotypesBMI(Phenotypes):
     _sample_IDs: np.ndarray
     _pheno_df: pd.DataFrame
 
-    def __init__(self, filename, inds, logfile):
+    def __init__(self, filename, inds, out, logfile):
         super().__init__()
-        self.initialize_from_file(filename, inds, logfile)
+        self.initialize_from_file(filename=filename, inds=inds, out=out, logfile=logfile)
 
-    def initialize_from_file(self, filename, inds, logfile):
+    def initialize_from_file(self, filename, out, inds, logfile):
         logfile.info("- Reading BMI phenotype information from " + filename)
         pheno_df = pd.read_csv(filename, names=["ID", "sex", "age", "BMI"])
-        missing_in_phenotypes, added_in_phenotypes = self.find_missing_individuals(inds.names, pheno_df['ID'])
+        missing_in_phenotypes, added_in_phenotypes = self.find_missing_individuals(inds_tree=inds.names, inds_phenotype=pheno_df['ID'])
         logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
                         "and " + str(len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
                         "remove added ones.")
@@ -124,12 +123,13 @@ class PhenotypesBMI(Phenotypes):
 
         self._num_inds = len(pheno_df['ID'])
         self._sample_IDs = np.array(pheno_df['ID'])
-        self._y = np.array(pheno_df['BMI'])
 
+        # self._y = np.array(pheno_df['BMI'])
         # inform inds object about which inds have missing phenotypes
         # print(pheno_df)
         # print(pheno_df[pheno_df.isna().any(axis=1)])
-        self.set_missing_phenotype_status(inds=inds)
+
+        self.standardize(out=out, inds=inds, logfile=logfile)
 
     def set_missing_phenotype_status(self, inds):
         tmp = np.repeat(True, inds.num_inds)
@@ -218,6 +218,7 @@ class PhenotypesSimulated(Phenotypes):
 
         self._random_noise = np.zeros(num_inds)
         self.betas = [0] * variants.number
+        self._y = np.empty(num_inds)
 
     @property
     def genetic_variance(self):
@@ -247,13 +248,17 @@ class PhenotypesSimulated(Phenotypes):
         self._genetic_variance = float(np.var(self._y))
         logfile.info("- Simulated phenotypes with genetic variance " + str(self._genetic_variance))
 
+        if args.pty_h_squared > 0 and self._genetic_variance == 0:
+            raise ValueError("Genetic variance is zero and heritability is not zero. Make sure you are simulating "
+                             "causal variants.")
+
         # simulate noise
         if args.pty_sd_envNoise is None and args.pty_h_squared is not None:
-            self._random_noise = self.simulate_env_noise_h(requested_hsquared=args.pty_h_squared, random=r)
+            self._random_noise = self.simulate_env_noise_h(requested_hsquared=args.pty_h_squared, inds=inds, random=r)
             logfile.info("- Simulated random noise to result in h^2 " + str(args.pty_h_squared) +
                          ". The variance of the random noise is thus " + str(np.var(self._random_noise)))
         elif args.pty_h_squared is None and args.pty_sd_envNoise is not None:
-            self._random_noise = self.simulate_env_noise_sd(sd_random_noise=args.pty_sd_envNoise, random=r)
+            self._random_noise = self.simulate_env_noise_sd(sd_random_noise=args.pty_sd_envNoise, inds=inds, random=r)
             logfile.info("- Simulated random noise with sd " + str(args.pty_sd_envNoise) +
                          ". The variance of the random noise is thus " + str(np.var(self._random_noise)))
         else:
@@ -478,29 +483,36 @@ class PhenotypesSimulated(Phenotypes):
         print(random.random.get_state()[1][0])
         print(random.random.uniform(0, 1, 1))
 
-    def simulate_env_noise_sd(self, sd_random_noise, random):
+    def simulate_env_noise_sd(self, sd_random_noise, random, inds):
         """
         Simulate random noise according to N(0, sd_random_noise)
         :param sd_random_noise: float
         :param random: TRandomGenerator
         :return noise: np.array
         """
-        noise = random.random.normal(loc=0, scale=sd_random_noise, size=self.num_inds)
+        noise = random.random.normal(loc=0, scale=sd_random_noise, size=inds.num_inds)
         return noise
 
-    def simulate_env_noise_h(self, requested_hsquared, random):
+    def simulate_env_noise_h(self, requested_hsquared, inds, random):
         """
         Simulate random noise according to requested heritability and actual genetic variance
         :param requested_hsquared: float
         :param random: TRandomGenerator
         :return noise: np.array
         """
-        V_G = self._genetic_variance
-        if V_G == 0:
-            raise ValueError("Genetic variance is zero")
-        V_E = V_G * (1 - requested_hsquared) / requested_hsquared
-        sd_random_noise = np.sqrt(V_E)
-        noise = random.random.normal(loc=0, scale=sd_random_noise, size=self.num_inds)
+        if requested_hsquared == 0.0:
+            V_E = 1.0
+            sd_random_noise = np.sqrt(V_E)
+            noise = random.random.normal(loc=0, scale=sd_random_noise, size=inds.num_inds)
+
+        else:
+            V_G = self._genetic_variance
+            if V_G == 0:
+                raise ValueError("Genetic variance is zero")
+            V_E = V_G * (1 - requested_hsquared) / requested_hsquared
+            sd_random_noise = np.sqrt(V_E)
+            noise = random.random.normal(loc=0, scale=sd_random_noise, size=inds.num_inds)
+
         return noise
 
     def simulate_null(self):
@@ -571,7 +583,6 @@ class PhenotypesSimulated(Phenotypes):
         -------
         None.
         """
-
         # add phenotypic effect to mutations that are uniformly distributed
         for v, var in enumerate(variants.variants):
 
@@ -604,6 +615,7 @@ class PhenotypesSimulated(Phenotypes):
         logfile.info("- Simulated phenotypes based on " + str(
             len(self.causal_variants)) + " causal variants out of a total of " + str(variants.number) + ".")
         self.filled = True
+        print(self._y)
 
     def simulate_causal_region(self, variants, inds, left_bound, right_bound, causal_mutations_effect_size_def,
                                local_heritability, prop_causal_mutations, random, min_allele_freq_causal,
