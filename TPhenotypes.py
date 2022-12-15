@@ -64,7 +64,7 @@ class Phenotypes:
         self.standardize(out=out, inds=inds, logfile=logfile)
 
         tmp_pheno = pd.DataFrame()
-        tmp_pheno['1'] = np.repeat(0, self._num_inds)
+        tmp_pheno['1'] = np.repeat(0, inds.num_inds)
         tmp_pheno['2'] = inds.names
         tmp_pheno['3'] = self._y
 
@@ -74,7 +74,7 @@ class Phenotypes:
 
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 
-    def write_to_file_gcta_scaled(self, out, logfile):
+    def write_to_file_gcta_scaled(self, out, inds, logfile):
         """
         Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
         will match the binary output created with egrm.
@@ -86,7 +86,7 @@ class Phenotypes:
         logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
 
         tmp_pheno = pd.DataFrame()
-        tmp_pheno['1'] = np.arange(1, self._num_inds + 1)
+        tmp_pheno['1'] = np.arange(1, inds.num_inds + 1)
         tmp_pheno['2'] = tmp_pheno['1']
         tmp_pheno['3'] = self._y
 
@@ -228,6 +228,11 @@ class PhenotypesSimulated(Phenotypes):
     def genetic_variance(self, genetic_variance: float):
         self._genetic_variance = genetic_variance
 
+    @staticmethod
+    def set_missing_phenotype_status(inds):
+        tmp = np.repeat(True, inds.num_inds)
+        inds.ind_has_phenotype = tmp
+
     def simulate(self, args, r, logfile, variants_orig, inds, trees, plots_dir):
         """
         Simulate phenotypes
@@ -248,7 +253,7 @@ class PhenotypesSimulated(Phenotypes):
         self._genetic_variance = float(np.var(self._y))
         logfile.info("- Simulated phenotypes with genetic variance " + str(self._genetic_variance))
 
-        if args.pty_h_squared > 0 and self._genetic_variance == 0:
+        if args.pty_h_squared is not None and args.pty_h_squared > 0 and self._genetic_variance == 0:
             raise ValueError("Genetic variance is zero and heritability is not zero. Make sure you are simulating "
                              "causal variants.")
 
@@ -761,3 +766,4 @@ class PhenotypesSimulated(Phenotypes):
         table['var_phenotypic'] = np.var(self._y)
 
         table.to_csv(out + "_pheno_causal_vars.csv", index=False, header=True)
+
