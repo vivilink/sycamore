@@ -404,7 +404,7 @@ class Phenotypes:
             if r < prop_causal_mutations:
 
                 # define beta
-                beta = random.random.normal(loc=mean_beta_causal_mutation, scale=sd_beta_causal_mutations, size=1)[0]
+                beta = np.random.normal(loc=mean_beta_causal_mutation, scale=sd_beta_causal_mutations, size=None)
                 self.betas[v] = beta
 
                 # simulate phenotype
