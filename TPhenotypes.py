@@ -61,8 +61,6 @@ class Phenotypes:
         """
         logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
 
-        self.standardize(out=out, inds=inds, logfile=logfile)
-
         tmp_pheno = pd.DataFrame()
         tmp_pheno['1'] = np.repeat(0, inds.num_inds)
         tmp_pheno['2'] = inds.names
@@ -210,6 +208,20 @@ class PhenotypesBMI(Phenotypes):
         """
         logfile.info("- standardizing phenotypes with indirect rank inverse transformation")
         self.regression_on_age_sex_find_outliers(out=out, inds=inds)
+
+    def write_to_file_gcta_eGRM(self, inds, out, logfile):
+        """
+        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
+        will match the binary output created with plinkFile R package.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.standardize(out=out, inds=inds, logfile=logfile)
+
+        super().write_to_file_gcta_eGRM(inds, out, logfile)
 
 
 class PhenotypesSimulated(Phenotypes):
