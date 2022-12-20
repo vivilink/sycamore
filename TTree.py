@@ -12,6 +12,7 @@ import TCovariance
 from egrm import varGRM_C
 from egrm import varGRM
 from egrm import egrm_one_tree_no_normalization
+from egrm import egrm_one_tree_no_normalization_C
 
 
 # ---------------------

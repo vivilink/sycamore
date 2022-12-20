@@ -380,6 +380,10 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                                                           covariances_picklefile=covariances_picklefile)
 
             window_index += 1
+            # log progress
+            if tree.index % 1 == 0:
+                end = time.time()
+                logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end - start)) + " s")
 
     # there is a window size
     else:
@@ -444,7 +448,7 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                         #       window_starts[0], window_ends[0], "and proportion", proportion)
 
                 # log progress
-                if tree.index % 1000 == 0:
+                if tree.index % 1 == 0:
                     end = time.time()
                     logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end - start)) + " s")
             # else:
