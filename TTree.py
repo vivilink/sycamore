@@ -297,8 +297,7 @@ class TTree:
     @staticmethod
     def get_unnormalized_eGRM(tree_obj, inds):
         cov, mu = egrm_one_tree_no_normalization(tree=tree_obj.tree, num_samples=inds.num_haplotypes)
-        cov2, mu2 = egrm_one_tree_no_normalization_C(tree=tree_obj.tree, num_samples=inds.num_haplotypes)
-        print(cov, cov2)
+        # cov, mu = egrm_one_tree_no_normalization_C(tree=tree_obj.tree, num_samples=inds.num_haplotypes)
         return cov, mu
 
     def solving_function(self, array, inds):

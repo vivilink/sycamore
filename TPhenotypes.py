@@ -104,6 +104,8 @@ class PhenotypesBMI(Phenotypes):
         self.initialize_from_file(filename=filename, inds=inds, out=out, logfile=logfile)
 
     def initialize_from_file(self, filename, out, inds, logfile):
+        if filename is None:
+            raise ValueError("Provide file with BMI phenotype information using 'filename'")
         logfile.info("- Reading BMI phenotype information from " + filename)
         pheno_df = pd.read_csv(filename, names=["ID", "sex", "age", "BMI"])
         missing_in_phenotypes, added_in_phenotypes = self.find_missing_individuals(inds_tree=inds.names, inds_phenotype=pheno_df['ID'])
