@@ -283,7 +283,7 @@ class TTree:
             # extract tree and write to file
             # TTrees.extract_single_tree(tree_obj=tree_obj, out=out, logfile=logfile, position=self.start)
 
-            EK_relate, EK_relate_mu = varGRM(tree=tree_obj.tree, num_samples=inds.num_haplotypes)
+            EK_relate, EK_relate_mu = varGRM_C(tree=tree_obj.tree, num_samples=inds.num_haplotypes)
             self.eGRM = EK_relate
             self.EK_relate_mu = EK_relate_mu
 

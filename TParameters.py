@@ -183,6 +183,10 @@ class TParameters:
         assoc.add_argument('--covariance_picklefiles', type=str, nargs='+',
                            help="calculate correlation between covariances along the genome (user must verify that "
                                 "windows have same coordinates)")
+        assoc.add_argument('--population_structure', type=str,
+                           help="Prefix of covariance matrix in GCTA format used to correct for population structure")
+        assoc.add_argument('--GCTA', type=str, default="gcta-1.94.1-linux-kernel-3-x86_64/gcta-1.94.1",
+                           help="path to GCTA executable")
 
         # associations with real data
         assoc.add_argument('--relate_sample_names', type=str,

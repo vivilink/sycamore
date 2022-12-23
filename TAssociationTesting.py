@@ -219,15 +219,15 @@ class TAssociationTestingRegions(TAssociationTesting):
         self.num_associations = num_associations
         # self._check_compatibility(ts_object, phenotypes)
 
-    def manhattan_plot(self, variant_positions, subplot, logfile, *args):
+    def manhattan_plot(self, variant_positions, subplot, phenotypes, *args):
         self.manhattan_plot_subset(variant_positions=variant_positions, subplot=subplot, index_min=0,
-                                   index_max=self.num_associations, p_values=self.p_values)
+                                   index_max=self.num_associations, p_values=self.p_values, phenotypes=phenotypes)
 
-    def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, logfile, title_supplement="", *args):
+    def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, logfile, phenotypes, title_supplement="", *args):
         logfile.info("Plotting " + str(self.num_associations) + " associations")
         self.manhattan_plot_subset(variant_positions=variant_positions, subplot=subplot, index_min=0,
                                    index_max=self.num_associations, p_values=p_values,
-                                   title_supplement=title_supplement)
+                                   title_supplement=title_supplement, phenotypes=phenotypes)
 
     def manhattan_plot_subset(self, variant_positions, subplot, index_min, index_max, p_values, phenotypes,
                               title_supplement="", size=1, n_snps_lowess=0, *args):
@@ -250,6 +250,7 @@ class TAssociationTestingRegions(TAssociationTesting):
             Size of the points in scatter plot. The default is 1.
         n_snps_lowess : int, optional
             Number of SNPs that are used to calculate lowess smoothing. The default is 0, meaning that no lowess curve is plotted
+        phenotypes : TPhenotypes
         *args : TYPE
             DESCRIPTION.
         Raises
@@ -342,8 +343,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
 
     def run_association_one_window_gcta(self, index, out):
         # create gcta input files, run gcta and parse output
-        exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_HE.sh", out])
-        # exit_code = subprocess.call([os.getcwd() + "/run_gcta_HE.sh", out])
+        exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_HE_mgrm.sh", out])
 
         # read results
         HE_CP = pd.read_table(out + "_HE-CP_result.txt")
@@ -456,11 +456,23 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         self.run_association_one_window_gcta(index=index, out=out)
 
     def run_association_one_window_gcta(self, index, out):
+        """
+        create multi_grm.txt according to https://yanglab.westlake.edu.cn/software/gcta/#GREMLinWGSorimputeddata
+        @param index: index of window or tree
+        @param out: prefix of output files
+        @param population_structure: prefix of files containing covariance matrix used to correct for population structure
+        @return:
+        """
         # create gcta input files, run gcta and parse output
-        exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_REML.sh", out])
+        exit_code = subprocess.call([out + "_run_gcta_REML.sh"])
 
         # read results
         result = pd.read_table(out + "_REML.hsq")
+
+        # replace different names in case of model with local and global GRM
+        result.replace('V(G1)', 'V(G)', inplace=True)
+        result.replace('Sum of V(G)/Vp', 'V(G)/Vp', inplace=True)
+
         result_pvalue = float(result['Variance'][result['Source'] == 'Pval'])
         if result_pvalue < 0:
             raise ValueError("Negative p-value for window with index " + str(index))

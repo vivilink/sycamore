@@ -19,7 +19,7 @@ import TPhenotypes as pt
 import TAssociationTesting as at
 import TImputation as impute
 import glob
-
+import stat
 
 def run_association_testing(args, random, logfile):
     """
@@ -322,7 +322,7 @@ def write_and_test_window_for_association(covariance_obj, inds, AIM_methods, out
 
 
 def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, window_ends, window_starts, num_tests,
-                                         inds, covariances_picklefile, pheno, logfile, outname):
+                                         inds, covariances_picklefile, pheno, logfile, outname, population_structure):
     """
     Write covariance calculated based on variants within a window (can be one tree) to file and test it for association with
     phenotypes. Currently, the only covariance type based on variants is GRM.
@@ -344,13 +344,13 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
     # log progress
     start = time.time()
 
-    for w in range(num_tests): #
+    for w in range(num_tests):  #
         tmpCov, tmpMu = covariance_obj.get_GRM(window_beginning=window_starts[w], window_end=window_ends[w],
                                                variants=variants, inds=inds)
         if tmpCov is not None:
             covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile, logfile=logfile)
             for m in AIM_methods:
-                m.run_association(index=w, out=outname)
+                m.run_association(index=w, out=outname, population_structure=population_structure)
             covariance_obj.clear()
 
         # log progress
@@ -368,9 +368,11 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
 
 def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window_ends, window_starts,
                                       window_size, skip_first_tree, inds, pheno, covariances_picklefile,
-                                      logfile, outname):
+                                      logfile, outname, population_structure):
     """
 
+    @param population_structure: str prefix of covariance matrix files used for correcting for population structure (can be None)
+    @param covariances_picklefile:
     @param trees:
     @param covariance_obj:
     @param AIM_methods:
@@ -535,6 +537,27 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
         pheno.find_causal_trees(trees)
         pheno.find_causal_windows(window_ends=window_ends, window_starts=window_starts)
 
+    # write GCTA files and scripts
+    if args.population_structure is not None:
+        with open(outname + '_multi_grm.txt', 'w') as f:
+            f.write(outname + '\n')
+            f.write(args.population_structure + '\n')
+
+    pheno_file = outname + "_phenotypes.phen"
+    # if args.simulate_phenotypes:
+    #     pheno_file = args.out + "_phenotypes.phen"
+
+    with open(outname + "_run_gcta_REML.sh", 'w') as f:
+        f.write("#!/bin/bash\n")
+        if args.population_structure:
+            f.write(args.GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
+                    + outname + "_REML --reml-lrt 1 --threads 8 --reml-maxit 500 > " + outname + "_tmp.out" )
+        else:
+            f.write(args.GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname
+                    + "_REML --threads 8 --reml-maxit 500 --reml-no-constrain > " + outname + "_tmp.out")
+    st = os.stat(outname + "_run_gcta_REML.sh")
+    os.chmod(outname + "_run_gcta_REML.sh", st.st_mode | stat.S_IEXEC)
+
     # create association method objects
     logfile.info("- Running associations tests using test methods " + str(
         args.AIM_method) + " for a sequence of trees")
@@ -567,7 +590,8 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                              covariances_picklefile=covariances_picklefile,
                                              pheno=pheno,
                                              logfile=logfile,
-                                             outname=outname)
+                                             outname=outname,
+                                             population_structure=args.population_structure)
 
     # tree based covariance
     else:
@@ -582,7 +606,8 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                           covariances_picklefile=covariances_picklefile,
                                           pheno=pheno,
                                           logfile=logfile,
-                                          outname=outname)
+                                          outname=outname,
+                                          population_structure=args.population_structure)
 
     # close covariance picklefiles
     if args.write_covariance_picklefiles:
