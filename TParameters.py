@@ -20,8 +20,8 @@ class TParameters:
         # general arguments
         parser.add_argument('--task', required=True,
                             choices=['simulate', 'impute', 'associate', 'downsampleVariantsWriteShapeit',
-                                     'ARGStatistics',
-                                     'getTreeAtPosition', 'simulateMoreMutations', 'covarianceCorrelations'],
+                                     'ARGStatistics', 'getTreeAtPosition', 'simulateMoreMutations',
+                                     'covarianceCorrelations'],
                             help='The task to be executed (simulate or associate)')
         parser.add_argument('--out', required=True, type=str,
                             help='Prefix of all output files')
@@ -81,6 +81,8 @@ class TParameters:
                          help="Mutation rate for simulating with msprime (does not work for stdPopsim)")
         sim.add_argument('--population_size', type=int,
                          help="Ancestral population size for simulating with msprime", default=1000)
+        sim.add_argument("--sim_two_populations", action="store_true",
+                         help="Simulate a population split with msprime")
         sim.add_argument('--AH_tree_pos', type=int,
                          help="Add mutations only to the local tree covering this genomic position")
         sim.add_argument('--recomb_rate',

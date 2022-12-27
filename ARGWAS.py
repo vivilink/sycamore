@@ -86,14 +86,17 @@ if args.task == "simulate":
         logger.error("use of any simulator besides stdPopSim not tested")
         raise ValueError("use of any simulator besides stdPopSim not tested")
     # TODO: trees should be put in a wrapper class, only this class should import tskit
-    trees = simulator.run_simulation(arguments=args, randomGenerator=r, logfile=logger)
+    if args.sim_two_populations is True:
+        trees = simulator.run_simulation_two_populations(arguments=args, randomGenerator=r, logfile=logger)
+    else:
+        trees = simulator.run_simulation(arguments=args, randomGenerator=r, logfile=logger)
 
     sample_ids = trees.samples()
     N = len(sample_ids)
     if args.N != N:
         logger.warning("WARNING: Number of samples in tree (" + str(N) + ") does not match number of samples in "
                                                                          "arguments (" + str(args.N) + ")")
-    inds = tind.Individuals(args.ploidy, N)
+    inds = tind.Individuals(args.ploidy, N, args.relate_sample_names)
     variants = tvar.TVariants(ts_object=trees, samp_ids=sample_ids)
     variants.fill_info(ts_object=trees, samp_ids=sample_ids, pos_float=args.pos_float, logfile=logger)
     variants.write_variant_info(out=args.out, logfile=logger)
@@ -149,7 +152,7 @@ if args.task == "downsampleVariantsWriteShapeit":
     # --------------------------------
     # create diploids and variants
     # --------------------------------
-    inds = tind.Individuals(args.ploidy, N)
+    inds = tind.Individuals(args.ploidy, N, args.relate_sample_names)
     inds.write_shapeit2(args.out, logger)
     variants = tvar.TVariantsFiltered(trees, sample_ids, args.min_allele_freq, args.max_allele_freq,
                                       args.prop_typed_variants, args.pos_float, r, logger)

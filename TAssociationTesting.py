@@ -47,7 +47,6 @@ class TAssociationTesting:
         tmp = scipy.stats.chisquare(f_obs=h, f_exp=((len(self.p_values)) / (num_bins)))
         return tmp
 
-
 class TAssociationTestingGWAS(TAssociationTesting):
     """
     SNP based association testing using Ordinary Least Squares regression
@@ -343,7 +342,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
 
     def run_association_one_window_gcta(self, index, out):
         # create gcta input files, run gcta and parse output
-        exit_code = subprocess.call([os.path.dirname(sys.argv[0]) + "/run_gcta_HE_mgrm.sh", out])
+        exit_code = subprocess.call([out + "_run_gcta_HE.sh"])
 
         # read results
         HE_CP = pd.read_table(out + "_HE-CP_result.txt")
@@ -375,7 +374,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         self.V_G_over_Vp_SE_Jackknife_HECP[index] = HE_CP["SE_Jackknife"][1]
         self.V_G_over_Vp_SE_Jackknife_HESD[index] = HE_SD["SE_Jackknife"][1]
 
-    def write_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
+    def write_association_results_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
         table = pd.DataFrame()
         table['start'] = window_starts
         table['end'] = window_ends

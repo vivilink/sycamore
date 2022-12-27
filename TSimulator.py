@@ -140,11 +140,80 @@ class TSimulatorMSPrime(TSimulator):
     def __init__(self):
         super().__init__()
 
+    def run_simulation_two_populations(self, arguments, randomGenerator, logfile):
+        logfile.info("- Simulating trees of two populations using msprime:")
+        logfile.add()
+
+        demography = msprime.Demography()
+        demography.add_population(name="A", initial_size=1_000)
+        demography.add_population(name="B", initial_size=1_000)
+        demography.add_population(name="C", initial_size=1_000)
+        demography.add_population_split(time=1000, derived=["A", "B"], ancestral="C")
+
+        # simulate trees
+        recomb_obj = self.get_recomb_obj(arguments=arguments, randomGenerator=randomGenerator, logfile=logfile)
+        trees_msprime = msprime.sim_ancestry(samples={"A": 500, "B": 500},
+                                             ploidy=1,
+                                             sequence_length=arguments.sequence_length,
+                                             recombination_rate=recomb_obj,
+                                             demography=demography,
+                                             random_seed=arguments.seed)
+
+        # simulate mutations
+        mut_obj = self.get_mut_obj(arguments=arguments, randomGenerator=randomGenerator, logfile=logfile)
+        self.trees = msprime.sim_mutations(trees_msprime, rate=mut_obj, random_seed=arguments.seed)
+
+        print(self.trees)
+        logfile.info("- Writing trees to " + arguments.out + ".trees")
+        self.trees.dump(arguments.out + ".trees")
+        logfile.sub()
+        return self.trees
+
     def run_simulation(self, arguments, randomGenerator, logfile):
-        logfile.info("- Simulating trees using msprime:")
+        logfile.info("- Simulating trees of one population using msprime:")
         logfile.add()
 
         # get recombination rates
+        recomb_obj = self.get_recomb_obj(arguments=arguments, randomGenerator=randomGenerator, logfile=logfile)
+
+        # get mutation rates
+        mut_obj = self.get_mut_obj(arguments=arguments, randomGenerator=randomGenerator, logfile=logfile)
+
+        # simulate
+        trees_msprime = msprime.sim_ancestry(samples=arguments.N, ploidy=1,  # do not simulate ploidy here!
+                                             sequence_length=arguments.sequence_length,
+                                             recombination_rate=recomb_obj,
+                                             population_size=arguments.population_size)
+        self.trees = msprime.sim_mutations(trees_msprime, rate=mut_obj, random_seed=arguments.seed)
+        self.trees.dump(arguments.out + ".trees")
+
+        logfile.info("- Writing trees to " + arguments.out + ".trees")
+        logfile.sub()
+        return self.trees
+
+    def get_mut_obj(self, arguments, randomGenerator, logfile):
+        mut_obj = None
+
+        if arguments.mu is not None:
+            mut_obj = float(arguments.mu)
+            logfile.info("- Simulating fixed mutation rate of " + str(arguments.mu))
+        else:
+            num_windows = int(np.floor(arguments.sequence_length / arguments.mut_window_size))
+            positions = [0 + w * arguments.mut_window_size for w in range(num_windows + 1)]
+            rates = [randomGenerator.random.beta(arguments.mut_beta_shape1, arguments.mut_beta_shape2) for w in
+                     range(num_windows)]
+            # rates = arguments.mu
+            # print(rates)
+            logfile.info("- Simulating mutation rates in windows with length " + str(arguments.mut_window_size)
+                         + ", mutation rate mean " + str(np.mean(rates)) + " and variance " + str(np.var(rates)))
+            mut_obj = msprime.RateMap(
+                position=positions,
+                rate=rates
+            )
+        return mut_obj
+
+
+    def get_recomb_obj(self, arguments, randomGenerator, logfile):
         try:
             recomb_obj = float(arguments.recomb_rate)
         except ValueError:
@@ -166,31 +235,4 @@ class TSimulatorMSPrime(TSimulator):
                          + str(recomb_obj.sequence_length) + ", starting pos " + str(recomb_map_start)
                          + " and ending pos " + str(recomb_map_end))
 
-        # get mutation rates
-        if arguments.mu is not None:
-            mut_obj = float(arguments.mu)
-            logfile.info("- Simulating fixed mutation rate of " + str(arguments.mu))
-        else:
-            num_windows = int(np.floor(arguments.sequence_length / arguments.mut_window_size))
-            positions = [0 + w * arguments.mut_window_size for w in range(num_windows + 1)]
-            rates = [randomGenerator.random.beta(arguments.mut_beta_shape1, arguments.mut_beta_shape2) for w in range(num_windows)]
-            # rates = arguments.mu
-            # print(rates)
-            logfile.info("- Simulating mutation rates in windows with length " + str(arguments.mut_window_size)
-                         + ", mutation rate mean " + str(np.mean(rates)) + " and variance " + str(np.var(rates)))
-            mut_obj = msprime.RateMap(
-                position=positions,
-                rate=rates
-            )
-
-        # simulate
-        trees_msprime = msprime.sim_ancestry(samples=arguments.N, ploidy=1, # do not simulate ploidy here!
-                                             sequence_length=arguments.sequence_length,
-                                             recombination_rate=recomb_obj,
-                                             population_size=arguments.population_size)
-        self.trees = msprime.sim_mutations(trees_msprime, rate=mut_obj, random_seed=arguments.seed)
-        self.trees.dump(arguments.out + ".trees")
-
-        logfile.info("- Writing trees to " + arguments.out + ".trees")
-        logfile.sub()
-        return self.trees
+        return recomb_obj

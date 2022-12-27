@@ -21,6 +21,7 @@ import TImputation as impute
 import glob
 import stat
 
+
 def run_association_testing(args, random, logfile):
     """
     Simulate phenotypes and perform association
@@ -183,14 +184,13 @@ def run_association_testing(args, random, logfile):
 
 def OLS(genotypes, phenotypes):
     # add intercept
-    print("!!!!!len genotypes", len(genotypes))
-    print("!!!!!len phenotypes", len(phenotypes))
-    print("!!!!!len phenotypes nan", len(np.isnan(phenotypes)))
-    print("!!!!!len genotypes nan", len(np.isnan(genotypes)))
+    # print("!!!!!len genotypes", len(genotypes))
+    # print("!!!!!len phenotypes", len(phenotypes))
+    # print("!!!!!len phenotypes nan", len(np.isnan(phenotypes)))
+    # print("!!!!!len genotypes nan", len(np.isnan(genotypes)))
     genotypes = genotypes[~np.isnan(genotypes)]
-    raise ValueError("here")
+    # raise ValueError("here")
     tmp = np.isnan(phenotypes)
-    print("tmp", (tmp))
     np.delete(genotypes, tmp)
 
     genotypes_test = sm.tools.add_constant(genotypes)
@@ -350,11 +350,11 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
         if tmpCov is not None:
             covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile, logfile=logfile)
             for m in AIM_methods:
-                m.run_association(index=w, out=outname, population_structure=population_structure)
+                m.run_association(index=w, out=outname)
             covariance_obj.clear()
 
         # log progress
-        if w % 1 == 0:
+        if w % 1000 == 0:
             end = time.time()
             logfile.info("- Ran AIM for " + str(w) + " windows in " + str(round(end - start)) + " s")
 
@@ -480,7 +480,7 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                         #       window_starts[0], window_ends[0], "and proportion", proportion)
 
                 # log progress
-                if tree.index % 1 == 0:
+                if tree.index % 1000 == 0:
                     end = time.time()
                     logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end - start)) + " s")
             # else:
@@ -547,22 +547,43 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     # if args.simulate_phenotypes:
     #     pheno_file = args.out + "_phenotypes.phen"
 
-    with open(outname + "_run_gcta_REML.sh", 'w') as f:
-        f.write("#!/bin/bash\n")
-        if args.population_structure:
-            f.write(args.GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
-                    + outname + "_REML --reml-lrt 1 --threads 8 --reml-maxit 500 > " + outname + "_tmp.out" )
-        else:
-            f.write(args.GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname
-                    + "_REML --threads 8 --reml-maxit 500 --reml-no-constrain > " + outname + "_tmp.out")
-    st = os.stat(outname + "_run_gcta_REML.sh")
-    os.chmod(outname + "_run_gcta_REML.sh", st.st_mode | stat.S_IEXEC)
-
     # create association method objects
     logfile.info("- Running associations tests using test methods " + str(
         args.AIM_method) + " for a sequence of trees")
     AIM_methods = []
     for m in args.AIM_method:
+        with open(outname + "_run_gcta_" + m + ".sh", 'w') as f:
+            f.write("#!/bin/bash\n")
+            if args.population_structure:
+                if m == "REML":
+                    f.write(args.GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
+                            + outname + "_REML --reml-lrt 1 --threads 8 --reml-maxit 500 > " + outname + "_tmp.out\n")
+                elif m == "HE":
+                    f.write(
+                        args.GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
+                        + outname + "_HE --reml-lrt 1 --threads 8 --reml-maxit 500 > " + outname + "_tmp.out\n")
+                    # grep results
+                    f.write("sed -n '2,4p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                            + outname + "_HE-CP_result.txt\n")
+                    f.write("sed -n '7,9p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                            + outname + "_HE-SD_result.txt\n")
+
+            else:
+                if m == "REML":
+                    f.write(args.GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname
+                            + "_REML --threads 8 --reml-maxit 500  > " + outname + "_tmp.out\n")
+                elif m == "HE":
+                    f.write(args.GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname
+                            + "_HE --threads 8 --reml-maxit 500 > " + outname + "_tmp.out\n")
+                    # grep results
+                    f.write("sed -n '2,4p' " + outname  + "_" + m + ".HEreg | unexpand -a | tr -s \'\\t\' > "
+                            + outname + "_HE-CP_result.txt\n")
+                    f.write("sed -n '7,9p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\\t\' > "
+                            + outname + "_HE-SD_result.txt\n")
+
+        st = os.stat(outname + "_run_gcta_" + m + ".sh")
+        os.chmod(outname + "_run_gcta_" + m + ".sh", st.st_mode | stat.S_IEXEC)
+
         test_obj = get_AIM_test_object(m, phenotypes=pheno, num_associations=num_tests)
         AIM_methods.append(test_obj)
 
