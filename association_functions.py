@@ -190,8 +190,8 @@ def OLS(genotypes, phenotypes):
     # print("!!!!!len genotypes nan", len(np.isnan(genotypes)))
     genotypes = genotypes[~np.isnan(genotypes)]
     # raise ValueError("here")
-    tmp = np.isnan(phenotypes)
-    np.delete(genotypes, tmp)
+#    tmp = np.isnan(phenotypes)
+    # np.delete(genotypes, tmp)
 
     genotypes_test = sm.tools.add_constant(genotypes)
     phenotypes = np.delete(phenotypes, np.isnan(phenotypes))
