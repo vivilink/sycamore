@@ -563,9 +563,9 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                         args.GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
                         + outname + "_HE --reml-lrt 1 --threads " + str(args.num_gcta_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
                     # grep results
-                    f.write("sed -n '2,4p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                    f.write("sed -n '2,6p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\t\' > "
                             + outname + "_HE-CP_result.txt\n")
-                    f.write("sed -n '7,9p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                    f.write("sed -n '9,13p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\t\' > "
                             + outname + "_HE-SD_result.txt\n")
 
             else:
