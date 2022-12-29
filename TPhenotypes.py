@@ -66,10 +66,12 @@ class Phenotypes:
         tmp_pheno['2'] = inds.names
         tmp_pheno['3'] = self._y
 
+        print("!!!self._y", self._y)
         # remove missing data
         indeces_to_remove = inds.get_indeces_inds_no_phenotype()
         print("!!!!!len(indeces_to_remove)", len(indeces_to_remove))
-        tmp_pheno.drop(axis=0, index=indeces_to_remove, inplace=True)
+        if len(indeces_to_remove) > 0:
+            tmp_pheno.drop(axis=0, index=indeces_to_remove, inplace=True)
 
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 
