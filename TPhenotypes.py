@@ -67,6 +67,7 @@ class Phenotypes:
         tmp_pheno['3'] = self._y
 
         print("!!!self._y", self._y)
+        print("np.isnan(data)", np.isnan(self._y))
         # remove missing data
         indeces_to_remove = inds.get_indeces_inds_no_phenotype()
         print("!!!!!len(indeces_to_remove)", len(indeces_to_remove))
