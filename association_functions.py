@@ -557,11 +557,11 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
             if args.population_structure:
                 if m == "REML":
                     f.write(args.GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
-                            + outname + "_REML --reml-lrt 1 --threads 8 --reml-maxit 500 > " + outname + "_tmp.out\n")
+                            + outname + "_REML --reml-lrt 1 --threads " + args.num_gcta_threads + " --reml-maxit 500 > " + outname + "_tmp.out\n")
                 elif m == "HE":
                     f.write(
                         args.GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
-                        + outname + "_HE --reml-lrt 1 --threads 8 --reml-maxit 500 > " + outname + "_tmp.out\n")
+                        + outname + "_HE --reml-lrt 1 --threads " + args.num_gcta_threads + " --reml-maxit 500 > " + outname + "_tmp.out\n")
                     # grep results
                     f.write("sed -n '2,4p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\t\' > "
                             + outname + "_HE-CP_result.txt\n")
@@ -571,10 +571,10 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
             else:
                 if m == "REML":
                     f.write(args.GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname
-                            + "_REML --threads 8 --reml-maxit 500  > " + outname + "_tmp.out\n")
+                            + "_REML --threads " + args.num_gcta_threads + " --reml-maxit 500  > " + outname + "_tmp.out\n")
                 elif m == "HE":
                     f.write(args.GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname
-                            + "_HE --threads 8 --reml-maxit 500 > " + outname + "_tmp.out\n")
+                            + "_HE --threads " + args.num_gcta_threads + " --reml-maxit 500 > " + outname + "_tmp.out\n")
                     # grep results
                     f.write("sed -n '2,4p' " + outname  + "_" + m + ".HEreg | unexpand -a | tr -s \'\\t\' > "
                             + outname + "_HE-CP_result.txt\n")

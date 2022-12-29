@@ -189,6 +189,8 @@ class TParameters:
                            help="Prefix of covariance matrix in GCTA format used to correct for population structure")
         assoc.add_argument('--GCTA', type=str, default="gcta-1.94.1-linux-kernel-3-x86_64/gcta-1.94.1",
                            help="path to GCTA executable")
+        assoc.add_argument("--num_gcta_threads", type=int, default=8,
+                           help="number of threads on which to run GCTA. Going from 2 to 8 roughly doubles the speed")
 
         # associations with real data
         assoc.add_argument('--relate_sample_names', type=str,
