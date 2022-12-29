@@ -66,11 +66,12 @@ class Phenotypes:
         tmp_pheno['2'] = inds.names
         tmp_pheno['3'] = self._y
 
-        print("!!!self._y", self._y)
-        print("np.isnan(data)", np.isnan(self._y))
-        # remove missing data
         indeces_to_remove = inds.get_indeces_inds_no_phenotype()
-        print("!!!!!len(indeces_to_remove)", len(indeces_to_remove))
+
+        if np.count_nonzero(np.isnan(self._y)) > 0 and len(indeces_to_remove) == 0:
+            raise ValueError("There are phenotypes that are nan")
+
+        # remove missing data
         if len(indeces_to_remove) > 0:
             tmp_pheno.drop(axis=0, index=indeces_to_remove, inplace=True)
 
@@ -223,6 +224,8 @@ class PhenotypesBMI(Phenotypes):
         None.
 
         """
+        print("in write to file gcta eGRM of BMI phenotypes")
+
         self.standardize(out=out, inds=inds, logfile=logfile)
 
         super().write_to_file_gcta_eGRM(inds, out, logfile)
@@ -313,11 +316,11 @@ class PhenotypesSimulated(Phenotypes):
         if args.pty_sim_method is None:
             raise ValueError("Must provide a phenotype simulation method with --pty_sim_method")
 
-        if args.pty_sim_method == "null":
+        elif args.pty_sim_method == "null":
             logfile.info("- Simulating null phenotypes based only on random noise")
             self.simulate_null()
 
-        if args.pty_sim_method == 'uniform':
+        elif args.pty_sim_method == 'uniform':
             logfile.info(
                 "- Simulating phenotypes based on uniformly chosen variants with prop_causal_mutations: " + str(
                     args.pty_prop_causal_mutations) + " and sd_beta_causal_mutations: " + str(
@@ -782,6 +785,8 @@ class PhenotypesSimulated(Phenotypes):
         table['var_genotypic_empiric'] = np.repeat(self._genetic_variance, variants.number)
         table['var_random'] = np.repeat(np.var(self._random_noise), variants.number)
         table['var_phenotypic'] = np.var(self._y)
+
+        print("nas in write_sim_params_to_file", np.count_nonzero(np.isnan(self._y)))
 
         table.to_csv(out + "_pheno_causal_vars.csv", index=False, header=True)
 
