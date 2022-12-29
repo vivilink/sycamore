@@ -241,6 +241,8 @@ class PhenotypesSimulated(Phenotypes):
         self.betas = [0] * variants.number
         self._y = np.empty(num_inds)
 
+        print("_y after initializing", self._y)
+
     @property
     def genetic_variance(self):
         return self._genetic_variance
