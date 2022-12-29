@@ -152,7 +152,7 @@ class TSimulatorMSPrime(TSimulator):
 
         # simulate trees
         recomb_obj = self.get_recomb_obj(arguments=arguments, randomGenerator=randomGenerator, logfile=logfile)
-        trees_msprime = msprime.sim_ancestry(samples={"A": 500, "B": 500},
+        trees_msprime = msprime.sim_ancestry(samples={"A": 1000, "B": 1000},
                                              ploidy=1,
                                              sequence_length=arguments.sequence_length,
                                              recombination_rate=recomb_obj,
@@ -191,7 +191,8 @@ class TSimulatorMSPrime(TSimulator):
         logfile.sub()
         return self.trees
 
-    def get_mut_obj(self, arguments, randomGenerator, logfile):
+    @staticmethod
+    def get_mut_obj(arguments, randomGenerator, logfile):
         mut_obj = None
 
         if arguments.mu is not None:
@@ -212,8 +213,9 @@ class TSimulatorMSPrime(TSimulator):
             )
         return mut_obj
 
-
-    def get_recomb_obj(self, arguments, randomGenerator, logfile):
+    @staticmethod
+    def get_recomb_obj(arguments, randomGenerator, logfile):
+        recomb_obj = None
         try:
             recomb_obj = float(arguments.recomb_rate)
         except ValueError:

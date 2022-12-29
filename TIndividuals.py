@@ -11,7 +11,9 @@ import numpy as np
 
 
 class Individuals:
-    def __init__(self, ploidy, num_haplotypes, relate_sample_names_file):
+    def __init__(self, ploidy, num_haplotypes, logfile, relate_sample_names_file):
+
+        logfile.info("- Initializing individuals with ploidy " + str(ploidy) + ". Found " + str(num_haplotypes) + " haplotypes.")
 
         if ploidy is None:
             raise ValueError("Must provide ploidy with --ploidy")

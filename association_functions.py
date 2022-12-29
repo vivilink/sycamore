@@ -61,7 +61,7 @@ def run_association_testing(args, random, logfile):
     # --------------------------------
     sample_ids = trees.samples()
     N = len(sample_ids)
-    inds = tind.Individuals(args.ploidy, N, relate_sample_names_file=args.relate_sample_names)
+    inds = tind.Individuals(ploidy=args.ploidy, num_haplotypes=N, relate_sample_names_file=args.relate_sample_names, logfile=logfile)
     trees = tt.TTrees.remove_monomorphic(trees)
 
     # TODO: trees_orig and variants_orig should be initialized at the same time, e.g. together in one function. We
