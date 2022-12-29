@@ -239,9 +239,7 @@ class PhenotypesSimulated(Phenotypes):
 
         self._random_noise = np.zeros(num_inds)
         self.betas = [0] * variants.number
-        self._y = np.empty(num_inds)
-
-        print("_y after initializing", self._y)
+        self._y = np.zeros(num_inds) # must be zero and not np.empty because we add noise afterwards! np-empty leads to nan
 
     @property
     def genetic_variance(self):
@@ -272,8 +270,6 @@ class PhenotypesSimulated(Phenotypes):
         self.simulate_trait_architecture(args=args, r=r, logfile=logfile, variants_orig=variants_orig, inds=inds,
                                          trees=trees, plots_dir=plots_dir)
 
-        print("_y before adding noise 1", self._y)
-
         # calculate genetic variance
         self._genetic_variance = float(np.var(self._y))
         logfile.info("- Simulated phenotypes with genetic variance " + str(self._genetic_variance))
@@ -295,7 +291,7 @@ class PhenotypesSimulated(Phenotypes):
             raise ValueError("Must provide random noise distribution parameter. Either set noise sd with "
                              "'pty_sd_envNoise' or heritability with 'pty_h_squared'")
 
-        print("_y before adding noise 2", self._y)
+        print("_y before adding noise", self._y)
 
         self._y += self._random_noise
 
