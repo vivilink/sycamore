@@ -73,7 +73,7 @@ logger.info("- randomGenerator seed is set to " + str(r.random.get_state()[1][0]
 if args.task == "simulate":
     logger.info("- TASK: simulate")
 
-    if args.N is None:
+    if args.N is None and args.sim_two_populations is False:
         raise ValueError("Must provide sample size with argument '--N'")
 
     logger.info("- Simulating " + str(args.N) + " individuals with ploidy " + str(args.ploidy))
@@ -96,7 +96,10 @@ if args.task == "simulate":
     if args.N != N:
         logger.warning("WARNING: Number of samples in tree (" + str(N) + ") does not match number of samples in "
                                                                          "arguments (" + str(args.N) + ")")
-    inds = tind.Individuals(args.ploidy, N, args.relate_sample_names)
+    inds = tind.Individuals(ploidy=args.ploidy,
+                            num_haplotypes=N,
+                            relate_sample_names_file=args.relate_sample_names,
+                            logfile=logger)
     variants = tvar.TVariants(ts_object=trees, samp_ids=sample_ids)
     variants.fill_info(ts_object=trees, samp_ids=sample_ids, pos_float=args.pos_float, logfile=logger)
     variants.write_variant_info(out=args.out, logfile=logger)
