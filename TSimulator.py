@@ -152,7 +152,7 @@ class TSimulatorMSPrime(TSimulator):
 
         # simulate trees
         recomb_obj = self.get_recomb_obj(arguments=arguments, randomGenerator=randomGenerator, logfile=logfile)
-        trees_msprime = msprime.sim_ancestry(samples={"A": 1000, "B": 1000},
+        trees_msprime = msprime.sim_ancestry(samples={"A": arguments.N, "B": arguments.N},
                                              ploidy=1,
                                              sequence_length=arguments.sequence_length,
                                              recombination_rate=recomb_obj,
