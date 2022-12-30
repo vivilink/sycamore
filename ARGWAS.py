@@ -73,7 +73,7 @@ logger.info("- randomGenerator seed is set to " + str(r.random.get_state()[1][0]
 if args.task == "simulate":
     logger.info("- TASK: simulate")
 
-    if args.N is None and args.sim_two_populations is False:
+    if args.N is None:
         raise ValueError("Must provide sample size with argument '--N'")
 
     logger.info("- Simulating " + str(args.N) + " individuals with ploidy " + str(args.ploidy))
