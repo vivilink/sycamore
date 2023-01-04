@@ -304,7 +304,7 @@ class PhenotypesSimulated(Phenotypes):
                                                             pty_mean_envNoise=args.pty_mean_envNoise,
                                                             inds=inds,
                                                             random=r)
-            logfile.info("- Simulated random noise with mean " + args.pty_mean_envNoise + " and sd " +
+            logfile.info("- Simulated random noise with mean " + str(args.pty_mean_envNoise) + " and sd " +
                          str(args.pty_sd_envNoise) + ". The variance of the random noise is thus " +
                          str(np.var(self._random_noise)))
         else:
