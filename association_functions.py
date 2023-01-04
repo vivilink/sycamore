@@ -91,11 +91,7 @@ def run_association_testing(args, random, logfile):
     # create phenotypes
     # --------------------------------
 
-    if args.simulate_phenotypes is False:
-        pheno = pt.PhenotypesBMI(filename=args.pheno_file, inds=inds, out=args.out, logfile=logfile)
-        # TODO: maybe restrict tree to inds for which we have phenotypes here
-
-    else:
+    if args.simulate_phenotypes:
         if args.tree_file_simulated is None:
             raise ValueError("To simulate phenotypes based on untyped variants the simulated trees need to be "
                              "provided with 'tree_file_simulated'.")
@@ -128,6 +124,15 @@ def run_association_testing(args, random, logfile):
         pheno.simulate(args=args, r=random, logfile=logfile, variants_orig=variants_orig, trees=trees, inds=inds,
                        plots_dir=plots_dir)
         logfile.sub()
+
+    else:
+        if args.pheno_file_BMI:
+            pheno = pt.PhenotypesBMI()
+            pheno.initialize_from_file(filename=args.pheno_file_BMI, inds=inds, out=args.out, logfile=logfile)
+            # TODO: maybe restrict tree to inds for which we have phenotypes here
+        else:
+            pheno = pt.Phenotypes()
+            pheno.initialize_from_file(filename=args.pheno_file, inds=inds, out=args.out, logfile=logfile)
 
     # --------------------------------
     # run association tests and plot
@@ -171,7 +176,7 @@ def run_association_testing(args, random, logfile):
         remove_files_with_pattern(args.out + '*HE-SD_result.txt')
         remove_files_with_pattern(args.out + '*.HEreg')
         remove_files_with_pattern(args.out + '*tmp.out')
-        remove_files_with_pattern(args.out + '*phenotypes.phen')
+        # remove_files_with_pattern(args.out + '*phenotypes.phen')
         remove_files_with_pattern(args.out + '*REML_result.txt')
         remove_files_with_pattern(args.out + '*REML.hsq')
         remove_files_with_pattern(args.out + '*REML.log')

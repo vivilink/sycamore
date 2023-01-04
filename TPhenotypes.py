@@ -14,6 +14,7 @@ import statsmodels.formula.api as smf
 from statsmodels.distributions.empirical_distribution import ECDF
 from scipy.stats import norm
 
+
 # TODO: being typed or not should be an option for all causal variants
 
 
@@ -38,6 +39,11 @@ class Phenotypes:
     @y.setter
     def y(self, y: np.ndarray):
         self._y = y
+
+    @staticmethod
+    def set_missing_phenotype_status(inds):
+        tmp = np.repeat(True, inds.num_inds)
+        inds.ind_has_phenotype = tmp
 
     def diffs(self):
         cols = np.tile(self._y, (self._num_inds, 1))
@@ -65,6 +71,8 @@ class Phenotypes:
         tmp_pheno['1'] = np.repeat(0, inds.num_inds)
         tmp_pheno['2'] = inds.names
         tmp_pheno['3'] = self._y
+
+        print(self._y)
 
         indeces_to_remove = inds.get_indeces_inds_no_phenotype()
 
@@ -97,24 +105,34 @@ class Phenotypes:
 
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 
+    def initialize_from_file(self, filename, out, inds, logfile):
+        if filename is None:
+            raise ValueError("Provide file with phenotype information using 'filename'")
+        logfile.info("- Reading phenotype information from " + filename)
+        pheno_df = pd.read_csv(filename, names=["0", "ID", "phenotype"], sep=' ')
+        self._num_inds = len(pheno_df['ID'])
+        self._sample_IDs = np.array(pheno_df['ID'])
+        self._y = np.array(pheno_df['phenotype'])
+
 
 class PhenotypesBMI(Phenotypes):
     _sample_IDs: np.ndarray
     _pheno_df: pd.DataFrame
 
-    def __init__(self, filename, inds, out, logfile):
+    def __init__(self):
         super().__init__()
-        self.initialize_from_file(filename=filename, inds=inds, out=out, logfile=logfile)
 
     def initialize_from_file(self, filename, out, inds, logfile):
         if filename is None:
             raise ValueError("Provide file with BMI phenotype information using 'filename'")
         logfile.info("- Reading BMI phenotype information from " + filename)
         pheno_df = pd.read_csv(filename, names=["ID", "sex", "age", "BMI"])
-        missing_in_phenotypes, added_in_phenotypes = self.find_missing_individuals(inds_tree=inds.names, inds_phenotype=pheno_df['ID'])
+        missing_in_phenotypes, added_in_phenotypes = self.find_missing_individuals(inds_tree=inds.names,
+                                                                                   inds_phenotype=pheno_df['ID'])
         logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
-                        "and " + str(len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
-                        "remove added ones.")
+                                                                        "and " + str(
+            len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
+                                        "remove added ones.")
 
         for i in missing_in_phenotypes:
             pheno_df.loc[len(pheno_df.index)] = [i, np.nan, np.nan, np.nan]
@@ -193,13 +211,15 @@ class PhenotypesBMI(Phenotypes):
             mn = np.mean(residuals)
             self._pheno_df.loc[(self._pheno_df['sex'] == sex) & (self._pheno_df['residual'] > (mn + 6.0 * sd))
                                | ((self._pheno_df['sex'] == sex) & (self._pheno_df['residual'] < (mn - 6.0 * sd)))
-                                , "outlier"] = True
+            , "outlier"] = True
 
             # do rank-based inversement transformation
             # TODO: should I exclude outliers from this?
             ecdf = sm.distributions.ECDF(residuals)
             quants = ecdf(residuals)
-            self._pheno_df.loc[(self._pheno_df['sex'] == sex) & (self._pheno_df['BMI'].notnull()), 'rank_inv_transform'] = norm.ppf(quants)
+            self._pheno_df.loc[
+                (self._pheno_df['sex'] == sex) & (self._pheno_df['BMI'].notnull()), 'rank_inv_transform'] = norm.ppf(
+                quants)
 
         # write to file and set necessary parameters
         self.set_missing_phenotype_status(inds=inds)
@@ -239,7 +259,8 @@ class PhenotypesSimulated(Phenotypes):
 
         self._random_noise = np.zeros(num_inds)
         self.betas = [0] * variants.number
-        self._y = np.zeros(num_inds) # must be zero and not np.empty because we add noise afterwards! np-empty leads to nan
+        self._y = np.zeros(
+            num_inds)  # must be zero and not np.empty because we add noise afterwards! np-empty leads to nan
 
     @property
     def genetic_variance(self):
@@ -248,11 +269,6 @@ class PhenotypesSimulated(Phenotypes):
     @genetic_variance.setter
     def genetic_variance(self, genetic_variance: float):
         self._genetic_variance = genetic_variance
-
-    @staticmethod
-    def set_missing_phenotype_status(inds):
-        tmp = np.repeat(True, inds.num_inds)
-        inds.ind_has_phenotype = tmp
 
     def simulate(self, args, r, logfile, variants_orig, inds, trees, plots_dir):
         """
@@ -795,3 +811,26 @@ class PhenotypesSimulated(Phenotypes):
 
         table.to_csv(out + "_pheno_causal_vars.csv", index=False, header=True)
 
+
+class PhenotypesSimulatedCopied(Phenotypes):
+
+    def __init__(self, logfile):
+        logfile.info("- Writing phenotype data '" + out + "_pheno_causal_vars.csv'")
+
+        # results for each variant
+        table = pd.DataFrame()
+        self.betas = table['betas']
+        self.causal_variant_indeces = table.loc[table['causal'] == "TRUE", index]
+        table['power'] = 0
+        table.loc[self.causal_variant_indeces, 'power'] = self.causal_power
+        table['var_genotypic_from_betas'] = np.repeat(float(inds.ploidy), variants.number) * np.array(
+            self.betas) * np.array(
+            self.betas) * np.array(table['allele_freq']) * (np.repeat(1.0, variants.number) - np.array(
+            table['allele_freq']))
+        table['var_genotypic_empiric'] = np.repeat(self._genetic_variance, variants.number)
+        table['var_random'] = np.repeat(np.var(self._random_noise), variants.number)
+        table['var_phenotypic'] = np.var(self._y)
+
+        print("nas in write_sim_params_to_file", np.count_nonzero(np.isnan(self._y)))
+
+        table.to_csv(out + "_pheno_causal_vars.csv", index=False, header=True)

@@ -106,6 +106,8 @@ class TParameters:
         # phenotypes
         pty = parser.add_argument_group('phenotypes')
         pty.add_argument('--pheno_file', type=str,
+                         help="File with phenotypes")
+        pty.add_argument('--pheno_file_BMI', type=str,
                          help="File with BMI phenotypes")
         pty.add_argument('--simulate_phenotypes', action='store_true',
                          help="If set to true, phenotypes will be simulated. If set to false, they will be read from "
