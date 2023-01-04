@@ -300,9 +300,13 @@ class PhenotypesSimulated(Phenotypes):
             logfile.info("- Simulated random noise to result in h^2 " + str(args.pty_h_squared) +
                          ". The variance of the random noise is thus " + str(np.var(self._random_noise)))
         elif args.pty_h_squared is None and args.pty_sd_envNoise is not None:
-            self._random_noise = self.simulate_env_noise_sd(sd_random_noise=args.pty_sd_envNoise, inds=inds, random=r)
-            logfile.info("- Simulated random noise with sd " + str(args.pty_sd_envNoise) +
-                         ". The variance of the random noise is thus " + str(np.var(self._random_noise)))
+            self._random_noise = self.simulate_env_noise_sd(sd_random_noise=args.pty_sd_envNoise,
+                                                            pty_mean_envNoise=args.pty_mean_envNoise,
+                                                            inds=inds,
+                                                            random=r)
+            logfile.info("- Simulated random noise with mean " + args.pty_mean_envNoise + " and sd " +
+                         str(args.pty_sd_envNoise) + ". The variance of the random noise is thus " +
+                         str(np.var(self._random_noise)))
         else:
             raise ValueError("Must provide random noise distribution parameter. Either set noise sd with "
                              "'pty_sd_envNoise' or heritability with 'pty_h_squared'")
@@ -527,7 +531,7 @@ class PhenotypesSimulated(Phenotypes):
         print(random.random.get_state()[1][0])
         print(random.random.uniform(0, 1, 1))
 
-    def simulate_env_noise_sd(self, sd_random_noise, random, inds):
+    def simulate_env_noise_sd(self, pty_mean_envNoise, sd_random_noise, random, inds):
         """
         Simulate random noise according to N(0, sd_random_noise)
         :param sd_random_noise: float
