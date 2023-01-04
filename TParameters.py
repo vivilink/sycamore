@@ -114,6 +114,8 @@ class TParameters:
                               "file.")
         pty.add_argument('--pty_sd_envNoise', type=float,
                          help="Std. dev. for environmental noise. If set to 0, no noise will be simulated.")
+        pty.add_argument('--pty_mean_envNoise', type=float, default=0,
+                         help="Mean for environmental noise. Should normally be zero")
         pty.add_argument('--pty_h_squared', type=float,
                          help="Heritability (h^2) of simulated phenotype. The environmental noise will be simulated in "
                               "order to satisfy the request.")
