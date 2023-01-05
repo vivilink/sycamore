@@ -539,10 +539,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     # initialize and write phenotypes
     if covariance == "eGRM" or covariance == "GRM":
         pheno.set_missing_phenotype_status(inds)
-        if args.pheno_file is None:
-            pheno.write_to_file_gcta_eGRM(inds=inds, out=outname, logfile=logfile)
-        else:
-            logfile.info("- Not writing phenotypes to file because pheno_file was provided")
+        pheno.write_to_file_gcta_eGRM(inds=inds, out=outname, logfile=logfile)
     else:
         pheno.write_to_file_gcta_scaled(out=outname, logfile=logfile)
     if args.simulate_phenotypes is True:

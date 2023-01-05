@@ -538,8 +538,6 @@ class PhenotypesSimulated(Phenotypes):
         """
         noise = random.random.normal(loc=0, scale=sd_random_noise, size=inds.num_inds)
 
-        print("nas in noise simulate_env_noise_sd", np.count_nonzero(np.isnan(noise)))
-
         return noise
 
     def simulate_env_noise_h(self, requested_hsquared, inds, random):
@@ -808,31 +806,4 @@ class PhenotypesSimulated(Phenotypes):
         table['var_genotypic_empiric'] = np.repeat(self._genetic_variance, variants.number)
         table['var_random'] = np.repeat(np.var(self._random_noise), variants.number)
         table['var_phenotypic'] = np.var(self._y)
-
-        print("nas in write_sim_params_to_file", np.count_nonzero(np.isnan(self._y)))
-
-        table.to_csv(out + "_pheno_causal_vars.csv", index=False, header=True)
-
-
-class PhenotypesSimulatedCopied(Phenotypes):
-
-    def __init__(self, logfile):
-        logfile.info("- Writing phenotype data '" + out + "_pheno_causal_vars.csv'")
-
-        # results for each variant
-        table = pd.DataFrame()
-        self.betas = table['betas']
-        self.causal_variant_indeces = table.loc[table['causal'] == "TRUE", index]
-        table['power'] = 0
-        table.loc[self.causal_variant_indeces, 'power'] = self.causal_power
-        table['var_genotypic_from_betas'] = np.repeat(float(inds.ploidy), variants.number) * np.array(
-            self.betas) * np.array(
-            self.betas) * np.array(table['allele_freq']) * (np.repeat(1.0, variants.number) - np.array(
-            table['allele_freq']))
-        table['var_genotypic_empiric'] = np.repeat(self._genetic_variance, variants.number)
-        table['var_random'] = np.repeat(np.var(self._random_noise), variants.number)
-        table['var_phenotypic'] = np.var(self._y)
-
-        print("nas in write_sim_params_to_file", np.count_nonzero(np.isnan(self._y)))
-
         table.to_csv(out + "_pheno_causal_vars.csv", index=False, header=True)
