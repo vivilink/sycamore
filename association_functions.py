@@ -321,9 +321,13 @@ def write_and_test_window_for_association(covariance_obj, inds, AIM_methods, out
         raise ValueError("trying to test empty covariance matrix for association at window index " + str(window_index))
     covariance_obj.finalize(inds=inds)
     covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile)
+
+    print("testing window with index " + str(window_index) + " for association!!!!!")
+
     for m in AIM_methods:
         m.run_association(index=window_index, out=outname)
     covariance_obj.clear()
+
 
 
 def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, window_ends, window_starts, num_tests,
