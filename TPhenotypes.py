@@ -311,8 +311,6 @@ class PhenotypesSimulated(Phenotypes):
             raise ValueError("Must provide random noise distribution parameter. Either set noise sd with "
                              "'pty_sd_envNoise' or heritability with 'pty_h_squared'")
 
-        print("_y before adding noise", self._y)
-
         self._y += self._random_noise
 
         # self.standardize(logfile)
