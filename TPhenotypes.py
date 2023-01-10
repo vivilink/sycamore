@@ -72,8 +72,6 @@ class Phenotypes:
         tmp_pheno['2'] = inds.names
         tmp_pheno['3'] = self._y
 
-        print(self._y)
-
         indeces_to_remove = inds.get_indeces_inds_no_phenotype()
 
         if np.count_nonzero(np.isnan(self._y)) > 0 and len(indeces_to_remove) == 0:

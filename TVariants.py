@@ -173,13 +173,13 @@ class TVariants:
         haps_file.close()
         logfile.sub()
 
-    def write_shapeit2(self, name, inds, logfile):
+    def write_shapeit2(self, out, inds, logfile):
         """
         Write files in SHAPEIT2 format, to be used as input by RELATE (https://myersgroup.github.io/relate/input_data.html)
 
         Parameters
         ----------
-        name : TYPE
+        out : TYPE
             DESCRIPTION.
 
         Returns
@@ -219,8 +219,45 @@ class TVariants:
                 #     print("v", v, "positions\n", self._info.iloc[v])
                 index += 1
 
-        logfile.info("- Writing haplotypes in Shapeit2 format to file '" + name + "_variants.haps'")
-        haps.to_csv(name + "_variants.haps", sep=' ', header=False, index=False)
+        logfile.info("- Writing haplotypes in Shapeit2 format to file '" + out + "_variants.haps'")
+        haps.to_csv(out + "_variants.haps", sep=' ', header=False, index=False)
+        logfile.sub()
+
+    def write_haplotypes(self, out, inds, logfile):
+        """
+        Write haplotypes in a format defined by me, rows are haplotypes, columns are variants (opposite of shapeit)
+        @param out:
+        @param inds:
+        @param logfile:
+        @return:
+        """
+        haps = pd.DataFrame(index=range(inds.num_haplotypes), columns=range(self._number_typed))
+        info_typed = self._info.loc[self._info['typed'] == True]
+        info_typed['index'] = range(self._number_typed)
+        info_typed.set_index(info_typed['index'], drop=True, inplace=True)
+
+        logfile.info("- Building haplotypes for typed variants and writing to file '" + out + "_haplotypes.txt'")
+        logfile.add()
+        # can't use v for index because it loops over all variants, not only typed ones
+        column = 0
+        # log progress
+        start = time.time()
+
+        for v, var in enumerate(self._variants):
+            if v % 10000 == 0:
+                end = time.time()
+                logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(
+                    round(end - start)) + " s")
+            # print(v, self._info.iloc[v]['typed'])
+            if self._info.iloc[v]['typed']:
+                # if self._info.iloc[v]['position'] == None :
+                #     print(self._info.iloc[v])
+                haps.iloc[:, column] = var.genotypes
+                # if index in [9,10, 11, 12]:
+                #     print("v", v, "positions\n", self._info.iloc[v])
+                column += 1
+
+        haps.to_csv(out + "_haplotypes.txt", sep=' ', header=False, index=False)
         logfile.sub()
 
 
