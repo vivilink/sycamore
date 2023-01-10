@@ -48,6 +48,8 @@ class TCovariance:
         # K = prefix_path.grm.bin; relatedness diagonal + lower diagonal
         # mu = prefix_path.grm.N.bin; number of shared mutations between individuals on diagonal + lower diagonal
         # samples = prefix_path.grm.id; 2 column text = family_id individual_id
+        # print("covariance", covariance_matrix)
+        # np.savetxt(out + '_covariance_matrix.csv', covariance_matrix, delimiter=',')
         n, n = covariance_matrix.shape
         with open("{}.grm.bin".format(out), "wb") as grmfile:
             for idx in range(n):
