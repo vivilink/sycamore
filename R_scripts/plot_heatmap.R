@@ -1,4 +1,5 @@
-setwd("/data/ARGWAS/experiments_population_split/tests/msprime")
+# setwd("/data/ARGWAS/experiments_population_split/tests/msprime")
+setwd("/home/vivian/postdoc_USC/AIM/debugging/two_pops/heatmap/msprime")
 
 ReadGRMBin=function(prefix, AllN=F, size=4){
   
@@ -31,15 +32,17 @@ ReadGRMBin=function(prefix, AllN=F, size=4){
   
   return(list(diag=grm[i], off=grm[-i], id=id, N=N, total_grm=total_grm))
 }
-color = function(x)rev(heat.colors(x))
-vbreaks=seq(-1,9, by=0.1)
+
 
 plot_hm <- function(egrm, title){
+  color = function(x)rev(heat.colors(x))
+  vbreaks=seq(range(egrm$total_grm)[1],range(egrm$total_grm)[2], by=0.1)
+  print(vbreaks)
   png(paste(title,"_heatmap.png", sep=''), 1800, 1800)
   print(range(egrm$total_grm))
-  heatmap(egrm$total_grm, main=title) #, Rowv=NA, Colv=NA , col=color(length(vbreaks)-1), breaks=vbreaks
+  h=heatmap(egrm$total_grm, main=title) #, Rowv=NA, Colv=NA , col=color(length(vbreaks)-1), breaks=vbreaks
   dev.off()
-  return(egrm)
+  return(h)
 }
 
 # --------------------
@@ -51,6 +54,9 @@ plot_hm(egrm=globalGRM, title="testing_GRM")
 
 globaleGRM <- ReadGRMBin("testing_eGRM")
 plot_hm(egrm=globaleGRM, title="testing_eGRM")
+
+globaleGRM <- ReadGRMBin("testing")
+plot_hm(egrm=globaleGRM, title="testing")
 
 GRM_direct <- as.matrix(read.csv("testing_GRM_covariance_matrix.csv", sep=',', header=FALSE))
 heatmap(as.matrix(GRM_direct))
@@ -65,16 +71,53 @@ sum(round(eGRM_direct, 4) != round(globaleGRM$whole_grm, 4))
 #---------------------
 
 
-globalGRM <- ReadGRMBin("two_pops_1")
-plot_hm(globalGRM, "global")
+globalGRM <- ReadGRMBin("two_pops_40")
+h_global <- plot_hm(globalGRM, "global")
+range(h$rowInd[1000:2000])
 
 notworking <- ReadGRMBin("two_pops_20_phenoRep1_eGRMrep1_eGRM")
-plot_hm(notworking, "not_working")
+h_not_working <- plot_hm(notworking, "not_working")
 
 working <- ReadGRMBin("two_pops_6_phenoRep1_eGRMrep1_eGRM")
-plot_hm(working, "working")
+h_working <- plot_hm(working, "working")
 
 
+
+
+
+#splittime20k
+notworking97 <- ReadGRMBin("splitTime20k/two_pops_97_phenoRep1_eGRMrep1_eGRM")
+h_not_working97 <- plot_hm(notworking97, "splitTime20k/not_working_97")
+
+notworking96 <- ReadGRMBin("splitTime20k/two_pops_96_phenoRep1_eGRMrep1_eGRM")
+h_not_working96 <- plot_hm(notworking96, "splitTime20k/not_working_96")
+
+notworking95 <- ReadGRMBin("splitTime20k/two_pops_95_phenoRep1_eGRMrep1_eGRM")
+h_not_working95 <- plot_hm(notworking95, "splitTime20k/not_working_95")
+
+working99 <- ReadGRMBin("splitTime20k/two_pops_99_phenoRep1_eGRMrep1_eGRM")
+h_working_99 <- plot_hm(working99, "splitTime20k/working_99")
+
+working9 <- ReadGRMBin("splitTime20k/two_pops_9_phenoRep1_eGRMrep1_eGRM")
+h_working_9 <- plot_hm(working9, "splitTime20k/working_9")
+
+working84 <- ReadGRMBin("splitTime20k/two_pops_84_phenoRep1_eGRMrep1_eGRM")
+h_working_84 <- plot_hm(working84, "splitTime20k/working_84")
+
+working94 <- ReadGRMBin("splitTime20k/two_pops_94_phenoRep1_eGRMrep1_eGRM")
+h_working_94 <- plot_hm(working94, "splitTime20k/working_94")
+
+globalGRM <- ReadGRMBin("splitTime20k/two_pops_99")
+h_global <- plot_hm(globalGRM, "splitTime20k/global_two_pops_99")
+range(h_global$rowInd[1000:2000])
+
+globalGRM <- ReadGRMBin("splitTime20k/two_pops_97")
+h_global <- plot_hm(globalGRM, "splitTime20k/global_two_pops_97")
+range(h_global$rowInd[1000:2000])
+
+globalGRM <- ReadGRMBin("splitTime20k/two_pops_1")
+h_global <- plot_hm(globalGRM, "splitTime20k/global_two_pops_1")
+range(h_global$rowInd[1000:2000])
 #------------
 # hamming distance
 #------------
