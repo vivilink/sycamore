@@ -148,7 +148,8 @@ class TSimulatorMSPrime(TSimulator):
         demography.add_population(name="A", initial_size=20_000)
         demography.add_population(name="B", initial_size=20_000)
         demography.add_population(name="C", initial_size=20_000)
-        demography.add_population_split(time=500, derived=["A", "B"], ancestral="C")
+        demography.add_population_split(time=arguments.split_time, derived=["A", "B"], ancestral="C")
+        print(demography.debug())
 
         # simulate trees
         recomb_obj = self.get_recomb_obj(arguments=arguments, randomGenerator=randomGenerator, logfile=logfile)
