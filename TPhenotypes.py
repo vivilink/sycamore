@@ -13,9 +13,57 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.distributions.empirical_distribution import ECDF
 from scipy.stats import norm
+import TVariants as tvar
+import tskit
 
 
 # TODO: being typed or not should be an option for all causal variants
+@staticmethod
+def simulate_phenotypes(args, trees, sample_ids, inds, plots_dir, random, logfile):
+    if args.simulate_phenotypes:
+        if args.tree_file_simulated is None:
+            raise ValueError("To simulate phenotypes based on untyped variants the simulated trees need to be "
+                             "provided with 'tree_file_simulated'.")
+
+        logfile.info("- Reading simulated tree used for simulating phenotypes from " + args.tree_file_simulated)
+        trees_orig = tskit.load(args.tree_file_simulated)
+
+        if trees_orig.num_samples != trees.num_samples:
+            raise ValueError("The trees provided with params 'tree_file_simulated' and 'tree_file' must have the same "
+                             "number of samples")
+
+        # variants_orig are used to simulate phenotypes. They need to be consistent with original tree and the typed
+        # status that might have been defined earlier with a variants file. The causal mutation should not be affected
+        # by a freq filter
+        variants_orig = tvar.TVariantsFiltered(ts_object=trees_orig,
+                                               samp_ids=sample_ids,
+                                               min_allele_freq=0,
+                                               max_allele_freq=1,
+                                               prop_typed_variants=1,
+                                               pos_float=args.pos_float,
+                                               random=random,
+                                               logfile=logfile,
+                                               filtered_variants_file=args.variants_file)
+
+        logfile.info("- Phenotypes:")
+        logfile.add()
+
+        pheno = PhenotypesSimulated(variants=variants_orig, num_inds=inds.num_inds)
+
+        pheno.simulate(args=args, r=random, logfile=logfile, variants_orig=variants_orig, trees=trees, inds=inds,
+                       plots_dir=plots_dir)
+        logfile.sub()
+
+        return pheno
+
+    else:
+        if args.pheno_file_BMI:
+            pheno = PhenotypesBMI()
+            pheno.initialize_from_file(filename=args.pheno_file_BMI, inds=inds, out=args.out, logfile=logfile)
+            # TODO: maybe restrict tree to inds for which we have phenotypes here
+        else:
+            pheno = Phenotypes()
+            pheno.initialize_from_file(filename=args.pheno_file, inds=inds, out=args.out, logfile=logfile)
 
 
 class Phenotypes:

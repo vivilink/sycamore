@@ -21,7 +21,7 @@ class TParameters:
         parser.add_argument('--task', required=True,
                             choices=['simulate', 'impute', 'associate', 'downsampleVariantsWriteShapeit',
                                      'ARGStatistics', 'getTreeAtPosition', 'simulateMoreMutations',
-                                     'covarianceCorrelations'],
+                                     'covarianceCorrelations', 'simulatePhenotypes'],
                             help='The task to be executed (simulate or associate)')
         parser.add_argument('--out', required=True, type=str,
                             help='Prefix of all output files')

@@ -38,6 +38,8 @@ def read_trees(tree_file, trees_interval, trees_interval_start, trees_interval_e
     else:
         trees_extract = trees_full.simplify()
 
+    trees_extract = TTrees.remove_monomorphic(trees_extract)
+
     return trees_extract, trees_interval
 
 
