@@ -92,13 +92,13 @@ def run_association_testing(args, random, logfile):
     # create phenotypes
     # --------------------------------
 
-    pheno = pt.simulate_phenotypes(args=args,
-                                   trees=trees,
-                                   sample_ids=sample_ids,
-                                   inds=inds,
-                                   plots_dir=plots_dir,
-                                   random=random,
-                                   logfile=logfile)
+    pheno = pt.make_phenotypes(args=args,
+                               trees=trees,
+                               sample_ids=sample_ids,
+                               inds=inds,
+                               plots_dir=plots_dir,
+                               random=random,
+                               logfile=logfile)
 
     # --------------------------------
     # run association tests and plot
@@ -507,7 +507,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
         pheno.write_to_file_gcta_eGRM(inds=inds, out=outname, logfile=logfile)
     else:
         pheno.write_to_file_gcta_scaled(out=outname, logfile=logfile)
-    if args.simulate_phenotypes is True:
+    if args.make_phenotypes is True:
         pheno.find_causal_trees(trees)
         pheno.find_causal_windows(window_ends=window_ends, window_starts=window_starts)
 

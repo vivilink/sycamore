@@ -228,13 +228,13 @@ if args.task == "simulatePhenotypes":
     inds = tind.Individuals(ploidy=args.ploidy, num_haplotypes=N, relate_sample_names_file=args.relate_sample_names,
                             logfile=logger)
 
-    pheno = pt.simulate_phenotypes(args=args,
-                                   trees=trees,
-                                   sample_ids=sample_ids,
-                                   inds=inds,
-                                   plots_dir=plots_dir,
-                                   random=r,
-                                   logfile=logger)
+    pheno = pt.make_phenotypes(args=args,
+                               trees=trees,
+                               sample_ids=sample_ids,
+                               inds=inds,
+                               plots_dir=plots_dir,
+                               random=r,
+                               logfile=logger)
 
     pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)
 

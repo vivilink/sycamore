@@ -18,7 +18,7 @@ import tskit
 
 
 # TODO: being typed or not should be an option for all causal variants
-def simulate_phenotypes(args, trees, sample_ids, inds, plots_dir, random, logfile):
+def make_phenotypes(args, trees, sample_ids, inds, plots_dir, random, logfile):
     if args.simulate_phenotypes:
         if args.tree_file_simulated is None:
             raise ValueError("To simulate phenotypes based on untyped variants the simulated trees need to be "
@@ -53,8 +53,6 @@ def simulate_phenotypes(args, trees, sample_ids, inds, plots_dir, random, logfil
                        plots_dir=plots_dir)
         logfile.sub()
 
-        return pheno
-
     else:
         if args.pheno_file_BMI:
             pheno = PhenotypesBMI()
@@ -64,9 +62,12 @@ def simulate_phenotypes(args, trees, sample_ids, inds, plots_dir, random, logfil
             pheno = Phenotypes()
             pheno.initialize_from_file(filename=args.pheno_file, inds=inds, out=args.out, logfile=logfile)
 
+    return pheno
+
 
 class Phenotypes:
     def __init__(self):
+        self._sample_IDs = None
         self._y = np.ndarray
         self._num_inds = -1
         self._genetic_variance = -1.0
@@ -707,7 +708,6 @@ class PhenotypesSimulated(Phenotypes):
         logfile.info("- Simulated phenotypes based on " + str(
             len(self.causal_variants)) + " causal variants out of a total of " + str(variants.number) + ".")
         self.filled = True
-        print(self._y)
 
     def simulate_causal_region(self, variants, inds, left_bound, right_bound, causal_mutations_effect_size_def,
                                local_heritability, prop_causal_mutations, random, min_allele_freq_causal,

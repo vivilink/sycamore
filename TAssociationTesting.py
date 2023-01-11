@@ -47,6 +47,7 @@ class TAssociationTesting:
         tmp = scipy.stats.chisquare(f_obs=h, f_exp=((len(self.p_values)) / (num_bins)))
         return tmp
 
+
 class TAssociationTestingGWAS(TAssociationTesting):
     """
     SNP based association testing using Ordinary Least Squares regression
@@ -72,11 +73,11 @@ class TAssociationTestingGWAS(TAssociationTesting):
                     genotypes = inds.get_diploid_genotypes(variant.genotypes)
                 else:
                     genotypes = variant.genotypes
-
-                if len(genotypes) != len(phenotypes.y):
-                    # TODO: remove this after debugging on real data
-                    raise ValueError("Genotypes length (" + str(len(genotypes)) + ") is not same as phenotypes length ("
-                                     + str(len(phenotypes.y)) + ")")
+                #
+                # if len(genotypes) != len(phenotypes.y):
+                #     # TODO: remove this after debugging on real data
+                #     raise ValueError("Genotypes length (" + str(len(genotypes)) + ") is not same as phenotypes length ("
+                #                      + str(len(phenotypes.y)) + ")")
 
                 PVALUE = af.OLS(genotypes=genotypes, phenotypes=phenotypes.y)
                 self.p_values[i] = PVALUE
@@ -143,7 +144,8 @@ class TAssociationTestingGWAS(TAssociationTesting):
         logfile.info("- Writing stats from OLS to '" + name + "_variants_stats.csv'")
         stats.to_csv(name + "_variants_stats.csv", index=False, header=True)
 
-    def manhattan_plot_subset(self, variant_positions, phenotypes, subplot, index_min, index_max, size=1, n_snps_lowess=0,
+    def manhattan_plot_subset(self, variant_positions, phenotypes, subplot, index_min, index_max, size=1,
+                              n_snps_lowess=0,
                               *args):
         """
         Parameters
@@ -222,7 +224,8 @@ class TAssociationTestingRegions(TAssociationTesting):
         self.manhattan_plot_subset(variant_positions=variant_positions, subplot=subplot, index_min=0,
                                    index_max=self.num_associations, p_values=self.p_values, phenotypes=phenotypes)
 
-    def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, logfile, phenotypes, title_supplement="", *args):
+    def manhattan_plot_special_pvalues(self, variant_positions, p_values, subplot, logfile, phenotypes,
+                                       title_supplement="", *args):
         logfile.info("Plotting " + str(self.num_associations) + " associations")
         self.manhattan_plot_subset(variant_positions=variant_positions, subplot=subplot, index_min=0,
                                    index_max=self.num_associations, p_values=p_values,
