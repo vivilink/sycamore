@@ -13,6 +13,7 @@ import TIndividuals as tind
 import TSimulator as tsim
 import TTree as tt
 import TImputation as impute
+import TPhenotypes as pt
 import association_functions as af
 from python_log_indenter import IndentedLoggerAdapter
 import logging
@@ -204,6 +205,38 @@ if args.task == "impute":
 
 if args.task == "covarianceCorrelations":
     af.run_covariance_correlation(args=args, logfile=logger)
+
+# ----------------------------------------------------------------
+# only simulate phenotypes
+# ----------------------------------------------------------------
+
+if args.task == "simulatePhenotypes":
+    if args.tree_file is None:
+        raise ValueError("The estimated trees need to be provided with 'tree_file'.")
+
+    trees, args.trees_interval = tt.read_trees(tree_file=args.tree_file,
+                                               trees_interval=args.trees_interval,
+                                               trees_interval_start=args.trees_interval_start,
+                                               trees_interval_end=args.trees_interval_end,
+                                               logfile=logger)
+    sample_ids = trees.samples()
+
+    plots_dir = args.out + "_plots/"
+    if not os.path.exists(plots_dir):
+        os.mkdir(plots_dir)
+    N = len(sample_ids)
+    inds = tind.Individuals(ploidy=args.ploidy, num_haplotypes=N, relate_sample_names_file=args.relate_sample_names,
+                            logfile=logger)
+
+    pheno = pt.simulate_phenotypes(args=args,
+                                   trees=trees,
+                                   sample_ids=sample_ids,
+                                   inds=inds,
+                                   plots_dir=plots_dir,
+                                   random=r,
+                                   logfile=logger)
+
+    pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)
 
 # ----------------------------------------------------------------
 # Read simulation to simulate phenotypes and perform association

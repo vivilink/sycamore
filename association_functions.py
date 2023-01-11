@@ -56,13 +56,14 @@ def run_association_testing(args, random, logfile):
     if not os.path.exists(plots_dir):
         os.mkdir(plots_dir)
 
+    sample_ids = trees.samples()
+    N = len(sample_ids)
+    inds = tind.Individuals(ploidy=args.ploidy, num_haplotypes=N, relate_sample_names_file=args.relate_sample_names,
+                            logfile=logfile)
+
     # --------------------------------
     # create diploids and variants
     # --------------------------------
-    sample_ids = trees.samples()
-    N = len(sample_ids)
-    inds = tind.Individuals(ploidy=args.ploidy, num_haplotypes=N, relate_sample_names_file=args.relate_sample_names, logfile=logfile)
-    trees = tt.TTrees.remove_monomorphic(trees)
 
     # TODO: trees_orig and variants_orig should be initialized at the same time, e.g. together in one function. We
     #  should not have 2 tree files and 2 variant files just floating around separately. Maybe TTrees class could
@@ -91,48 +92,13 @@ def run_association_testing(args, random, logfile):
     # create phenotypes
     # --------------------------------
 
-    if args.simulate_phenotypes:
-        if args.tree_file_simulated is None:
-            raise ValueError("To simulate phenotypes based on untyped variants the simulated trees need to be "
-                             "provided with 'tree_file_simulated'.")
-
-        logfile.info("- Reading simulated tree used for simulating phenotypes from " + args.tree_file_simulated)
-        trees_orig = tskit.load(args.tree_file_simulated)
-
-        if trees_orig.num_samples != trees.num_samples:
-            raise ValueError("The trees provided with params 'tree_file_simulated' and 'tree_file' must have the same "
-                             "number of samples")
-
-        # variants_orig are used to simulate phenotypes. They need to be consistent with original tree and the typed
-        # status that might have been defined earlier with a variants file. The causal mutation should not be affected
-        # by a freq filter
-        variants_orig = tvar.TVariantsFiltered(ts_object=trees_orig,
-                                               samp_ids=sample_ids,
-                                               min_allele_freq=0,
-                                               max_allele_freq=1,
-                                               prop_typed_variants=1,
-                                               pos_float=args.pos_float,
-                                               random=random,
-                                               logfile=logfile,
-                                               filtered_variants_file=args.variants_file)
-
-        logfile.info("- Phenotypes:")
-        logfile.add()
-
-        pheno = pt.PhenotypesSimulated(variants=variants_orig, num_inds=inds.num_inds)
-
-        pheno.simulate(args=args, r=random, logfile=logfile, variants_orig=variants_orig, trees=trees, inds=inds,
-                       plots_dir=plots_dir)
-        logfile.sub()
-
-    else:
-        if args.pheno_file_BMI:
-            pheno = pt.PhenotypesBMI()
-            pheno.initialize_from_file(filename=args.pheno_file_BMI, inds=inds, out=args.out, logfile=logfile)
-            # TODO: maybe restrict tree to inds for which we have phenotypes here
-        else:
-            pheno = pt.Phenotypes()
-            pheno.initialize_from_file(filename=args.pheno_file, inds=inds, out=args.out, logfile=logfile)
+    pheno = pt.simulate_phenotypes(args=args,
+                                   trees=trees,
+                                   sample_ids=sample_ids,
+                                   inds=inds,
+                                   plots_dir=plots_dir,
+                                   random=random,
+                                   logfile=logfile)
 
     # --------------------------------
     # run association tests and plot
@@ -195,7 +161,7 @@ def OLS(genotypes, phenotypes):
     # print("!!!!!len genotypes nan", len(np.isnan(genotypes)))
     genotypes = genotypes[~np.isnan(genotypes)]
     # raise ValueError("here")
-#    tmp = np.isnan(phenotypes)
+    #    tmp = np.isnan(phenotypes)
     # np.delete(genotypes, tmp)
 
     genotypes_test = sm.tools.add_constant(genotypes)
@@ -327,7 +293,6 @@ def write_and_test_window_for_association(covariance_obj, inds, AIM_methods, out
     for m in AIM_methods:
         m.run_association(index=window_index, out=outname)
     covariance_obj.clear()
-
 
 
 def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, window_ends, window_starts, num_tests,
@@ -566,11 +531,13 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
             if args.population_structure:
                 if m == "REML":
                     f.write(args.GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
-                            + outname + "_REML --reml-lrt 1 --threads " + str(args.num_gcta_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+                            + outname + "_REML --reml-lrt 1 --threads " + str(
+                        args.num_gcta_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
                 elif m == "HE":
                     f.write(
                         args.GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
-                        + outname + "_HE --reml-lrt 1 --threads " + str(args.num_gcta_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+                        + outname + "_HE --reml-lrt 1 --threads " + str(
+                            args.num_gcta_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
                     # grep results
                     f.write("sed -n '2,6p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\t\' > "
                             + outname + "_HE-CP_result.txt\n")
@@ -580,12 +547,14 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
             else:
                 if m == "REML":
                     f.write(args.GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname
-                            + "_REML --threads " + str(args.num_gcta_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
+                            + "_REML --threads " + str(
+                        args.num_gcta_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
                 elif m == "HE":
                     f.write(args.GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname
-                            + "_HE --threads " + str(args.num_gcta_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+                            + "_HE --threads " + str(
+                        args.num_gcta_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
                     # grep results
-                    f.write("sed -n '2,4p' " + outname  + "_" + m + ".HEreg | unexpand -a | tr -s \'\\t\' > "
+                    f.write("sed -n '2,4p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\\t\' > "
                             + outname + "_HE-CP_result.txt\n")
                     f.write("sed -n '7,9p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\\t\' > "
                             + outname + "_HE-SD_result.txt\n")

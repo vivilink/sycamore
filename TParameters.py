@@ -21,7 +21,7 @@ class TParameters:
         parser.add_argument('--task', required=True,
                             choices=['simulate', 'impute', 'associate', 'downsampleVariantsWriteShapeit',
                                      'ARGStatistics', 'getTreeAtPosition', 'simulateMoreMutations',
-                                     'covarianceCorrelations'],
+                                     'covarianceCorrelations', 'simulatePhenotypes'],
                             help='The task to be executed (simulate or associate)')
         parser.add_argument('--out', required=True, type=str,
                             help='Prefix of all output files')
@@ -83,6 +83,8 @@ class TParameters:
                          help="Ancestral population size for simulating with msprime", default=1000)
         sim.add_argument("--sim_two_populations", action="store_true",
                          help="Simulate a population split with msprime")
+        sim.add_argument("--split_time", type=int,
+                         help="Split time between two populations")
         sim.add_argument('--AH_tree_pos', type=int,
                          help="Add mutations only to the local tree covering this genomic position")
         sim.add_argument('--recomb_rate',
@@ -129,7 +131,7 @@ class TParameters:
         pty.add_argument('--pty_prop_causal_mutations', type=float, default=0,
                          help="Proportion of causal mutations to simulate at uniformly distributed positions if "
                               "pty_sim_method is set to 'uniform'. If set to 0, there will be no causal mutations.")
-        pty.add_argument('--pty_sd_beta_causal_mutations', type=float,
+        pty.add_argument('--pty_sd_beta_causal_mutations', type=str,
                          help="Std. dev. for betas of causal mutations if pty_sim_method is set to 'uniform', "
                               "'oneTree' or 'oneWindow'. If it can be converted to a float, betas will sampled from "
                               "N(0, pty_sd_beta_causal_mutations). If set to 'standardized', betas will be sampled "
