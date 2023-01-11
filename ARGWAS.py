@@ -236,6 +236,8 @@ if args.task == "simulatePhenotypes":
                                    random=r,
                                    logfile=logger)
 
+    pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)
+
 # ----------------------------------------------------------------
 # Read simulation to simulate phenotypes and perform association
 # ----------------------------------------------------------------
