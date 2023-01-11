@@ -387,7 +387,7 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
 
             window_index += 1
             # log progress
-            if tree.index % 1 == 0:
+            if tree.index % 100 == 0:
                 end = time.time()
                 logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end - start)) + " s")
 
@@ -454,7 +454,7 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                         #       window_starts[0], window_ends[0], "and proportion", proportion)
 
                 # log progress
-                if tree.index % 1 == 0:
+                if tree.index % 100 == 0:
                     end = time.time()
                     logfile.info("- Ran AIM for " + str(tree.index) + " trees in " + str(round(end - start)) + " s")
             # else:
