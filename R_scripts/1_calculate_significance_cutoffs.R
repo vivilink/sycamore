@@ -1,8 +1,11 @@
-setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/relate_trees/window_based/5k")
+setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/true_trees/window_based/10k")
 
 reps <- 300
 cutoff_rep <- 0.05 * reps
 position_interval <- c(49000000, 50000000)
+# position_interval <- c(0, 1000000)
+# result_file_prefix <- "two_pops"
+result_file_prefix <- "cutoff_sims"
 
 covariance_types <- c("eGRM", "GRM")
 m_results_VC <- list()
@@ -31,13 +34,13 @@ for(i in 1:length(covariance_types)){
 
   for(rep in 1:reps){
     # read REML results
-    df_REML <- read.csv(paste("cutoff_sims_", rep, "_", covariance_types[i], "_trees_REML_results.csv", sep=''))
+    df_REML <- read.csv(paste(result_file_prefix, "_", rep, "_", covariance_types[i], "_trees_REML_results.csv", sep=''))
     # df_REML <- df_REML[-1,]
     df_REML <- df_REML[which(df_REML$start > position_interval[1] & df_REML$start < position_interval[2]),]
     # df_REML <- df_REML[-nrow(df_REML),]
 
     # read HE results
-    df_HE <- read.csv(paste("cutoff_sims_", rep, "_", covariance_types[i], "_trees_HE_results.csv", sep=''))
+    df_HE <- read.csv(paste(result_file_prefix, "_", rep, "_", covariance_types[i], "_trees_HE_results.csv", sep=''))
     df_HE <- df_HE[-1,]
     df_HE <- df_HE[which(df_HE$start > position_interval[1] & df_HE$start < position_interval[2]),]
     # df_HE_eGRM <- df_HE_eGRM[-nrow(df_HE_eGRM),]
@@ -132,7 +135,7 @@ for(i in 1:length(covariance_types)){
 
 for(rep in 1:reps){
   #read GWAS results
-  df_GWAS <- read.csv(paste("cutoff_sims_", rep, "_GWAS_variants_results.csv", sep=''))
+  df_GWAS <- read.csv(paste(result_file_prefix, "_", rep, "_GWAS_variants_results.csv", sep=''))
   df_GWAS <- df_GWAS[which(df_GWAS$start > position_interval[1] & df_GWAS$start < position_interval[2]),]
   m_results_GWAS$GWAS[rep] <- -log10(min(df_GWAS$p_value))
   m_results_GWAS$index_min_GWAS[rep] <- which(df_GWAS$p_value == min(df_GWAS$p_value))[1]

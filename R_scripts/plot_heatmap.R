@@ -31,6 +31,7 @@ ReadGRMBin=function(prefix, AllN=F, size=4){
   
   return(list(diag=grm[i], off=grm[-i], id=id, N=N, total_grm=total_grm))
 }
+
 color = function(x)rev(heat.colors(x))
 vbreaks=seq(-1,9, by=0.1)
 
@@ -41,24 +42,6 @@ plot_hm <- function(egrm, title){
   dev.off()
   return(egrm)
 }
-
-# --------------------
-# testing if GRM is being put together correctly
-# --------------------
-
-globalGRM <- ReadGRMBin("testing_GRM")
-plot_hm(egrm=globalGRM, title="testing_GRM")
-
-globaleGRM <- ReadGRMBin("testing_eGRM")
-plot_hm(egrm=globaleGRM, title="testing_eGRM")
-
-GRM_direct <- as.matrix(read.csv("testing_GRM_covariance_matrix.csv", sep=',', header=FALSE))
-heatmap(as.matrix(GRM_direct))
-sum(round(GRM_direct, 4) != round(globalGRM$whole_grm, 4))
-
-eGRM_direct <- as.matrix(read.csv("testing_eGRM_covariance_matrix.csv", sep=',', header=FALSE))
-heatmap(as.matrix(eGRM_direct))
-sum(round(eGRM_direct, 4) != round(globaleGRM$whole_grm, 4))
 
 # --------------------
 # comparing actual matrices
@@ -73,6 +56,29 @@ plot_hm(notworking, "not_working")
 
 working <- ReadGRMBin("two_pops_6_phenoRep1_eGRMrep1_eGRM")
 plot_hm(working, "working")
+
+
+
+# --------------------
+# testing if GRM is being put together correctly
+# --------------------
+
+globalGRM <- ReadGRMBin("testing_GRM")
+plot_hm(egrm=globalGRM, title="testing_GRM")
+
+globaleGRM <- ReadGRMBin("testing_eGRM")
+plot_hm(egrm=globaleGRM, title="testing_eGRM")
+
+globaleGRM <- ReadGRMBin("testing")
+plot_hm(egrm=globaleGRM, title="testing_caoqi")
+
+GRM_direct <- as.matrix(read.csv("testing_GRM_covariance_matrix.csv", sep=',', header=FALSE))
+heatmap(as.matrix(GRM_direct))
+sum(round(GRM_direct, 4) != round(globalGRM$whole_grm, 4))
+
+eGRM_direct <- as.matrix(read.csv("testing_eGRM_covariance_matrix.csv", sep=',', header=FALSE))
+heatmap(as.matrix(eGRM_direct))
+sum(round(eGRM_direct, 4) != round(globaleGRM$whole_grm, 4))
 
 
 #------------

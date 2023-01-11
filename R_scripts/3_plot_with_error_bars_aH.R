@@ -11,7 +11,7 @@ offset <- 0.08
 
 pdf(paste("power_aH_erorBars_window_based_propCausal", propCausal, ".pdf", sep=''), height=5, width=10)
 par(mfrow=c(1,2))
-for(ws in c("5k")){  # , "20k", "50k" ,"10k"
+for(ws in c("5k","10k")){  # , "20k", "50k" ,"10k"
   plot(0, type='n', ylim=c(0, 1), xlim=c(min(1)-offset, length(hs)+offset), ylab="power", xlab='local heritability', xaxt='n', main=ws, bty='n', las=2)
   axis(side=1, at=1:length(hs), labels=hs)
   for(h in hs){
