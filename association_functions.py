@@ -507,7 +507,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
         pheno.write_to_file_gcta_eGRM(inds=inds, out=outname, logfile=logfile)
     else:
         pheno.write_to_file_gcta_scaled(out=outname, logfile=logfile)
-    if args.make_phenotypes is True:
+    if args.simulate_phenotypes is True:
         pheno.find_causal_trees(trees)
         pheno.find_causal_windows(window_ends=window_ends, window_starts=window_starts)
 
