@@ -18,7 +18,6 @@ import tskit
 
 
 # TODO: being typed or not should be an option for all causal variants
-@staticmethod
 def simulate_phenotypes(args, trees, sample_ids, inds, plots_dir, random, logfile):
     if args.simulate_phenotypes:
         if args.tree_file_simulated is None:
