@@ -31,7 +31,7 @@ plot_one <- function(method, rep, df_REML, df_HE, cutoff_REML, cutoff_HE, cutoff
   dev.off()
 }
 
-power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type, window_size){
+power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type, window_size_testing, window_size_causal, pheno_file_dir){
   #which power do I have with heritability 0.005, 1000 diploids
   expected_power_GWAS <- pwr.norm.test(d=hsquared^2, n=1000, sig.level = 0.05, power=NULL)$power
   
@@ -51,7 +51,7 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   m_results_GWAS <- matrix(nrow=reps, ncol=2)
   colnames(m_results_GWAS) <- c("GWAS", "pos_min_GWAS")
   m_results_GWAS <- data.frame(m_results_GWAS)
-  cutoff_GWAS <- read.csv(paste("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/", tree_type, "/", region_type, "/", window_size, "/p_value_cutoffs_", "GWAS", ".csv", sep=''))$x
+  cutoff_GWAS <- read.csv(paste("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/", tree_type, "/", region_type, "/", window_size_testing, "/p_value_cutoffs_", "GWAS", ".csv", sep=''))$x
 
   #covariance_types 
   covariance_types <- c("eGRM", "GRM")
@@ -60,7 +60,7 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   for(i in 1:length(covariance_types)){
     result_matrices[[covariance_types[i]]] <- m_results_REML
     
-    cutoff_files[[covariance_types[i]]] <- read.csv(paste("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/", tree_type,  "/", region_type, "/", window_size, "/p_value_cutoffs_", covariance_types[i], ".csv", sep=''))
+    cutoff_files[[covariance_types[i]]] <- read.csv(paste("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/", tree_type,  "/", region_type, "/", window_size_testing, "/p_value_cutoffs_", covariance_types[i], ".csv", sep=''))
 
   }
   result_matrices[["GWAS"]] <- m_results_GWAS
@@ -68,7 +68,7 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   for(rep in c(1:reps)){
     print(rep)
     #read phenotype specs
-    df_pheno <- read.csv(paste(out_dir,"/rep", rep,"/power_sims_", rep, "_pheno_causal_vars.csv", sep=''))
+    df_pheno <- read.csv(paste(pheno_file_dir,"/h", hsquared, "/rep", rep,"/power_sims_", rep, "_pheno_causal_vars.csv", sep=''))
     
     #read GWAS results
     df_GWAS <- read.csv(paste(out_dir,"/rep", rep,"/power_sims_", rep, "_GWAS_variants_results.csv", sep=''))

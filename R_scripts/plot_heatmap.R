@@ -1,5 +1,5 @@
-# setwd("/data/ARGWAS/experiments_population_split/tests/msprime")
-setwd("/home/vivian/postdoc_USC/AIM/debugging/two_pops/heatmap/msprime")
+setwd("/data/ARGWAS/experiments_population_split/tests/msprime")
+# setwd("/home/vivian/postdoc_USC/AIM/debugging/two_pops/heatmap/msprime")
 
 ReadGRMBin=function(prefix, AllN=F, size=4){
   
