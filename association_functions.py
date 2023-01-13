@@ -239,13 +239,17 @@ def get_window_ends(window_size, trees_interval):
     @return list: list of window ends
     """
     window_ends = []
-    num_tests = (trees_interval[1] - trees_interval[0]) / window_size
-
-    for w in range(int(np.floor(num_tests))):
-        window_ends.append(trees_interval[0] + (w + 1) * window_size)
-    # add last bit (smaller window)
-    if window_ends[-1] < trees_interval[1]:
+    if window_size >= (trees_interval[1] - trees_interval[0]):
         window_ends.append(trees_interval[1])
+
+    else:
+        num_tests = (trees_interval[1] - trees_interval[0]) / window_size
+
+        for w in range(int(np.floor(num_tests))):
+            window_ends.append(trees_interval[0] + (w + 1) * window_size)
+        # add last bit (smaller window)
+        if window_ends[-1] < trees_interval[1]:
+            window_ends.append(trees_interval[1])
 
     return window_ends
 
