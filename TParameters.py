@@ -193,6 +193,9 @@ class TParameters:
                                 "windows have same coordinates)")
         assoc.add_argument('--population_structure', type=str,
                            help="Prefix of covariance matrix in GCTA format used to correct for population structure")
+        assoc.add_argument('--population_structure_pca_num_eigenvectors', type=int,
+                           help="Correct for population structure with this number of PCA eigenvectors computed with "
+                                "gcta")
         assoc.add_argument('--GCTA', type=str, default="gcta-1.94.1-linux-kernel-3-x86_64/gcta-1.94.1",
                            help="path to GCTA executable")
         assoc.add_argument("--num_gcta_threads", type=int, default=2,

@@ -292,8 +292,6 @@ def write_and_test_window_for_association(covariance_obj, inds, AIM_methods, out
     covariance_obj.finalize(inds=inds)
     covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile)
 
-    print("testing window with index " + str(window_index) + " for association!!!!!")
-
     for m in AIM_methods:
         m.run_association(index=window_index, out=outname)
     covariance_obj.clear()
@@ -473,6 +471,93 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                                             logfile=logfile)
 
 
+def write_command_file_mgrm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads):
+    """
+    Write executable bash script for running association test with multiple random effects using GCTA
+
+    @param testing_method:
+    @param outname:
+    @param pheno_file:
+    @param outfile:
+    @param GCTA:
+    @param num_GCTA_threads:
+    @return:
+    """
+    if testing_method == "REML":
+        outfile.write(GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
+                      + outname + "_REML --reml-lrt 1 --threads " + str(
+            num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+    elif testing_method == "HE":
+        outfile.write(
+            GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
+            + outname + "_HE --reml-lrt 1 --threads " + str(
+                num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+        # grep results
+        outfile.write("sed -n '2,6p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                      + outname + "_HE-CP_result.txt\n")
+        outfile.write("sed -n '9,13p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                      + outname + "_HE-SD_result.txt\n")
+
+
+def write_command_file_grm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads):
+    """
+    Write executable bash script for running association test with only the local eGRM as random effects using GCTA
+
+    @param testing_method:
+    @param outname:
+    @param pheno_file:
+    @param outfile:
+    @param GCTA:
+    @param num_GCTA_threads:
+    @return:
+    """
+    if testing_method == "REML":
+        outfile.write(GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname
+                      + "_REML --threads " + str(
+            num_GCTA_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
+    elif testing_method == "HE":
+        outfile.write(GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname
+                      + "_HE --threads " + str(
+            num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+        # grep results
+        outfile.write("sed -n '2,4p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
+                      + outname + "_HE-CP_result.txt\n")
+        outfile.write("sed -n '7,9p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
+                      + outname + "_HE-SD_result.txt\n")
+
+
+def write_command_file_grm_pca(testing_method, outname, pheno_file, outfile, num_eigenvectors,
+                               population_structure_matrix, GCTA, num_GCTA_threads):
+    """
+    Write executable bash script for running association test with local eGRM as random effects and PCA of global
+    population structure matrix using GCTA
+
+    @param num_eigenvectors:
+    @param population_structure_matrix:
+    @param testing_method:
+    @param outname:
+    @param pheno_file:
+    @param outfile:
+    @param GCTA:
+    @param num_GCTA_threads:
+    @return:
+    """
+    outfile.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
+                  + outname + "> " + outname + "_tmp2.out\n\n")
+
+    if testing_method == "REML":
+        outfile.write(GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_REML" + " --qcovar " + outname + ".eigenvec --threads "
+                       + str(num_GCTA_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
+    elif testing_method == "HE":
+        outfile.write(GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_HE --qcovar " + outname + ".eigenvec "
+                      + " --threads " + str(num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+        # grep results
+        outfile.write("sed -n '2,4p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
+                      + outname + "_HE-CP_result.txt\n")
+        outfile.write("sed -n '7,9p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
+                      + outname + "_HE-SD_result.txt\n")
+
+
 def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_size,
                         logfile):
     # ----------------
@@ -516,7 +601,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
         pheno.find_causal_windows(window_ends=window_ends, window_starts=window_starts)
 
     # write GCTA files and scripts
-    if args.population_structure is not None:
+    if args.population_structure and args.population_structure_pca_num_eigenvectors is None:
         with open(outname + '_multi_grm.txt', 'w') as f:
             f.write(outname + '\n')
             f.write(args.population_structure + '\n')
@@ -532,36 +617,31 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     for m in args.AIM_method:
         with open(outname + "_run_gcta_" + m + ".sh", 'w') as f:
             f.write("#!/bin/bash\n")
-            if args.population_structure:
-                if m == "REML":
-                    f.write(args.GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
-                            + outname + "_REML --reml-lrt 1 --threads " + str(
-                        args.num_gcta_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
-                elif m == "HE":
-                    f.write(
-                        args.GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
-                        + outname + "_HE --reml-lrt 1 --threads " + str(
-                            args.num_gcta_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
-                    # grep results
-                    f.write("sed -n '2,6p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\t\' > "
-                            + outname + "_HE-CP_result.txt\n")
-                    f.write("sed -n '9,13p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\t\' > "
-                            + outname + "_HE-SD_result.txt\n")
+            if args.population_structure and args.population_structure_pca_num_eigenvectors is None:
+                write_command_file_mgrm(testing_method=m,
+                                        outname=outname,
+                                        pheno_file=pheno_file,
+                                        outfile=f,
+                                        GCTA=args.GCTA,
+                                        num_GCTA_threads=args.num_gcta_threads)
+
+            if args.population_structure and args.population_structure_pca_num_eigenvectors:
+                write_command_file_grm_pca(testing_method=m,
+                                           outname=outname,
+                                           pheno_file=pheno_file,
+                                           num_eigenvectors=args.population_structure_pca_num_eigenvectors,
+                                           population_structure_matrix=args.population_structure,
+                                           outfile=f,
+                                           GCTA=args.GCTA,
+                                           num_GCTA_threads=args.num_gcta_threads)
 
             else:
-                if m == "REML":
-                    f.write(args.GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname
-                            + "_REML --threads " + str(
-                        args.num_gcta_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
-                elif m == "HE":
-                    f.write(args.GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname
-                            + "_HE --threads " + str(
-                        args.num_gcta_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
-                    # grep results
-                    f.write("sed -n '2,4p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\\t\' > "
-                            + outname + "_HE-CP_result.txt\n")
-                    f.write("sed -n '7,9p' " + outname + "_" + m + ".HEreg | unexpand -a | tr -s \'\\t\' > "
-                            + outname + "_HE-SD_result.txt\n")
+                write_command_file_grm(testing_method=m,
+                                       outname=outname,
+                                       pheno_file=pheno_file,
+                                       outfile=f,
+                                       GCTA=args.GCTA,
+                                       num_GCTA_threads=args.num_gcta_threads)
 
         st = os.stat(outname + "_run_gcta_" + m + ".sh")
         os.chmod(outname + "_run_gcta_" + m + ".sh", st.st_mode | stat.S_IEXEC)
