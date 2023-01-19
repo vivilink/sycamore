@@ -756,7 +756,13 @@ class PhenotypesSimulated(Phenotypes):
         num_causal_vars = np.count_nonzero(causal == 1)
 
         if num_causal_vars < 1:
-            logfile.info("- WARNING: Number of causal variants is 0!")
+            logfile.info("- WARNING: Number of causal variants is 0! Selecting one causal variant at random.")
+            indeces = range(len(info_window.index))
+            c = random.random.choice(indeces)
+            causal[c] = 1
+            num_causal_vars = 1
+
+            print("info_window", info_window, "causal variants", causal)
 
         # add phenotypic effect to mutations that are uniformly distributed
         for v_i, v in enumerate(info_window['var_index']):
