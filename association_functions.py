@@ -103,6 +103,8 @@ def run_association_testing(args, random, logfile):
     # --------------------------------
     # run association tests and plot
     # --------------------------------
+    if args.ass_method is None:
+        raise ValueError("Must provide association method using 'ass_method'")
     for m in args.ass_method:
         method = m.split(':')[0]
         logfile.info("- Running " + m + " for associating")
@@ -344,7 +346,7 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
 
 def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window_ends, window_starts,
                                       window_size, skip_first_tree, inds, pheno, covariances_picklefile,
-                                      logfile, outname, population_structure):
+                                      logfile, outname, limit_association_tests):
     """
 
     @param population_structure: str prefix of covariance matrix files used for correcting for population structure (can be None)
@@ -369,9 +371,10 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
     start = time.time()
 
     # windows are given by trees
+    window_index = 0
     if window_size is None:
-        window_index = 0
-        for tree in trees.trees():
+        tree = tskit.Tree(trees)
+        while tree.next() and window_index < limit_association_tests:
             tree_obj = tt.TTree(tree)
 
             # print("----------------")
@@ -395,8 +398,8 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
 
     # there is a window size
     else:
-        window_index = 0
-        for tree in trees.trees():
+        tree = tskit.Tree(trees)
+        while tree.next() and window_index < limit_association_tests:
             tree_obj = tt.TTree(tree)
 
             # print("----------------")
@@ -430,7 +433,7 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
 
                     # add rest of tree to next window. Tree might span multiple windows, so need while loop
                     while (proportion < 1.0 and tree_obj.end >= window_ends[0]) \
-                            or (proportion == 1.0 and tree_obj.end >= window_ends[0]):
+                            or (proportion == 1.0 and tree_obj.end >= window_ends[0]) and window_index < limit_association_tests:
                         write_and_test_window_for_association(covariance_obj=covariance_obj,
                                                               inds=inds,
                                                               AIM_methods=AIM_methods,
@@ -690,7 +693,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                           pheno=pheno,
                                           logfile=logfile,
                                           outname=outname,
-                                          population_structure=args.population_structure)
+                                          limit_association_tests=args.limit_association_tests)
 
     # close covariance picklefiles
     if args.write_covariance_picklefiles:
