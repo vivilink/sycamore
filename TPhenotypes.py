@@ -360,7 +360,7 @@ class PhenotypesSimulated(Phenotypes):
         self._y += self._random_noise
 
         if args.add_1_to_half_of_inds:
-            half = inds.num_inds / 2
+            half = int(inds.num_inds / 2)
             logfile.info("Adding 1 to phenotypes of first " + str(half) + " individuals")
             self._y[0:half] += 1
         # self.standardize(logfile)
