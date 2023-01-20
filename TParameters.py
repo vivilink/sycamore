@@ -93,7 +93,8 @@ class TParameters:
         sim.add_argument('--recomb_map_start_random', action='store_true',
                          help="Use recombination rates starting at random position (does not work for stdPopsim)")
         sim.add_argument('--mut_window_size', type=int,
-                         help="window size for mutation rate map for simulating with msprime (does not work for stdPopsim)")
+                         help="window size for mutation rate map for simulating with msprime (does not work for "
+                              "stdPopsim)")
         sim.add_argument('--mut_beta_shape1', type=float, default=10,
                          help="shape1 parameter for window-based mutation rate beta distribution")
         sim.add_argument('--mut_beta_shape2', type=float, default=1000000000,
@@ -160,6 +161,9 @@ class TParameters:
                          help="Simulate phenotype with all variants in a region with this min allele freq to be causal")
         pty.add_argument('--max_allele_freq_causal', type=float, default=1.0,
                          help="Simulate phenotype with all variants in a region with this max allele freq to be causal")
+        pty.add_argument('--add_1_to_half_of_inds', action='store_true',
+                         help="Add 1 to half of all individuals (only makes sense when simulating with "
+                              "sim_two_populations")
 
         # run associations
         assoc = parser.add_argument_group('running association tests')

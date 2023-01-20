@@ -359,6 +359,10 @@ class PhenotypesSimulated(Phenotypes):
 
         self._y += self._random_noise
 
+        if args.add_1_to_half_of_inds:
+            half = inds.num_inds / 2
+            logfile.info("Adding 1 to phenotypes of first " + str(half) + " individuals")
+            self._y[0:half] += 1
         # self.standardize(logfile)
 
         # write phenotypes to file
@@ -579,10 +583,11 @@ class PhenotypesSimulated(Phenotypes):
         """
         Simulate random noise according to N(0, sd_random_noise)
         :param sd_random_noise: float
+        :param pty_mean_envNoise:
         :param random: TRandomGenerator
         :return noise: np.array
         """
-        noise = random.random.normal(loc=0, scale=sd_random_noise, size=inds.num_inds)
+        noise = random.random.normal(loc=pty_mean_envNoise, scale=sd_random_noise, size=inds.num_inds)
 
         return noise
 
