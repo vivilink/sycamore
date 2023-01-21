@@ -433,7 +433,8 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
 
                     # add rest of tree to next window. Tree might span multiple windows, so need while loop
                     while (proportion < 1.0 and tree_obj.end >= window_ends[0]) \
-                            or (proportion == 1.0 and tree_obj.end >= window_ends[0]) and window_index < limit_association_tests:
+                            or (proportion == 1.0 and tree_obj.end >= window_ends[
+                        0]) and window_index < limit_association_tests:
                         write_and_test_window_for_association(covariance_obj=covariance_obj,
                                                               inds=inds,
                                                               AIM_methods=AIM_methods,
@@ -549,11 +550,13 @@ def write_command_file_grm_pca(testing_method, outname, pheno_file, outfile, num
                   + outname + "> " + outname + "_tmp2.out\n\n")
 
     if testing_method == "REML":
-        outfile.write(GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_REML" + " --qcovar " + outname + ".eigenvec --threads "
-                       + str(num_GCTA_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
+        outfile.write(
+            GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_REML" + " --qcovar " + outname + ".eigenvec --threads "
+            + str(num_GCTA_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
     elif testing_method == "HE":
-        outfile.write(GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_HE --qcovar " + outname + ".eigenvec "
-                      + " --threads " + str(num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+        outfile.write(
+            GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_HE --qcovar " + outname + ".eigenvec "
+            + " --threads " + str(num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
         # grep results
         outfile.write("sed -n '2,4p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
                       + outname + "_HE-CP_result.txt\n")

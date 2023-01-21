@@ -345,6 +345,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
 
     def run_association_one_window_gcta(self, index, out):
         # create gcta input files, run gcta and parse output
+
         exit_code = subprocess.call([out + "_run_gcta_HE.sh"])
 
         # read results
@@ -376,6 +377,9 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         self.V_G_over_Vp_SE_OLS_HESD[index] = HE_SD["SE_OLS"][1]
         self.V_G_over_Vp_SE_Jackknife_HECP[index] = HE_CP["SE_Jackknife"][1]
         self.V_G_over_Vp_SE_Jackknife_HESD[index] = HE_SD["SE_Jackknife"][1]
+
+        # delete GCTA results file to make sure it's not used again
+        af.remove_files_with_pattern(out + '*.HEreg')
 
     def write_association_results_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
         table = pd.DataFrame()
@@ -497,6 +501,9 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         self.V_e_SE[index] = float(result['SE'][result['Source'] == 'V(e)'])
         self.Vp_SE[index] = float(result['SE'][result['Source'] == 'Vp'])
         self.V_G_over_Vp_SE[index] = float(result['SE'][result['Source'] == 'V(G)/Vp'])
+
+        # delete GCTA results file to make sure it's not used again
+        af.remove_files_with_pattern(out + '*REML.hsq')
 
     def write_association_results_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
         table = pd.DataFrame()
