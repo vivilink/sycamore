@@ -631,7 +631,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                         GCTA=args.GCTA,
                                         num_GCTA_threads=args.num_gcta_threads)
 
-            if args.population_structure and args.population_structure_pca_num_eigenvectors:
+            elif args.population_structure and args.population_structure_pca_num_eigenvectors:
                 write_command_file_grm_pca(testing_method=m,
                                            outname=outname,
                                            pheno_file=pheno_file,
