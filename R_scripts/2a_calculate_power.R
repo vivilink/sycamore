@@ -160,32 +160,33 @@ library("pwr")
 options(scipen = 100, digits = 4)
 hs_all <- c(0.02, 0.04,  0.06,  0.08, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
 # hs_all <- c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
-propCausal <- 0.8
 
 #read low freq true trees
-for(tree_type in c("true_trees")){ #, "relate_trees", true_trees
-  for(region_type in c("window_based")){
-    for(ws_testing in c("10k")){ #, "20k", "50k" , "10k", 5k
-      for(ws_causal in  c("5k")){
-        power_results_aH <- data.frame()
-        for(hs in hs_all){
-          # folder=paste("/data/ARGWAS/power_sims/stdpopsim/high_mut_trees/oneTree/eGRM_and_GRM/", tree_type, "/", region_type, "/", ws, "/",sep="")
-          folder=paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_testing, "/propCausal", propCausal, "/" ,sep="")
-          print(paste("analyzing folder", folder))
-          results_file <- paste(folder, "h", hs, "/power_results.txt", sep='')
-          print(paste(hs, file.exists(results_file)))
-          if(file.exists(results_file) == FALSE){
-            if(ws_testing == ws_causal){
-              pheno_file_dir <- folder
-            } else {
-              pheno_file_dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_causal, "/propCausal", propCausal, "/" ,sep="")
+for(propCausal in c(0.2,0.5)){ #0.1, 
+  for(tree_type in c("true_trees")){ #, "relate_trees", true_trees
+    for(region_type in c("window_based")){
+      for(ws_testing in c("5k")){ #, "20k", "50k" , "10k", 5k
+        for(ws_causal in  c("5k")){
+          power_results_aH <- data.frame()
+          for(hs in hs_all){
+            # folder=paste("/data/ARGWAS/power_sims/stdpopsim/high_mut_trees/oneTree/eGRM_and_GRM/", tree_type, "/", region_type, "/", ws, "/",sep="")
+            folder=paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_testing, "/propCausal", propCausal, "/" ,sep="")
+            print(paste("analyzing folder", folder))
+            results_file <- paste(folder, "h", hs, "/power_results.txt", sep='')
+            print(paste(hs, file.exists(results_file)))
+            if(file.exists(results_file) == FALSE){
+              if(ws_testing == ws_causal){
+                pheno_file_dir <- folder
+              } else {
+                pheno_file_dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_causal, "/propCausal", propCausal, "/" ,sep="")
+              }
+              power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type=tree_type, region_type=region_type, window_size_testing=ws_testing, window_size_causal=ws_causal, pheno_file_dir=pheno_file_dir)
+              # power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type="high_mut_trees")
+              # print("finished creating results file")
             }
-            power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type=tree_type, region_type=region_type, window_size_testing=ws_testing, window_size_causal=ws_causal, pheno_file_dir=pheno_file_dir)
-            # power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type="high_mut_trees")
-            # print("finished creating results file")
+            t <- read.table(results_file, header=TRUE)
+            power_results_aH <- rbind(power_results_aH, t)
           }
-          t <- read.table(results_file, header=TRUE)
-          power_results_aH <- rbind(power_results_aH, t)
         }
       }
     }
@@ -193,3 +194,21 @@ for(tree_type in c("true_trees")){ #, "relate_trees", true_trees
 }
 
 
+# with ACAT results
+source("/home/linkv/git/argwas/R_scripts/2b_calculate_power_one_experiment.R")
+library(ACAT)
+library("pwr")
+
+tree_type <- "true_trees"
+region_type <- "window_based"
+ws_testing <- "5k"
+ws_causal <- "5k"
+propCausal <- 0.2
+folder=paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_testing, "/propCausal", propCausal, "/" ,sep="")
+if(ws_testing == ws_causal){
+  pheno_file_dir <- folder
+} else {
+  pheno_file_dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_causal, "/propCausal", propCausal, "/" ,sep="")
+}
+power_one_experiment(hsquared = hs, REPS = 200, folder=folder, tree_type=tree_type, region_type=region_type, window_size_testing=ws_testing, window_size_causal=ws_causal, pheno_file_dir=pheno_file_dir, run_acat=TRUE)
+  
