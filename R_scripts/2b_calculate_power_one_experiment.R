@@ -3,7 +3,7 @@ plot_one <- function(method, rep, df_REML, df_HE, cutoff_REML, cutoff_HE, cutoff
   causal_pos_pos <- df_pheno$start[which(df_pheno$causal == TRUE & df_pheno$betas > 0)]
   
   if(run_acat){
-    pdf(paste(out_dir,"/significant_rep", rep, "_", method, ".pdf", sep=''), width=6, height=8)
+    pdf(paste(out_dir,"/significant_rep", rep, "_", method, "_acat.pdf", sep=''), width=6, height=8)
     par(mfrow=c(4,1))
   } else{
     pdf(paste(out_dir,"/significant_rep", rep, "_", method, ".pdf", sep=''), width=6, height=5)
@@ -70,7 +70,7 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   #acat
   if(run_acat){
     m_results_acat <- matrix(nrow=reps, ncol=2)
-    colnames(m_results_acat) <- c("acat", "pos_min_GWAS")
+    colnames(m_results_acat) <- c("acat", "pos_min_acat")
     m_results_acat <- data.frame(m_results_acat)
     cutoff_acat <- 4
   }
@@ -86,6 +86,9 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
 
   }
   result_matrices[["GWAS"]] <- m_results_GWAS
+  if(run_acat){
+    result_matrices[["acat"]] <- m_results_acat
+  }
   
   for(rep in c(1:reps)){
     print(rep)
@@ -110,6 +113,9 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
         end_w <- t_windows$end[r]
         ps_acat[r] <- ACAT(df_GWAS$p_value[df_GWAS$start >= start_w & df_GWAS$start < end_w])
       }
+      result_matrices[["acat"]]$acat[rep] <- -log10(min(ps_acat))
+      pos_with_min_p <- t_windows$start[which(ps_acat == min(ps_acat))]
+      distances <- abs(pos_with_min_p - result_matrices[[i]]$pos_causal[rep])
     }
     
     
@@ -206,8 +212,9 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   
   if(run_acat){
     out_t <- cbind(power_REML_eGRM, power_REML_GRM, power_GWAS, power_acat, expected_power_GWAS)#, power_REML_region, power_GWAS_region, power_HE_SD_region, power_HE_CP_region)
+    write.table(out_t, file=paste(out_dir, "/power_results_acat.txt", sep=''), quote=FALSE, row.names=FALSE)
   } else {
     out_t <- cbind(power_REML_eGRM, power_REML_GRM, power_GWAS, expected_power_GWAS)#, power_REML_region, power_GWAS_region, power_HE_SD_region, power_HE_CP_region)
+    write.table(out_t, file=paste(out_dir, "/power_results.txt", sep=''), quote=FALSE, row.names=FALSE)
   }
-  write.table(out_t, file=paste(out_dir, "/power_results.txt", sep=''), quote=FALSE, row.names=FALSE)
 }
