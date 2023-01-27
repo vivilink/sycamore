@@ -1,8 +1,11 @@
+library(ACAT)
+
 setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/true_trees/window_based/10k")
 
 reps <- 300
 cutoff_rep <- 0.05 * reps
 position_interval <- c(49000000, 50000000)
+run_acat <- TRUE
 # position_interval <- c(0, 1000000)
 # result_file_prefix <- "two_pops"
 result_file_prefix <- "cutoff_sims"
@@ -140,6 +143,19 @@ for(rep in 1:reps){
   m_results_GWAS$GWAS[rep] <- -log10(min(df_GWAS$p_value))
   m_results_GWAS$index_min_GWAS[rep] <- which(df_GWAS$p_value == min(df_GWAS$p_value))[1]
   m_results_GWAS$p_value_10[rep] <- df_GWAS$p_value[10]
+  
+  #ACAT
+  if(run_acat){
+    df_REML <- read.csv(paste(result_file_prefix, "_", rep, "_", covariance_types[i], "_trees_REML_results.csv", sep=''))
+    
+    start_w <- df_REML$start[r]
+    end_w <- df_REML$end[r]
+    ps <- df_GWAS$p_value[df_GWAS$start >= start_w & df_GWAS$start < end_w]
+    
+    m_results_acat$acat[rep] <- -log10(min(ps))
+    m_results_acat$index_min_acat[rep] <- which(ps == min(ps))[1]
+    m_results_acat$p_value_10[rep] <- ps[10]
+  }
 }
 
 pdf(paste("hist_lowest_pvalue_index_", "GWAS", ".pdf", sep=""), width=8, height=8)
