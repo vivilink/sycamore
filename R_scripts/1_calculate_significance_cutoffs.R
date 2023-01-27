@@ -15,6 +15,11 @@ m_results_VC <- list()
 m_results_GWAS <- matrix(nrow=reps, ncol=3)
 colnames(m_results_GWAS) <- c( "GWAS", "index_min_GWAS", "p_value_10")
 m_results_GWAS <- data.frame(m_results_GWAS)
+if(run_acat){
+  m_results_acat <- matrix(nrow=reps, ncol=3)
+  colnames(m_results_acat) <- c( "acat", "index_min_acat", "p_value_10")
+  m_results_acat <- data.frame(m_results_acat)
+}
 tmp <- matrix(nrow=reps, ncol=7)
 colnames(tmp) <- c("REML", "HE_SD", "HE_CP","REML_equal0.5", "index_min_REML", "index_min_HESD", "index_min_HECP")
 
