@@ -3,7 +3,8 @@
 # setwd("/data/ARGWAS/power_sims/stdpopsim/high_mut_trees/oneTree/eGRM_and_GRM/")
 setwd("/data/ARGWAS/power_sims/stdpopsim/")
 nreps=200
-propCausal=0.8
+propCausal=0.2
+run_acat <- FALSE
 
 hs <- c(0.02,0.04,0.06,0.08, 0.1)
 # hs <- c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
@@ -13,6 +14,11 @@ pdf(paste("power_aH_erorBars_window_based_propCausal", propCausal, ".pdf", sep='
 par(mfrow=c(1,2))
 for(ws_testing in c("5k","10k")){  # , "20k", "50k" ,"10k"
   for(ws_causal in c("5k")){
+    
+    if(propCausal == 0.2 & ws_testing == "5k" & ws_causal == "5k"){
+      run_acat <- TRUE
+    }
+    
     plot(0, type='n', ylim=c(0, 1), xlim=c(min(1)-offset, length(hs)+offset), ylab="power", xlab='local heritability', xaxt='n', main=ws_testing, bty='n', las=2)
     axis(side=1, at=1:length(hs), labels=hs)
     for(h in hs){
@@ -40,7 +46,7 @@ for(ws_testing in c("5k","10k")){  # , "20k", "50k" ,"10k"
       segments(x0=x_pos+offset, y0=power - std, y1=power + std, col="maroon2")
 
       #true
-      power_results <- read.table(paste("true_trees/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/propCausal", propCausal, "/h", h, "/power_results.txt", sep=''), header=TRUE)
+      power_results <- read.table(paste("true_trees/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/propCausal", propCausal, "/h", h, "/power_results_acat.txt", sep=''), header=TRUE)
       
       # REML GWAS
       points(y=power_results$power_GWAS, x=x_pos-offset, pch=19, col="orange2")
@@ -59,6 +65,14 @@ for(ws_testing in c("5k","10k")){  # , "20k", "50k" ,"10k"
       power <- power_results$power_REML_GRM
       std <- sqrt(power*(1-power)/nreps)
       segments(x0=x_pos+offset, y0=power - std, y1=power + std, col="maroon2")
+      
+      # acat
+      if(run_acat){
+        power_results <- read.table(paste("true_trees/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/propCausal", propCausal, "/h", h, "/power_results_acat.txt", sep=''), header=TRUE)
+        power <- power_results$power_acat
+        std <- sqrt(power*(1-power)/nreps)
+        segments(x0=x_pos+offset, y0=power - std, y1=power + std, col="darkblue")
+      }
     }
     legend(x="bottomright", legend=c("true trees / all variants","Relate / typed variants", "local eGRM", "local GRM", "GWAS"), pch=c(19, 1, 15, 15, 15), col=c("black","black","dodgerblue", "maroon2", "orange2"), bty='n')
   }

@@ -1,4 +1,4 @@
-plot_one <- function(method, rep, df_REML, df_HE, cutoff_REML, cutoff_HE, cutoff_GWAS, df_GWAS, out_dir, df_pheno, ps_acat, run_acat){
+plot_one <- function(method, rep, df_REML, df_HE, cutoff_REML, cutoff_HE, cutoff_GWAS, cutoff_acat, df_GWAS, out_dir, df_pheno, ps_acat, run_acat){
   causal_pos_neg <- df_pheno$start[which(df_pheno$causal == TRUE & df_pheno$betas < 0)]
   causal_pos_pos <- df_pheno$start[which(df_pheno$causal == TRUE & df_pheno$betas > 0)]
   
@@ -40,7 +40,7 @@ plot_one <- function(method, rep, df_REML, df_HE, cutoff_REML, cutoff_HE, cutoff
     plot(df_HE$start, -log10(ps_acat), main=paste("ACAT rep", rep), xlab="position", ylab="-log10(p)")
     abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.2))
     abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.2))
-    abline(h=4, col="gray")
+    abline(h=cutoff_acat, col="gray")
   }
   dev.off()
 }
@@ -69,10 +69,13 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   
   #acat
   if(run_acat){
+    cutoff_acat <- read.csv(paste("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/", tree_type, "/", region_type, "/", window_size_testing, "/p_value_cutoffs_", "acat", ".csv", sep=''))$x
+    
     m_results_acat <- matrix(nrow=reps, ncol=2)
     colnames(m_results_acat) <- c("acat", "pos_min_acat")
     m_results_acat <- data.frame(m_results_acat)
-    cutoff_acat <- 4
+  } else{
+    cutoff_acat <- -1
   }
 
   #covariance_types 
@@ -106,7 +109,9 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
     
     # ACAT
     if(run_acat){
-      t_windows <- read.table(paste("h", hs, "/rep", rep, "/power_sims_", rep, "_eGRM_trees_REML_results.csv", sep=''), header=TRUE, sep=',')[which(!is.na(t_windows$V_e)),]
+      t_windows <- read.csv(paste(out_dir,"/rep", rep, "/power_sims_", rep, "_eGRM_trees_REML_results.csv", sep=''))
+      t_windows <- t_windows[which(t_windows$start > position_interval[1] & t_windows$start < position_interval[2]),]
+      
       ps_acat <- numeric(length=nrow(t_windows))
       for(r in 1:nrow(t_windows)){
         start_w <- t_windows$start[r]
@@ -122,8 +127,8 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
     for(i in 1:length(covariance_types)){
       # read REML results
       df_REML <- read.csv(paste(out_dir,"/rep", rep, "/power_sims_", rep, "_", covariance_types[[i]], "_trees_REML_results.csv", sep=''))
-      df_REML <- df_REML[-1,]
-      df_REML <- df_REML[-nrow(df_REML),]
+      # df_REML <- df_REML[-1,]
+      # df_REML <- df_REML[-nrow(df_REML),]
       df_REML <- df_REML[which(df_REML$start > position_interval[1] & df_REML$start < position_interval[2]),]
       df_REML$p_values[df_REML$p_values == 0] <- .Machine$double.xmin
       
@@ -157,16 +162,23 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
       
       #plot significant replicates
       if(result_matrices[[i]]$REML[rep] > cutoff_files[[covariance_types[i]]]$cutoff_p_REML){
-        plot_one(method=paste("REML", covariance_types[i], sep='_'), rep=rep, df_REML=df_REML, df_HE=df_HE, cutoff_REML=cutoff_files[[covariance_types[i]]]$cutoff_p_REML, cutoff_HE=cutoff_files[[covariance_types[i]]]$cutoff_p_HE_SD, cutoff_GWAS=cutoff_GWAS, df_GWAS=df_GWAS, out_dir=out_dir, df_pheno=df_pheno, ps_acat, run_acat)
+        plot_one(method=paste("REML", covariance_types[i], sep='_'), rep=rep, df_REML=df_REML, df_HE=df_HE, cutoff_REML=cutoff_files[[covariance_types[i]]]$cutoff_p_REML, cutoff_HE=cutoff_files[[covariance_types[i]]]$cutoff_p_HE_SD, cutoff_GWAS=cutoff_GWAS, cutoff_acat=cutoff_acat, df_GWAS=df_GWAS, out_dir=out_dir, df_pheno=df_pheno, ps_acat=ps_acat, run_acat=run_acat)
       }
 
       if(result_matrices[[i]]$HE_SD[rep] > cutoff_files[[covariance_types[i]]]$cutoff_p_HE_SD){
-        plot_one(method=paste("HE_SD", covariance_types[i], sep='_'), rep=rep, df_REML=df_REML, df_HE=df_HE, cutoff_REML=cutoff_files[[covariance_types[i]]]$cutoff_p_REML, cutoff_HE=cutoff_files[[covariance_types[i]]]$cutoff_p_HE_SD, cutoff_GWAS=cutoff_GWAS, df_GWAS=df_GWAS, out_dir=out_dir, df_pheno=df_pheno, ps_acat, run_acat)
+        plot_one(method=paste("HE_SD", covariance_types[i], sep='_'), rep=rep, df_REML=df_REML, df_HE=df_HE, cutoff_REML=cutoff_files[[covariance_types[i]]]$cutoff_p_REML, cutoff_HE=cutoff_files[[covariance_types[i]]]$cutoff_p_HE_SD, cutoff_GWAS=cutoff_GWAS, cutoff_acat=cutoff_acat, df_GWAS=df_GWAS, out_dir=out_dir, df_pheno=df_pheno, ps_acat=ps_acat, run_acat=run_acat)
       }
       
       if(result_matrices[["GWAS"]]$GWAS[rep] > cutoff_GWAS){
-        plot_one(method="GWAS", rep=rep, df_REML=df_REML, df_HE=df_HE, cutoff_REML=cutoff_files[[covariance_types[i]]]$cutoff_p_REML, cutoff_HE=cutoff_files[[covariance_types[i]]]$cutoff_p_HE_SD, cutoff_GWAS=cutoff_GWAS, df_GWAS=df_GWAS, out_dir=out_dir, df_pheno=df_pheno, ps_acat, run_acat)
+        plot_one(method="GWAS", rep=rep, df_REML=df_REML, df_HE=df_HE, cutoff_REML=cutoff_files[[covariance_types[i]]]$cutoff_p_REML, cutoff_HE=cutoff_files[[covariance_types[i]]]$cutoff_p_HE_SD, cutoff_GWAS=cutoff_GWAS, df_GWAS=df_GWAS, cutoff_acat=cutoff_acat, out_dir=out_dir, df_pheno=df_pheno, ps_acat=ps_acat, run_acat=run_acat)
       }
+      
+      if(run_acat){
+        if(result_matrices[["acat"]]$acat[rep] > cutoff_acat){
+          plot_one(method="acat", rep=rep, df_REML=df_REML, df_HE=df_HE, cutoff_REML=cutoff_files[[covariance_types[i]]]$cutoff_p_REML, cutoff_HE=cutoff_files[[covariance_types[i]]]$cutoff_p_HE_SD, cutoff_GWAS=cutoff_GWAS, df_GWAS=df_GWAS, cutoff_acat=cutoff_acat, out_dir=out_dir, df_pheno=df_pheno, ps_acat=ps_acat, run_acat=run_acat)
+        }
+      }
+
       
       # if(rep %in% c(23)){
       #   plot_one(method=paste("REML", covariance_types[i], sep='_'), rep=rep, df_REML=df_REML, df_HE=df_HE, cutoff_REML=cutoff_files[[covariance_types[i]]]$cutoff_p_REML, cutoff_HE=cutoff_files[[covariance_types[i]]]$cutoff_p_HE_SD, cutoff_GWAS=cutoff_GWAS, df_GWAS=df_GWAS, out_dir=out_dir, df_pheno=df_pheno)

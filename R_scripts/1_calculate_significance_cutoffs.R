@@ -41,6 +41,7 @@ for(i in 1:length(covariance_types)){
   m_p_values_HECP <- data.frame(m_p_values_HECP)
 
   for(rep in 1:reps){
+    print(rep)
     # read REML results
     df_REML <- read.csv(paste(result_file_prefix, "_", rep, "_", covariance_types[i], "_trees_REML_results.csv", sep=''))
     # df_REML <- df_REML[-1,]
@@ -152,14 +153,17 @@ for(rep in 1:reps){
   #ACAT
   if(run_acat){
     df_REML <- read.csv(paste(result_file_prefix, "_", rep, "_", covariance_types[i], "_trees_REML_results.csv", sep=''))
+    df_REML <- df_REML[which(df_REML$start > position_interval[1] & df_REML$start < position_interval[2]),]
     
-    start_w <- df_REML$start[r]
-    end_w <- df_REML$end[r]
-    ps <- df_GWAS$p_value[df_GWAS$start >= start_w & df_GWAS$start < end_w]
-    
-    m_results_acat$acat[rep] <- -log10(min(ps))
-    m_results_acat$index_min_acat[rep] <- which(ps == min(ps))[1]
-    m_results_acat$p_value_10[rep] <- ps[10]
+    ps_acat <- numeric(length=nrow(df_REML))
+    for(r in 1:nrow(df_REML)){
+      start_w <- df_REML$start[r]
+      end_w <- df_REML$end[r]
+      ps_acat[r] <- ACAT(df_GWAS$p_value[df_GWAS$start >= start_w & df_GWAS$start < end_w])
+    }
+    m_results_acat$acat[rep] <- -log10(min(ps_acat))
+    m_results_acat$index_min_acat[rep] <- which(ps_acat == min(ps_acat))[1]
+    m_results_acat$p_value_10[rep] <- ps_acat[10]
   }
 }
 
@@ -178,6 +182,29 @@ qqplot(uniform, m_results_GWAS$p_value_10, ylab="window index 10", las=2)
 abline(0,1)
 
 dev.off()
+
+#--------------------------
+# ACAT
+#--------------------------
+
+if(run_acat){
+  pdf(paste("hist_lowest_pvalue_index_", "acat", ".pdf", sep=""), width=8, height=8)
+  hist(m_results_GWAS$index_min_GWAS, xlab ="index of min p-value of all variants acat", breaks=20, main="")
+  dev.off()
+  
+  cutoff_p_acat <- sort(m_results_acat[,"acat"], decreasing=T)[cutoff_rep]
+  write.csv(cutoff_p_acat, file=paste("p_value_cutoffs_", "acat", sep='', ".csv"), row.names=FALSE, quote=FALSE)
+  
+  pdf(paste("p_values_acat_qqplot.pdf", sep=""), width=4, height=4)
+  par(mfrow=c(1,1))
+  
+  uniform <- (runif(1000))
+  qqplot(uniform, m_results_GWAS$p_value_10, ylab="window index 10", las=2)
+  abline(0,1)
+  
+  dev.off()
+}
+
 
 #--------------------------
 # cutoff plot
