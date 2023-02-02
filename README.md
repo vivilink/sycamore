@@ -82,9 +82,14 @@ This task reads a tree, downsamples the variants to mimic a genotyping array and
 
 This task takes an ARG and outputs a file with information about the ARG, such as the marginal tree coordinates, number of variants per tree, ...
 
+    python ARGWAS.py --task ARGStatistics --out example --tree_file example.trees --tree_file_simulated example.trees
+
+
 *simulatePhenotypes*
 
 This task takes an ARG and simulates phenotypes without running any association test. If the same seed is used, the phenotypes simulated under task 'associate' and 'simulatePhenotypes' should be identical.
+
+    python ARGWAS.py --task simulatePhenotypes --out example --tree_file relate_tree.trees --tree_file_simulated simulated_tree.trees --variants_file simulated_tree_variants.csv --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method oneRegion --pty_prop_causal_mutations 0.02 --causal_region_coordinates 49500000 49505000 --pty_h_squared $hsquared --pty_sd_beta_causal_mutations standardized --ploidy 2 --skip_first_tree --min_allele_freq 0.01 --seed 1 --ass_window_size 5000 --trees_interval_start 49000000 --simulate_phenotypes
 
 *impute*
 
