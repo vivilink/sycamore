@@ -214,9 +214,41 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   #   plot_one("HE_SD_region", rep=rep, df_REML=df_REML, m_results=m_results, cutoffs=cutoffs, df_HE=df_HE, df_GWAS=df_GWAS, out_dir=out_dir)
   # }
   
-
-    
+  #--------------------------
+  # write result matrices
+  #--------------------------
   
+  for(m in names(result_matrices)){
+    write.table(result_matrices[[m]], file=paste(out_dir, "/association_results_",m,".txt", sep=''), quote=FALSE, row.names=FALSE)
+  }
+    
+  #--------------------------
+  # plot distance dist
+  #--------------------------
+  pdf(paste(out_dir, "/distance_from_causal_hsquared",h,"_wsCausal",window_size_causal,".pdf", sep=''), width = 7, height = 3)
+  par(mar=c(5,7,3,3))
+  # par(oma=c(3,3,3,3))
+  max_y <- max(density(result_matrices[["GWAS"]]$distance_min_p_to_causal)$y, 
+               density(result_matrices[["eGRM"]]$distance_min_p_to_causal_REML)$y,
+               density(result_matrices[["GRM"]]$distance_min_p_to_causal_REML)$y
+               )
+  max_x <-  max((result_matrices[["GWAS"]]$distance_min_p_to_causal), 
+                (result_matrices[["eGRM"]]$distance_min_p_to_causal_REML),
+                (result_matrices[["GRM"]]$distance_min_p_to_causal_REML)
+                )
+  plot(density(result_matrices[["GWAS"]]$distance_min_p_to_causal), col="orange2", 
+       ylim=c(0,max_y), bty='n', las=2, xaxt='n', ylab='',
+       xlab="Distance between most significant p-value and causal window start [kb]", main="")
+  axis(side=1, at=seq(0,max(max_x),by=100000), labels=seq(0,max(max_x),by=100000) / 1000)
+  title(ylab = "Density", line = 5) 
+  lines(density(result_matrices[["eGRM"]]$distance_min_p_to_causal_REML), col="dodgerblue")
+  lines(density(result_matrices[["GRM"]]$distance_min_p_to_causal_REML), col="maroon2")
+  if(run_acat){
+    lines(density(result_matrices[["acat"]]$distance_min_p_to_causal), col="black")
+  }
+  legend(legend=c("local GRM", "local eGRM", "GWAS", "acat"), col=c("maroon2", "dodgerblue", "orange2", "black"), x="topright", lty=1, bty='n')
+  
+  dev.off()
   #--------------------------
   # power
   #--------------------------
