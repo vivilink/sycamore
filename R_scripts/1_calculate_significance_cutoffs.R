@@ -1,6 +1,6 @@
 library(ACAT)
 
-setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/true_trees/window_based/10k")
+setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/relate_trees/window_based/5k")
 
 reps <- 300
 cutoff_rep <- 0.05 * reps
@@ -161,8 +161,8 @@ for(rep in 1:reps){
       end_w <- df_REML$end[r]
       ps_acat[r] <- ACAT(df_GWAS$p_value[df_GWAS$start >= start_w & df_GWAS$start < end_w])
     }
-    m_results_acat$acat[rep] <- -log10(min(ps_acat))
-    m_results_acat$index_min_acat[rep] <- which(ps_acat == min(ps_acat))[1]
+    m_results_acat$acat[rep] <- -log10(min(ps_acat, na.rm=TRUE))
+    m_results_acat$index_min_acat[rep] <- which(ps_acat == min(ps_acat, na.rm=TRUE))[1]
     m_results_acat$p_value_10[rep] <- ps_acat[10]
   }
 }

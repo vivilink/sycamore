@@ -54,16 +54,24 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   position_interval <- c(49000000, 50000000)
   # position_interval <- c(49350000, 49650000)
   
-
+  causal_pos <- 49500000
+  # if(window_size_causal == "5k"){
+  #   causal_pos <- (49505000 - 49500000) / 2
+  # }
+  # 
+  # if(window_size_causal == "10k"){
+  #   causal_pos <- (49510000 - 49500000) / 2
+  # }
+  
   reps <- REPS
   
   #prepare result data frames
-  m_results_REML <- matrix(nrow=reps, ncol=10)
-  colnames(m_results_REML) <- c("REML", "HE_SD", "HE_CP", "REML_equal0.5", "pos_min_REML", "pos_min_HESD", "pos_min_HECP", "pos_causal", "af_causal", "h2_empiric")
+  m_results_REML <- matrix(nrow=reps, ncol=7)
+  colnames(m_results_REML) <- c("REML", "HE_SD", "HE_CP", "REML_equal0.5", "distance_min_p_to_causal_REML", "distance_min_p_to_causal_HESD", "distance_min_p_to_causal_HECP")
   m_results_REML <- data.frame(m_results_REML)
 
-  m_results_GWAS <- matrix(nrow=reps, ncol=2)
-  colnames(m_results_GWAS) <- c("GWAS", "pos_min_GWAS")
+  m_results_GWAS <- matrix(nrow=reps, ncol=3)
+  colnames(m_results_GWAS) <- c("GWAS", "pos_min_GWAS", "distance_min_p_to_causal")
   m_results_GWAS <- data.frame(m_results_GWAS)
   cutoff_GWAS <- read.csv(paste("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/", tree_type, "/", region_type, "/", window_size_testing, "/p_value_cutoffs_", "GWAS", ".csv", sep=''))$x
   
@@ -71,8 +79,8 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   if(run_acat){
     cutoff_acat <- read.csv(paste("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/", tree_type, "/", region_type, "/", window_size_testing, "/p_value_cutoffs_", "acat", ".csv", sep=''))$x
     
-    m_results_acat <- matrix(nrow=reps, ncol=2)
-    colnames(m_results_acat) <- c("acat", "pos_min_acat")
+    m_results_acat <- matrix(nrow=reps, ncol=3)
+    colnames(m_results_acat) <- c("acat", "pos_min_acat", "distance_min_p_to_causal")
     m_results_acat <- data.frame(m_results_acat)
   } else{
     cutoff_acat <- -1
@@ -86,7 +94,6 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
     result_matrices[[covariance_types[i]]] <- m_results_REML
     
     cutoff_files[[covariance_types[i]]] <- read.csv(paste("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/", tree_type,  "/", region_type, "/", window_size_testing, "/p_value_cutoffs_", covariance_types[i], ".csv", sep=''))
-
   }
   result_matrices[["GWAS"]] <- m_results_GWAS
   if(run_acat){
@@ -94,9 +101,12 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   }
   
   for(rep in c(1:reps)){
+    
     print(rep)
+    
     #read phenotype specs
     df_pheno <- read.csv(paste(pheno_file_dir,"/h", hsquared, "/rep", rep,"/power_sims_", rep, "_pheno_causal_vars.csv", sep=''))
+    # causal_pos <- df_pheno$start[which(df_pheno$causal == TRUE)]
     
     #read GWAS results
     df_GWAS <- read.csv(paste(out_dir,"/rep", rep,"/power_sims_", rep, "_GWAS_variants_results.csv", sep=''))
@@ -104,9 +114,9 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
     
     result_matrices[["GWAS"]]$GWAS[rep] <- -log10(min(df_GWAS$p_value))
     pos_with_min_p <- df_GWAS$start[which(df_GWAS$p_value == min(df_GWAS$p_value))]
-    distances <- abs(pos_with_min_p - result_matrices[[i]]$pos_causal[rep])
-    # result_matrices[[i]]$pos_min_GWAS[rep] <- pos_with_min_p[distances == min(distances)]
-    
+    distances <- abs(pos_with_min_p - causal_pos)
+    result_matrices[["GWAS"]]$distance_min_p_to_causal[rep] <- min(distances)
+
     # ACAT
     if(run_acat){
       t_windows <- read.csv(paste(out_dir,"/rep", rep, "/power_sims_", rep, "_eGRM_trees_REML_results.csv", sep=''))
@@ -118,30 +128,29 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
         end_w <- t_windows$end[r]
         ps_acat[r] <- ACAT(df_GWAS$p_value[df_GWAS$start >= start_w & df_GWAS$start < end_w])
       }
-      result_matrices[["acat"]]$acat[rep] <- -log10(min(ps_acat))
+      ps_acat[ps_acat==0]
+      result_matrices[["acat"]]$acat[rep] <- -log10(min(ps_acat, na.rm = TRUE))
       pos_with_min_p <- t_windows$start[which(ps_acat == min(ps_acat))]
-      distances <- abs(pos_with_min_p - result_matrices[[i]]$pos_causal[rep])
+      distances <- abs(pos_with_min_p - causal_pos)
+      result_matrices[["acat"]]$distance_min_p_to_causal[rep] <- min(distances)
     }
     
     
     for(i in 1:length(covariance_types)){
       # read REML results
       df_REML <- read.csv(paste(out_dir,"/rep", rep, "/power_sims_", rep, "_", covariance_types[[i]], "_trees_REML_results.csv", sep=''))
-      # df_REML <- df_REML[-1,]
-      # df_REML <- df_REML[-nrow(df_REML),]
       df_REML <- df_REML[which(df_REML$start > position_interval[1] & df_REML$start < position_interval[2]),]
       df_REML$p_values[df_REML$p_values == 0] <- .Machine$double.xmin
       
+      # minimum distance REML
       result_matrices[[i]]$REML[rep] <- -log10(min(df_REML$p_values, na.rm = TRUE))
       pos_with_min_p <- df_REML$start[which(df_REML$p_values == min(df_REML$p_values, na.rm = TRUE))]
-      distances <- abs(pos_with_min_p - result_matrices[[i]]$pos_causal[rep])
-      # result_matrices[[i]]$pos_min_REML[rep] <- pos_with_min_p[distances == min(distances)]
+      distances <- abs(pos_with_min_p - causal_pos)
+      result_matrices[[i]]$distance_min_p_to_causal_REML[rep] <- min(distances)
       
       # read HE results
       df_HE <- read.csv(paste(out_dir,"/rep", rep,"/power_sims_", rep, "_", covariance_types[[i]], "_trees_HE_results.csv", sep=''))
-      df_HE <- df_HE[-1,]
       df_HE <- df_HE[which(df_HE$start > position_interval[1] & df_HE$start < position_interval[2]),]
-      # df_HE <- df_HE[-nrow(df_HE),]
       if(sum(df_HE$p_values_HESD_Jackknife == 0, na.rm = TRUE) > 0){
         df_HE$p_values_HESD_Jackknife[df_HE$p_values_HESD_Jackknife == 0] <- .Machine$double.xmin
       }
@@ -149,15 +158,17 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
         df_HE$p_values_HECP_Jackknife[df_HE$p_values_HECP_Jackknife == 0] <- .Machine$double.xmin
       }
 
+      # minimum distance HE_SD
       result_matrices[[i]]$HE_SD[rep] <- -log10(min(df_HE$p_values_HESD_Jackknife, na.rm = TRUE))
       pos_with_min_p <- df_HE$start[which(df_HE$p_values_HESD_Jackknife == min(df_HE$p_values_HESD_Jackknife))]
-      distances <- abs(pos_with_min_p - result_matrices[[i]]$pos_causal[rep])
-      # result_matrices[[m]]$pos_min_HESD[rep] <- pos_with_min_p[distances == min(distances)]
+      distances <- abs(pos_with_min_p - causal_pos)
+      result_matrices[[i]]$distance_min_p_to_causal_HESD[rep] <- min(distances)
 
+      # minimum distance HE_CP
       result_matrices[[i]]$HE_CP[rep] <- -log10(min(df_HE$p_values_HECP_Jackknife, na.rm = TRUE))
       pos_with_min_p <- df_HE$start[which(df_HE$p_values_HECP_Jackknife == min(df_HE$p_values_HECP_Jackknife))]
-      distances <- abs(pos_with_min_p - result_matrices[[i]]$pos_causal[rep])
-      # result_matrices[[m]]$pos_min_HECP[rep] <- pos_with_min_p[distances == min(distances)]
+      distances <- abs(pos_with_min_p - causal_pos)
+      result_matrices[[i]]$distance_min_p_to_causal_HECP[rep] <- pos_with_min_p[distances == min(distances)]
       
       
       #plot significant replicates
