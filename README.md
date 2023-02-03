@@ -54,9 +54,14 @@ Tasks
 
 This task runs all association tests, including GWAS, local REML with eGRM and local REML with GRM. You can either simulate phenotypes or read in existing phenotype files. 
 
-Typical command:
+Typical command to run associations with simulated phenotypes and allelic heterogeneity:
 
     python ARGWAS.py --task simulatePhenotypes --out power_simulation --tree_file relate_ARG.trees --tree_file_simulated simulated_ARG.trees --variants_file simulated_ARG_variants.csv --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method oneRegion --pty_prop_causal_mutations 0.1 --causal_region_coordinates 49500000 49505000 --pty_h_squared 0.02 --pty_sd_beta_causal_mutations standardized --ploidy 2 --skip_first_tree --min_allele_freq 0.01 --seed 1 --ass_window_size 5000 --trees_interval_start 49000000 --simulate_phenotypes
+    
+Run association with simulated phenotypes and two populations, correcting for stratification with PCA:
+
+    python ARGWAS.py --task associate --out example --tree_file simulated_ARG.trees --tree_file_simulated simulated_ARG.trees  --ass_method AIM:eGRM --AIM_method REML --pty_sim_method null --pty_sd_envNoise 1 --ploidy 2 --seed 1 --min_allele_freq 0 --simulate_phenotypes --population_structure prefix_global_eGRM --population_structure_pca_num_eigenvectors 20 --add_1_to_half_of_inds
+
 
 *simulate*
 
