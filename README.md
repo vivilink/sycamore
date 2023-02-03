@@ -4,6 +4,14 @@ argwas
 Creating conda environment
 -------------------------
 
+*Build environment from file*
+
+The list of packages installed in my conda environment used to produce all results can be found here in this file: ARGWAS-package-list.txt. It should thus be possible to recreate my environment with the following command:
+
+    conda create -n myenv --file ARGWAS-package-list.txt
+    
+*Build environment from scratch*
+
 Build environment
 
     conda env create -f argwas_environment.yml
