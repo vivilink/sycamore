@@ -60,7 +60,16 @@ Typical command:
 
 *simulate*
 
-This task simulates ARGs using either msprime or stdpopsim
+This task simulates ARGs using either msprime or stdpopsim. Always simulate haploids, the haplotypes are assigned to individuals in the association task.
+
+Simulate one population with stdpopsim:
+
+    python ARGWAS.py --task simulate --out example --ploidy 1 --sequence_length 30000000.0 --sim_tree_simulator stdPopsim --N 1000 --trees_interval 49000000 50000000 --seed 1
+
+Simulate two populations with msprime:
+
+    python ARGWAS.py --task simulate --mu 1e-08 --out example --ploidy 1 --recomb_rate 1e-08 --sequence_length 100000.0 --sim_tree_simulator msprime --sim_two_populations --N 2000 --seed 1 --split_time 10000 
+
 
 *simulateMoreMutations*
 
@@ -89,7 +98,7 @@ This task takes an ARG and outputs a file with information about the ARG, such a
 
 This task takes an ARG and simulates phenotypes without running any association test. If the same seed is used, the phenotypes simulated under task 'associate' and 'simulatePhenotypes' should be identical.
 
-    python ARGWAS.py --task simulatePhenotypes --out example --tree_file relate_tree.trees --tree_file_simulated simulated_tree.trees --variants_file simulated_tree_variants.csv --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method oneRegion --pty_prop_causal_mutations 0.02 --causal_region_coordinates 49500000 49505000 --pty_h_squared $hsquared --pty_sd_beta_causal_mutations standardized --ploidy 2 --skip_first_tree --min_allele_freq 0.01 --seed 1 --ass_window_size 5000 --trees_interval_start 49000000 --simulate_phenotypes
+    python ARGWAS.py --task simulatePhenotypes --out example --tree_file relate_tree.trees --tree_file_simulated simulated_tree.trees --variants_file simulated_tree_variants.csv --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method oneRegion --pty_prop_causal_mutations 0.02 --causal_region_coordinates 49500000 49505000 --pty_h_squared 0.1 --pty_sd_beta_causal_mutations standardized --ploidy 2 --skip_first_tree --min_allele_freq 0.01 --seed 1 --ass_window_size 5000 --trees_interval_start 49000000 --simulate_phenotypes
 
 *impute*
 
