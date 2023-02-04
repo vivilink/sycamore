@@ -138,3 +138,7 @@ I simulated 300 random ARG. On the cluster they are located here: /home1/linkv/A
 The null simulations consisting of random phenotypes and association tests for the true trees and all variants are located here: ~/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/true_trees/window_based. For the RELATE trees and downsampled variants they are located here: /home1/linkv/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/relate_trees/window_based. The directories are further divided into directories 5k and 10k, which contain the association test results with corresponding window sizes.
 
 The R script used to calculate the cutoff values is: 1_calculate_significance_cutoffs.R
+
+*association tests for power analysis*
+
+The main directory is /home1/linkv/ARGWAS/power_sims/stdpopsim/. It is further separated by true and relate trees, and phenotypes with a single causal variant (oneVariant) and phenotypes with allelic heterogeneity (oneRegion). For the paper, I'm using the results in the eGRM_GRM and window_based folders. For allelic heterogeneity, the next distinction is the causal window size (10k or 5k) and the testing window size (tested10k or tested5k). For the single variant case, there are tests for causal variant allele frequency = 0.02 (rareVariant) and frequency = 0.2 (commonVariant).
