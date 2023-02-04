@@ -142,3 +142,9 @@ The R script used to calculate the cutoff values is: 1_calculate_significance_cu
 *association tests for power analysis*
 
 The main directory is /home1/linkv/ARGWAS/power_sims/stdpopsim/. It is further separated by true and relate trees, and phenotypes with a single causal variant (oneVariant) and phenotypes with allelic heterogeneity (oneRegion). For the paper, I'm using the results in the eGRM_GRM and window_based folders. For allelic heterogeneity, the next distinction is the causal window size (10k or 5k) and the testing window size (tested10k or tested5k). For the single variant case, there are tests for causal variant allele frequency = 0.02 (rareVariant) and frequency = 0.2 (commonVariant).
+
+The R script used to calculate the association power is 2a_calculate_power.R, which calls 2b_calculate_power_one_experiment.R. It uses the output of 1_calculate_significance_cutoffs.R. The results can be plotted with 3_plot_with_error_bars_aH.R and 3_plot_with_error_bars_oneVariant.R.
+
+*population structure*
+
+
