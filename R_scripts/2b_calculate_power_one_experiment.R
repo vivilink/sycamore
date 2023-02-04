@@ -130,7 +130,7 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
       }
       ps_acat[ps_acat==0]
       result_matrices[["acat"]]$acat[rep] <- -log10(min(ps_acat, na.rm = TRUE))
-      pos_with_min_p <- t_windows$start[which(ps_acat == min(ps_acat))]
+      pos_with_min_p <- t_windows$start[which(ps_acat == min(ps_acat, na.rm = TRUE))]
       distances <- abs(pos_with_min_p - causal_pos)
       result_matrices[["acat"]]$distance_min_p_to_causal[rep] <- min(distances)
     }
@@ -160,15 +160,15 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
 
       # minimum distance HE_SD
       result_matrices[[i]]$HE_SD[rep] <- -log10(min(df_HE$p_values_HESD_Jackknife, na.rm = TRUE))
-      pos_with_min_p <- df_HE$start[which(df_HE$p_values_HESD_Jackknife == min(df_HE$p_values_HESD_Jackknife))]
+      pos_with_min_p <- df_HE$start[which(df_HE$p_values_HESD_Jackknife == min(df_HE$p_values_HESD_Jackknife, na.rm = TRUE))]
       distances <- abs(pos_with_min_p - causal_pos)
-      result_matrices[[i]]$distance_min_p_to_causal_HESD[rep] <- min(distances)
+      result_matrices[[i]]$distance_min_p_to_causal_HESD[rep] <- min(distances, na.rm = TRUE)
 
       # minimum distance HE_CP
       result_matrices[[i]]$HE_CP[rep] <- -log10(min(df_HE$p_values_HECP_Jackknife, na.rm = TRUE))
-      pos_with_min_p <- df_HE$start[which(df_HE$p_values_HECP_Jackknife == min(df_HE$p_values_HECP_Jackknife))]
+      pos_with_min_p <- df_HE$start[which(df_HE$p_values_HECP_Jackknife == min(df_HE$p_values_HECP_Jackknife, na.rm = TRUE))]
       distances <- abs(pos_with_min_p - causal_pos)
-      result_matrices[[i]]$distance_min_p_to_causal_HECP[rep] <- pos_with_min_p[distances == min(distances)]
+      result_matrices[[i]]$distance_min_p_to_causal_HECP[rep] <- pos_with_min_p[distances == min(distances, na.rm = TRUE)]
       
       
       #plot significant replicates
@@ -225,26 +225,26 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   #--------------------------
   # plot distance dist
   #--------------------------
-  pdf(paste(out_dir, "/distance_from_causal_hsquared",h,"_wsCausal",window_size_causal,".pdf", sep=''), width = 7, height = 3)
+  pdf(paste(out_dir, "/distance_from_causal_hsquared",hsquared,"_wsCausal",window_size_causal,".pdf", sep=''), width = 7, height = 3)
   par(mar=c(5,7,3,3))
   # par(oma=c(3,3,3,3))
-  max_y <- max(density(result_matrices[["GWAS"]]$distance_min_p_to_causal)$y, 
-               density(result_matrices[["eGRM"]]$distance_min_p_to_causal_REML)$y,
-               density(result_matrices[["GRM"]]$distance_min_p_to_causal_REML)$y
+  max_y <- max(density(result_matrices[["GWAS"]]$distance_min_p_to_causal, bw="SJ")$y, 
+               density(result_matrices[["eGRM"]]$distance_min_p_to_causal_REML, bw="SJ")$y,
+               density(result_matrices[["GRM"]]$distance_min_p_to_causal_REML, bw="SJ")$y
                )
   max_x <-  max((result_matrices[["GWAS"]]$distance_min_p_to_causal), 
                 (result_matrices[["eGRM"]]$distance_min_p_to_causal_REML),
                 (result_matrices[["GRM"]]$distance_min_p_to_causal_REML)
                 )
-  plot(density(result_matrices[["GWAS"]]$distance_min_p_to_causal), col="orange2", 
-       ylim=c(0,max_y), bty='n', las=2, xaxt='n', ylab='',
+  plot(density(result_matrices[["GWAS"]]$distance_min_p_to_causal, na.rm = TRUE, bw="SJ"), col="orange2", 
+       ylim=c(0,max_y), bty='n', las=2, xaxt='n', ylab='', xlim=c(0,max_x),
        xlab="Distance between most significant p-value and causal window start [kb]", main="")
   axis(side=1, at=seq(0,max(max_x),by=100000), labels=seq(0,max(max_x),by=100000) / 1000)
   title(ylab = "Density", line = 5) 
-  lines(density(result_matrices[["eGRM"]]$distance_min_p_to_causal_REML), col="dodgerblue")
-  lines(density(result_matrices[["GRM"]]$distance_min_p_to_causal_REML), col="maroon2")
+  lines(density(result_matrices[["eGRM"]]$distance_min_p_to_causal_REML, na.rm = TRUE, bw="SJ"), col="dodgerblue")
+  lines(density(result_matrices[["GRM"]]$distance_min_p_to_causal_REML, na.rm = TRUE, bw="SJ"), col="maroon2")
   if(run_acat){
-    lines(density(result_matrices[["acat"]]$distance_min_p_to_causal), col="black")
+    lines(density(result_matrices[["acat"]]$distance_min_p_to_causal, na.rm = TRUE), col="black")
   }
   legend(legend=c("local GRM", "local eGRM", "GWAS", "acat"), col=c("maroon2", "dodgerblue", "orange2", "black"), x="topright", lty=1, bty='n')
   
