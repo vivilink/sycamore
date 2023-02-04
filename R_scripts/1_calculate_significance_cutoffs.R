@@ -1,8 +1,11 @@
-setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/true_trees/window_based/10k")
+library(ACAT)
+
+setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/relate_trees/window_based/5k")
 
 reps <- 300
 cutoff_rep <- 0.05 * reps
 position_interval <- c(49000000, 50000000)
+run_acat <- TRUE
 # position_interval <- c(0, 1000000)
 # result_file_prefix <- "two_pops"
 result_file_prefix <- "cutoff_sims"
@@ -12,6 +15,11 @@ m_results_VC <- list()
 m_results_GWAS <- matrix(nrow=reps, ncol=3)
 colnames(m_results_GWAS) <- c( "GWAS", "index_min_GWAS", "p_value_10")
 m_results_GWAS <- data.frame(m_results_GWAS)
+if(run_acat){
+  m_results_acat <- matrix(nrow=reps, ncol=3)
+  colnames(m_results_acat) <- c( "acat", "index_min_acat", "p_value_10")
+  m_results_acat <- data.frame(m_results_acat)
+}
 tmp <- matrix(nrow=reps, ncol=7)
 colnames(tmp) <- c("REML", "HE_SD", "HE_CP","REML_equal0.5", "index_min_REML", "index_min_HESD", "index_min_HECP")
 
@@ -33,6 +41,7 @@ for(i in 1:length(covariance_types)){
   m_p_values_HECP <- data.frame(m_p_values_HECP)
 
   for(rep in 1:reps){
+    print(rep)
     # read REML results
     df_REML <- read.csv(paste(result_file_prefix, "_", rep, "_", covariance_types[i], "_trees_REML_results.csv", sep=''))
     # df_REML <- df_REML[-1,]
@@ -140,6 +149,22 @@ for(rep in 1:reps){
   m_results_GWAS$GWAS[rep] <- -log10(min(df_GWAS$p_value))
   m_results_GWAS$index_min_GWAS[rep] <- which(df_GWAS$p_value == min(df_GWAS$p_value))[1]
   m_results_GWAS$p_value_10[rep] <- df_GWAS$p_value[10]
+  
+  #ACAT
+  if(run_acat){
+    df_REML <- read.csv(paste(result_file_prefix, "_", rep, "_", covariance_types[i], "_trees_REML_results.csv", sep=''))
+    df_REML <- df_REML[which(df_REML$start > position_interval[1] & df_REML$start < position_interval[2]),]
+    
+    ps_acat <- numeric(length=nrow(df_REML))
+    for(r in 1:nrow(df_REML)){
+      start_w <- df_REML$start[r]
+      end_w <- df_REML$end[r]
+      ps_acat[r] <- ACAT(df_GWAS$p_value[df_GWAS$start >= start_w & df_GWAS$start < end_w])
+    }
+    m_results_acat$acat[rep] <- -log10(min(ps_acat, na.rm=TRUE))
+    m_results_acat$index_min_acat[rep] <- which(ps_acat == min(ps_acat, na.rm=TRUE))[1]
+    m_results_acat$p_value_10[rep] <- ps_acat[10]
+  }
 }
 
 pdf(paste("hist_lowest_pvalue_index_", "GWAS", ".pdf", sep=""), width=8, height=8)
@@ -157,6 +182,29 @@ qqplot(uniform, m_results_GWAS$p_value_10, ylab="window index 10", las=2)
 abline(0,1)
 
 dev.off()
+
+#--------------------------
+# ACAT
+#--------------------------
+
+if(run_acat){
+  pdf(paste("hist_lowest_pvalue_index_", "acat", ".pdf", sep=""), width=8, height=8)
+  hist(m_results_GWAS$index_min_GWAS, xlab ="index of min p-value of all variants acat", breaks=20, main="")
+  dev.off()
+  
+  cutoff_p_acat <- sort(m_results_acat[,"acat"], decreasing=T)[cutoff_rep]
+  write.csv(cutoff_p_acat, file=paste("p_value_cutoffs_", "acat", sep='', ".csv"), row.names=FALSE, quote=FALSE)
+  
+  pdf(paste("p_values_acat_qqplot.pdf", sep=""), width=4, height=4)
+  par(mfrow=c(1,1))
+  
+  uniform <- (runif(1000))
+  qqplot(uniform, m_results_GWAS$p_value_10, ylab="window index 10", las=2)
+  abline(0,1)
+  
+  dev.off()
+}
+
 
 #--------------------------
 # cutoff plot

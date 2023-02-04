@@ -4,6 +4,14 @@ argwas
 Creating conda environment
 -------------------------
 
+*Build environment from file*
+
+The list of packages installed in my conda environment used to produce all results can be found here in this file: ARGWAS-package-list.txt. It should thus be possible to recreate my environment with the following command:
+
+    conda create -n myenv --file ARGWAS-package-list.txt
+    
+*Build environment from scratch*
+
 Build environment
 
     conda env create -f argwas_environment.yml
@@ -41,5 +49,102 @@ Install tsdate
     python3 -m pip install tsdate --user
 
 
-Install plinkFile library in R
+Install plinkFile library in R if you want to write covariance matrices in .grm.bin format for GCTA
+
+    install.packages("plinkFile")
+    
+    
+
+Tasks
+-------------------------
+
+*associate*
+
+This task runs all association tests, including GWAS, local REML with eGRM and local REML with GRM. You can either simulate phenotypes or read in existing phenotype files. 
+
+Typical command to run associations with simulated phenotypes and allelic heterogeneity:
+
+    python ARGWAS.py --task simulatePhenotypes --out power_simulation --tree_file relate_ARG.trees --tree_file_simulated simulated_ARG.trees --variants_file simulated_ARG_variants.csv --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method oneRegion --pty_prop_causal_mutations 0.1 --causal_region_coordinates 49500000 49505000 --pty_h_squared 0.02 --pty_sd_beta_causal_mutations standardized --ploidy 2 --skip_first_tree --min_allele_freq 0.01 --seed 1 --ass_window_size 5000 --trees_interval_start 49000000 --simulate_phenotypes
+    
+Run association with simulated phenotypes and two populations, correcting for stratification with PCA:
+
+    python ARGWAS.py --task associate --out example --tree_file simulated_ARG.trees --tree_file_simulated simulated_ARG.trees  --ass_method AIM:eGRM --AIM_method REML --pty_sim_method null --pty_sd_envNoise 1 --ploidy 2 --seed 1 --min_allele_freq 0 --simulate_phenotypes --population_structure prefix_global_eGRM --population_structure_pca_num_eigenvectors 20 --add_1_to_half_of_inds
+
+
+*simulate*
+
+This task simulates ARGs using either msprime or stdpopsim. Always simulate haploids, the haplotypes are assigned to individuals in the association task.
+
+Simulate one population with stdpopsim:
+
+    python ARGWAS.py --task simulate --out example --ploidy 1 --sequence_length 30000000.0 --sim_tree_simulator stdPopsim --N 1000 --trees_interval 49000000 50000000 --seed 1
+
+Simulate two populations with msprime:
+
+    python ARGWAS.py --task simulate --mu 1e-08 --out example --ploidy 1 --recomb_rate 1e-08 --sequence_length 100000.0 --sim_tree_simulator msprime --sim_two_populations --N 2000 --seed 1 --split_time 10000 
+
+
+*simulateMoreMutations*
+
+This task reads in an ARG and adds more mutations in a specified region of the ARG. It then outputs a new ARG.
+
+*downsampleVariantsWriteShapeit*
+
+This task reads a tree, downsamples the variants to mimic a genotyping array and then outputs the variant information in the correct format to be read by Relate to infer ARGs.
+
+    python ARGWAS.py --task downsampleVariantsWriteShapeit --out downsampled --tree_file simulated_ARG.trees --tree_file_simulated simulated_ARG.trees --min_allele_freq 0.01 --ploidy 2 --prop_typed_variants 0.2 --seed 1
+
+    ./relate/bin/Relate --haps downsampled_variants.haps --sample downsampled_inds.sample --mode All --output downsampled_relate --mutation_rate 1.25e-8 --effectiveN 2000 --map genetic_map_GRCh37_chr1.map
+
+    ./relate/bin/RelateFileFormats --input downsampled_relate --output downsampled_relate  --mode ConvertToTreeSequence
+
+
+
+*ARGStatistics*
+
+This task takes an ARG and outputs a file with information about the ARG, such as the marginal tree coordinates, number of variants per tree, ...
+
+    python ARGWAS.py --task ARGStatistics --out example --tree_file example.trees --tree_file_simulated example.trees
+
+
+*simulatePhenotypes*
+
+This task takes an ARG and simulates phenotypes without running any association test. If the same seed is used, the phenotypes simulated under task 'associate' and 'simulatePhenotypes' should be identical.
+
+    python ARGWAS.py --task simulatePhenotypes --out example --tree_file relate_tree.trees --tree_file_simulated simulated_tree.trees --variants_file simulated_tree_variants.csv --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method oneRegion --pty_prop_causal_mutations 0.02 --causal_region_coordinates 49500000 49505000 --pty_h_squared 0.1 --pty_sd_beta_causal_mutations standardized --ploidy 2 --skip_first_tree --min_allele_freq 0.01 --seed 1 --ass_window_size 5000 --trees_interval_start 49000000 --simulate_phenotypes
+
+*impute*
+
+This task takes two ARGs, one for the population of interest and one for a reference panel. It then runs impute2 to infer the missing genotypes in the population of interest using the reference panel.
+
+*getTreeAtPosition*
+
+This task takes an ARG and extracts the marginal tree overlapping a genomic position, and then writes it to file.
+
+*covarianceCorrelations*
+
+This task takes pickle files containing covariance matrices that can be calculated and written to pickle with task 'associate'. It calculates the correlation between these covariance matrices.
+
+
+Analysis descriptions
+-------------------------
+
+*simulated ARGs for power analysis*
+
+I simulated 300 random ARG. On the cluster they are located here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees. I downsampled the variants to 20% typed variants and estimated RELATE trees from these variants here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees/minFreq0.01
+
+*random phenotypes and assoiation tests for cutoff*
+
+The null simulations consisting of random phenotypes and association tests for the true trees and all variants are located here: ~/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/true_trees/window_based. For the RELATE trees and downsampled variants they are located here: /home1/linkv/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/relate_trees/window_based. The directories are further divided into directories 5k and 10k, which contain the association test results with corresponding window sizes.
+
+The R script used to calculate the cutoff values is: 1_calculate_significance_cutoffs.R
+
+*association tests for power analysis*
+
+The main directory is /home1/linkv/ARGWAS/power_sims/stdpopsim/. It is further separated by true and relate trees, and phenotypes with a single causal variant (oneVariant) and phenotypes with allelic heterogeneity (oneRegion). For the paper, I'm using the results in the eGRM_GRM and window_based folders. For allelic heterogeneity, the next distinction is the causal window size (10k or 5k) and the testing window size (tested10k or tested5k). For the single variant case, there are tests for causal variant allele frequency = 0.02 (rareVariant) and frequency = 0.2 (commonVariant).
+
+The R script used to calculate the association power is 2a_calculate_power.R, which calls 2b_calculate_power_one_experiment.R. It uses the output of 1_calculate_significance_cutoffs.R. The results can be plotted with 3_plot_with_error_bars_aH.R and 3_plot_with_error_bars_oneVariant.R.
+
+*population structure*
+
 
