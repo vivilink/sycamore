@@ -137,14 +137,24 @@ I simulated 300 random ARG. On the cluster they are located here: /home1/linkv/A
 
 The null simulations consisting of random phenotypes and association tests for the true trees and all variants are located here: ~/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/true_trees/window_based. For the RELATE trees and downsampled variants they are located here: /home1/linkv/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/relate_trees/window_based. The directories are further divided into directories 5k and 10k, which contain the association test results with corresponding window sizes.
 
-The R script used to calculate the cutoff values is: 1_calculate_significance_cutoffs.R
+The R script used to calculate the cutoff values is: R_scripts/1_calculate_significance_cutoffs.R
 
 *association tests for power analysis*
 
 The main directory is /home1/linkv/ARGWAS/power_sims/stdpopsim/. It is further separated by true and relate trees, and phenotypes with a single causal variant (oneVariant) and phenotypes with allelic heterogeneity (oneRegion). For the paper, I'm using the results in the eGRM_GRM and window_based folders. For allelic heterogeneity, the next distinction is the causal window size (10k or 5k) and the testing window size (tested10k or tested5k). For the single variant case, there are tests for causal variant allele frequency = 0.02 (rareVariant) and frequency = 0.2 (commonVariant).
 
-The R script used to calculate the association power is 2a_calculate_power.R, which calls 2b_calculate_power_one_experiment.R. It uses the output of 1_calculate_significance_cutoffs.R. The results can be plotted with 3_plot_with_error_bars_aH.R and 3_plot_with_error_bars_oneVariant.R.
+The R script used to calculate the association power is 2a_calculate_power.R, which calls 2b_calculate_power_one_experiment.R. It uses the output of R_scripts/1_calculate_significance_cutoffs.R. The results can be plotted with R_scripts/3_plot_with_error_bars_aH.R and R_scripts/3_plot_with_error_bars_oneVariant.R.
 
 *population structure*
 
+The ARGs of two populations that I used in the end is simulated here: ~/ARGWAS/simulations_two_populations/tree_files/no_migration_highNe_splitTime10k. This is also where the global eGRMs are located. The association tests that correct for population structure are located here: ~/ARGWAS/simulations_two_populations/association_tests/eGRM_GRM/true_trees/window_based/5k/with_strat_correction_highNe_splitTime10k, and the association tests that do not correct for populations structure are here: ~/ARGWAS/simulations_two_populations/association_tests/eGRM_GRM/true_trees/window_based/5k/no_strat_correction_highNe_splitTime10k
 
+The R script to plot the results is R_scripts/population_structure.R.
+
+*CREBRF with REML*
+
+I first estimated piecewise eGRMs for every RELATE tree of the genome using script ~/ARGWAS/hawaiian/run_egrm.sh. The global eGRMs are located here: ~/ARGWAS/hawaiian/global_grm/. I then combined the piecewise eGRMs, except for those of chromosome 5, to a global eGRM using script R_scripts/combine_egrms.R. I ran association testing for all parts of chromosome 5 with script ~/ARGWAS/hawaiian/run_association.sh, but not all finished. For the paper, I extracted the region around CREBRF into tree file ~/ARGWAS/hawaiian/chr5.part-04.CREBRF.trees, and tested this region for association using ~/ARGWAS/hawaiian/run_association_CREBRF.sh. 
+
+*CREBRF with GWAS*
+
+The original plink files with genotypes around the CREBRF gene and 10 principle components calculated based on the whole genome, which were shared with me, are here:/home1/linkv/ARGWAS/hawaiian/plink_files_copy/ (this is a copy for safety). The analysis for the paper are here: ~/ARGWAS/hawaiian/plink_files/. I first added the standardized phenotypes that I calculated in the REML analysis to the .fam file with other_scripts/add_phenotype_to_fam.py. I then ran /home1/linkv/ARGWAS/hawaiian/plink_files/run_plink.sh to transform the .fam and .bed files into .ped and .map files, and then the GWAS association tests.
