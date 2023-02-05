@@ -158,3 +158,10 @@ I first estimated piecewise eGRMs for every RELATE tree of the genome using scri
 *CREBRF with GWAS*
 
 The original plink files with genotypes around the CREBRF gene and 10 principle components calculated based on the whole genome, which were shared with me, are here:/home1/linkv/ARGWAS/hawaiian/plink_files_copy/ (this is a copy for safety). The analysis for the paper are here: ~/ARGWAS/hawaiian/plink_files/. I first added the standardized phenotypes that I calculated in the REML analysis to the .fam file with other_scripts/add_phenotype_to_fam.py. I then ran /home1/linkv/ARGWAS/hawaiian/plink_files/run_plink.sh to transform the .fam and .bed files into .ped and .map files, and then the perform the GWAS association tests.
+
+
+Other
+-----------
+
+- In order to run several of the tasks, you need to provide two ARG files, one with parameter "tree_file" and the other with "tree_file_simulated". in addition to variant files (which are produced when you simulate phenotypes). The tree_file is the main ARG that will be tested for association testing. In the case where you have a RELATE tree, the tree_file is the RELATE tree. The "tree_file_simulated" becomes necessary in the case where you simulate phenotypes based on non-typed variants. Since the RELATE trees only contain typed variants, there needs to be a way to access the origial, non-typed variants. Tree_file_simulated should always be accompanied by the "variant_file" that is produced by task"downsampleVariantsWriteShapeit". If you are working with the true trees and all variants, you can provide the same simulated tree file with both ARG paramters, and the variant file that is produced by task "simulate".
+- For the paper, I only use covariance types "eGRM" and "GRM". The "scaled" covariance was the first one implemented and might not have all functionalities. It is calculated based on the TMRCA and the assumption of brownian motion.
