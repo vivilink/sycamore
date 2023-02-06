@@ -124,3 +124,45 @@ This task takes an ARG and extracts the marginal tree overlapping a genomic posi
 *covarianceCorrelations*
 
 This task takes pickle files containing covariance matrices that can be calculated and written to pickle with task 'associate'. It calculates the correlation between these covariance matrices.
+
+
+Analysis descriptions
+-------------------------
+
+*simulated ARGs for power analysis*
+
+I simulated 300 random ARG. On the cluster they are located here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees. I downsampled the variants to 20% typed variants and estimated RELATE trees from these variants here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees/minFreq0.01
+
+*random phenotypes and assoiation tests for cutoff*
+
+The null simulations consisting of random phenotypes and association tests for the true trees and all variants are located here: ~/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/true_trees/window_based. For the RELATE trees and downsampled variants they are located here: /home1/linkv/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/relate_trees/window_based. The directories are further divided into directories 5k and 10k, which contain the association test results with corresponding window sizes.
+
+The R script used to calculate the cutoff values is: R_scripts/1_calculate_significance_cutoffs.R
+
+*association tests for power analysis*
+
+The main directory is /home1/linkv/ARGWAS/power_sims/stdpopsim/. It is further separated by true and relate trees, and phenotypes with a single causal variant (oneVariant) and phenotypes with allelic heterogeneity (oneRegion). For the paper, I'm using the results in the eGRM_GRM and window_based folders. For allelic heterogeneity, the next distinction is the causal window size (10k or 5k) and the testing window size (tested10k or tested5k). For the single variant case, there are tests for causal variant allele frequency = 0.02 (rareVariant) and frequency = 0.2 (commonVariant).
+
+The R script used to calculate the association power is 2a_calculate_power.R, which calls 2b_calculate_power_one_experiment.R. It uses the output of R_scripts/1_calculate_significance_cutoffs.R. The results can be plotted with R_scripts/3_plot_with_error_bars_aH.R and R_scripts/3_plot_with_error_bars_oneVariant.R.
+
+*population structure*
+
+The ARGs of two populations that I used in the end is simulated here: ~/ARGWAS/simulations_two_populations/tree_files/no_migration_highNe_splitTime10k. This is also where the global eGRMs are located. The association tests that correct for population structure are located here: ~/ARGWAS/simulations_two_populations/association_tests/eGRM_GRM/true_trees/window_based/5k/with_strat_correction_highNe_splitTime10k, and the association tests that do not correct for populations structure are here: ~/ARGWAS/simulations_two_populations/association_tests/eGRM_GRM/true_trees/window_based/5k/no_strat_correction_highNe_splitTime10k
+
+The R script to plot the results is R_scripts/population_structure.R.
+
+*CREBRF with REML*
+
+I first estimated piecewise eGRMs for every RELATE tree of the genome using script ~/ARGWAS/hawaiian/run_egrm.sh. The global eGRMs are located here: ~/ARGWAS/hawaiian/global_grm/. I then combined the piecewise eGRMs, except for those of chromosome 5, to a global eGRM using script R_scripts/combine_egrms.R. I ran association testing for all parts of chromosome 5 with script ~/ARGWAS/hawaiian/run_association.sh, but not all finished. For the paper, I extracted the region around CREBRF into tree file ~/ARGWAS/hawaiian/chr5.part-04.CREBRF.trees, and tested this region for association using ~/ARGWAS/hawaiian/run_association_CREBRF.sh. 
+
+*CREBRF with GWAS*
+
+The original plink files with genotypes around the CREBRF gene and 10 principle components calculated based on the whole genome, which were shared with me, are here:/home1/linkv/ARGWAS/hawaiian/plink_files_copy/ (this is a copy for safety). The analysis for the paper are here: ~/ARGWAS/hawaiian/plink_files/. I first added the standardized phenotypes that I calculated in the REML analysis to the .fam file with other_scripts/add_phenotype_to_fam.py. I then ran /home1/linkv/ARGWAS/hawaiian/plink_files/run_plink.sh to transform the .fam and .bed files into .ped and .map files, and to perform the GWAS association tests.
+
+
+Other
+-----------
+
+- In order to run several of the tasks, you need to provide two ARG files, one with parameter "tree_file" and the other with "tree_file_simulated". in addition to variant files (which are produced when you simulate phenotypes). The tree_file is the main ARG that will be tested for association testing. In the case where you have a RELATE tree, the tree_file is the RELATE tree. The "tree_file_simulated" becomes necessary in the case where you simulate phenotypes based on non-typed variants. Since the RELATE trees only contain typed variants, there needs to be a way to access the origial, non-typed variants. Tree_file_simulated should always be accompanied by the "variant_file" that is produced by task"downsampleVariantsWriteShapeit". If you are working with the true trees and all variants, you can provide the same simulated tree file with both ARG paramters, and the variant file that is produced by task "simulate".
+- For the paper, I only use covariance types "eGRM" and "GRM". The "scaled" covariance was the first one implemented and might not have all functionalities. It is calculated based on the TMRCA and the assumption of brownian motion.
+- For the paper, I only use the mixed model association results produced with REML. However, the program can also run the Haseman-Elston algorithm of GCTA. HE is faster but has lower power than REML at small sample sizes, e.g. 1000 diploids.
