@@ -44,7 +44,10 @@ for line in fam:
 		newline += i + " "
 	entry = inds_pheno.get(ind)
 	if entry:
-		newline += entry[1] + " " + entry[0] + "\n"
+		# with sex
+		#newline += entry[1] + " " + entry[0] + "\n"
+		#no sex
+		newline += "0 " + entry[0] + "\n"
 	else:
 		newline += "0 -9\n"
 	fam_new.write(newline)
