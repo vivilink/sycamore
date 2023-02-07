@@ -290,7 +290,6 @@ class PhenotypesBMI(Phenotypes):
         None.
 
         """
-        print("in write to file gcta eGRM of BMI phenotypes")
 
         self.standardize(out=out, inds=inds, logfile=logfile)
 

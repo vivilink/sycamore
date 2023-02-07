@@ -207,7 +207,7 @@ if(run_acat){
 
 
 #--------------------------
-# cutoff plot
+# cutoff plot all
 #--------------------------
 
 # pdf("p_values_cutoff_separate.pdf", width=10, height=5)
@@ -253,5 +253,23 @@ abline(v=cutoff_rep, lty=2)
 dev.off()
 
 
+#--------------------------
+# cutoff plot paper
+#--------------------------
 
 
+pdf("p_values_cutoff_paper.pdf", width=5, height=5)
+
+par(pty="s")
+plot(sort(m_results_VC[[1]][,"REML"], decreasing=T), col="dodgerblue", yaxt='n', ylim=c(0.5,6), xlim=c(1,reps), ylab=expression("-log"[10]*"(p)"), xlab="ordered simulation number", type='l')
+lines(sort(m_results_VC[[2]][,"REML"], decreasing=T), col="maroon2", lty=1)
+lines(sort(m_results_GWAS[,"GWAS"], decreasing=T), col="orange2")
+
+axis(side=2, las=2)
+legend(legend=c("GWAS", 
+                "local eGRM",  
+                "local GRM"), 
+                x="topright", ncol=1, col=c("orange2", "dodgerblue","maroon2"), lty=c(1), bty='n')
+abline(v=cutoff_rep, lty=2)
+
+dev.off()

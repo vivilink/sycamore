@@ -245,9 +245,9 @@ if args.task == "simulatePhenotypes":
 if args.task == "associate":
     af.run_association_testing(args=args, random=r, logfile=logger)
 
-# -----------------------
+# ----------------------------------------------------------------
 # Write variants plink files
-# -----------------------
+# ----------------------------------------------------------------
 
 if args.task == "writeToPlink":
     raise ValueError("task 'writeToPlink' is planned but not yet implemented")
