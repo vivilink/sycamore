@@ -1,38 +1,57 @@
+setwd("/data/ARGWAS/experiments_population_split/association_tests/eGRM_GRM/true_trees/window_based/5k/")
 
-setwd("/data/ARGWAS/experiments_population_split/association_tests/eGRM_GRM/true_trees/window_based/5k/with_strat_correction_highNe_splitTime10k")
+pdf("p_value_qqplots.pdf", width=10, height=5)
+par(mfrow=c(1,2))
+n_reps <- 100
+p_values <- c()
 
-pdf("pca_corrected.pdf", width=5, height=5)
+for(r in c(2:13,15:71,73:n_reps)){
+  df <- read.csv(paste("no_strat_correction_highNe_splitTime10k/two_pops_",r,"_eGRM_trees_REML_results.csv", sep=''))
+  p_values <- c(p_values, df$p_values)
+}
+
+qqplot(runif(1000), p_values, bty='n', ylim=c(0,1), xlim=c(0,1), xlab="U(0,1)", ylab="p-values")
+abline(a=0, b=1)
 
 n_reps <- 100
 p_values <- c()
 
 for(r in 1:n_reps){
-  df <- read.csv(paste("two_pops_", r, "_phenoSeed_eGRMGlobalSeed_PCA_eGRM_trees_REML_results.csv", sep=''))
+  df <- read.csv(paste("with_strat_correction_highNe_splitTime10k/two_pops_", r, "_phenoSeed_eGRMGlobalSeed_PCA_eGRM_trees_REML_results.csv", sep=''))
   p_values <- c(p_values, df$p_values)
 }
 
-qqplot(runif(1000), p_values, bty='n')
+qqplot(runif(1000), p_values, bty='n', ylim=c(0,1), xlim=c(0,1), xlab="U(0,1)", ylab="p-values")
 abline(a=0, b=1)
 
 dev.off()
 
 
-
-pdf("mgrm_corrected.pdf", width=5, height=5)
-
-n_reps <- 100
-p_values <- c()
-
-for(r in c(1:20, 22:n_reps)){
-  df <- read.csv(paste("two_pops_", r, "_phenoSeed_eGRMGlobalSeed_mgrm_eGRM_trees_REML_results.csv", sep=''))
-  p_values <- c(p_values, df$p_values)
-}
-
-qqplot(runif(1000), p_values, bty='n')
-abline(a=0, b=1)
-
-dev.off()
-
+# 
+# 
+# pheno <- read.table("two_pops_98_eGRM_phenotypes.phen", header=FALSE)
+# plot(density(pheno$V3[1:1000]))
+# lines(density(pheno$V3[1001:2000]))
+# mean(pheno$V3[1:1000])
+# mean(pheno$V3[1001:2000])
+# 
+# 
+# 
+# pdf("mgrm_corrected.pdf", width=5, height=5)
+# 
+# n_reps <- 100
+# p_values <- c()
+# 
+# for(r in c(1:20, 22:n_reps)){
+#   df <- read.csv(paste("two_pops_", r, "_phenoSeed_eGRMGlobalSeed_mgrm_eGRM_trees_REML_results.csv", sep=''))
+#   p_values <- c(p_values, df$p_values)
+# }
+# 
+# qqplot(runif(1000), p_values, bty='n')
+# abline(a=0, b=1)
+# 
+# dev.off()
+# 
 
 # 
 # ReadGRMBin=function(prefix, AllN=F, size=4){
@@ -89,29 +108,4 @@ dev.off()
 
 
 
-
-
-
-
-
-setwd("/data/ARGWAS/experiments_population_split/association_tests/eGRM_GRM/true_trees/window_based/5k/no_strat_correction_highNe_splitTime10k")
-
-pdf("not_corrected.pdf", width=5, height=5)
-n_reps <- 100
-p_values <- c()
-
-for(r in c(2:13,15:71,73:n_reps)){
-  df <- read.csv(paste("two_pops_",r,"_eGRM_trees_REML_results.csv", sep=''))
-  p_values <- c(p_values, df$p_values)
-}
-
-qqplot(runif(1000), p_values, bty='n')
-abline(a=0, b=1)
-dev.off()
-
-pheno <- read.table("two_pops_98_eGRM_phenotypes.phen", header=FALSE)
-plot(density(pheno$V3[1:1000]))
-lines(density(pheno$V3[1001:2000]))
-mean(pheno$V3[1:1000])
-mean(pheno$V3[1001:2000])
 
