@@ -1,6 +1,6 @@
 
 base_dir <- "/data/ARGWAS/experiments_cutoff_N2K/"
-setwd("/data/ARGWAS/power_sims/stdpopsim")
+setwd(base_dir)
 
 options(scipen = 100, digits = 4)
 run_acat <- TRUE
@@ -23,7 +23,6 @@ for(tree_type in c("true_trees", "relate_trees")){ #, , true_trees
       t <- rbind(t, c(tree_type, ws_testing, "ACAT-V", round(cutoff_acat,4)))
       t <- rbind(t, c(tree_type, ws_testing, "local eGRM", round(cutoff_eGRM,4)))
       t <- rbind(t, c(tree_type, ws_testing, "local GRM", round(cutoff_GRM,4)))
-      
     }
   }
 }

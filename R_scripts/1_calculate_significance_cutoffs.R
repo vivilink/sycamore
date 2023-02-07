@@ -1,6 +1,6 @@
 library(ACAT)
 
-setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/relate_trees/window_based/5k")
+setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/true_trees/window_based/5k")
 
 reps <- 300
 cutoff_rep <- 0.05 * reps
@@ -261,15 +261,17 @@ dev.off()
 pdf("p_values_cutoff_paper.pdf", width=5, height=5)
 
 par(pty="s")
-plot(sort(m_results_VC[[1]][,"REML"], decreasing=T), col="dodgerblue", yaxt='n', ylim=c(0.5,6), xlim=c(1,reps), ylab=expression("-log"[10]*"(p)"), xlab="ordered simulation number", type='l')
+plot(sort(m_results_VC[[1]][,"REML"], decreasing=T), col="dodgerblue", yaxt='n', ylim=c(0.5,6), xlim=c(1,reps), ylab=expression("-log"[10]*"(p)"), xlab="ordered simulation number", type='l', bty='n')
 lines(sort(m_results_VC[[2]][,"REML"], decreasing=T), col="maroon2", lty=1)
 lines(sort(m_results_GWAS[,"GWAS"], decreasing=T), col="orange2")
+lines(sort(m_results_acat[,"acat"], decreasing=T), col="black")
 
 axis(side=2, las=2)
 legend(legend=c("GWAS", 
                 "local eGRM",  
-                "local GRM"), 
-                x="topright", ncol=1, col=c("orange2", "dodgerblue","maroon2"), lty=c(1), bty='n')
+                "local GRM",
+                "ACAT-V"), 
+                x="topright", ncol=1, col=c("orange2", "dodgerblue","maroon2", "black"), lty=c(1), bty='n')
 abline(v=cutoff_rep, lty=2)
 
 dev.off()
