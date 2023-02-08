@@ -1,6 +1,6 @@
 library(ACAT)
 
-setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/true_trees/window_based/5k")
+setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/relate_trees/window_based/5k")
 
 reps <- 300
 cutoff_rep <- 0.05 * reps
@@ -252,13 +252,23 @@ abline(v=cutoff_rep, lty=2)
 
 dev.off()
 
+#--------------------------
+# write detailed results to file, to be used to plot in different script
+#--------------------------
+
+write.table(m_results_VC[[1]], sep=',', row.names = FALSE, col.names = c("REML_min_p_value", "HE_SD_min_p_value",  "HE_CP_min_p_value", "REML_equal0.5", "index_min_REML", "index_min_HESD", "index_min_HECP"), file="p_values_replicates_eGRM.csv")
+write.table(m_results_VC[[2]], sep=',', row.names = FALSE, col.names = c("REML_min_p_value", "HE_SD_min_p_value",  "HE_CP_min_p_value", "REML_equal0.5", "index_min_REML", "index_min_HESD", "index_min_HECP"), file="p_values_replicates_GRM.csv")
+write.table(m_results_GWAS, sep=',', row.names = FALSE, col.names = c("GWAS_min_p_value", "index_min_GWAS", "p_value_10"), file="p_values_replicates_GWAS.csv")
+if(run_acat){
+  write.table(m_results_acat, sep=',', row.names = FALSE, col.names = c("ACAT_min_p_value", "index_min_GWAS", "p_value_10"), file="p_values_replicates_acat.csv")
+}
 
 #--------------------------
-# cutoff plot paper
+# cutoff plot selected results
 #--------------------------
 
 
-pdf("p_values_cutoff_paper.pdf", width=5, height=5)
+pdf("p_values_cutoff_selected_results.pdf", width=5, height=5)
 
 par(pty="s")
 plot(sort(m_results_VC[[1]][,"REML"], decreasing=T), col="dodgerblue", yaxt='n', ylim=c(0.5,6), xlim=c(1,reps), ylab=expression("-log"[10]*"(p)"), xlab="ordered simulation number", type='l', bty='n')

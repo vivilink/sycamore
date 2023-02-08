@@ -1,3 +1,6 @@
+#---------------------------
+# latex table
+#---------------------------
 
 base_dir <- "/data/ARGWAS/experiments_cutoff_N2K/"
 setwd(base_dir)
@@ -40,4 +43,53 @@ t[which(t == "10k")] <- "10kb"
 print(xtable(t, type = "latex"), file = paste(base_dir,"p_value_cutoffs.tex", sep=''))
 
 
+#---------------------------
+# p-value cutoff plot
+#---------------------------
+
+# colors
+org <- "#E69F00"
+blu <- "#56B4E9"
+pin <- "#CC79A7"
+
+plot_lines <- function(folder, LTY){
+  p_values <- read.csv(file=paste(folder, "p_values_replicates_eGRM.csv",sep=''))
+  lines(sort(p_values$REML_min_p_value, decreasing=TRUE), col=blu, lty=LTY)
+  
+  p_values <- read.csv(file=paste(folder, "p_values_replicates_GRM.csv",sep=''))
+  lines(sort(p_values$REML_min_p_value, decreasing=TRUE), col=pin, lty=LTY)
+  
+  p_values <- read.csv(file=paste(folder, "p_values_replicates_GWAS.csv",sep=''))
+  lines(sort(p_values$GWAS_min_p_value, decreasing=TRUE), col=org, lty=LTY)
+  
+  p_values <- read.csv(file=paste(folder, "p_values_replicates_acat.csv",sep=''))
+  lines(sort(p_values$ACAT_min_p_value, decreasing=TRUE), col="black", lty=LTY)
+}
+
+
+
+pdf("p_value_cutoffs_true_relate.pdf", width=5, height = 5)
+reps <- 300
+cutoff_rep <- 0.05 * reps
+
+plot(0, type='n', yaxt='n', ylim=c(0.5,6), xlim=c(1,reps), ylab='', xlab="",  bty='n')
+title(ylab=expression("-log"[10]*"(p)"), line=2)
+title(xlab="ordered simulation number", line=2.2)
+axis(side=2, las=2)
+
+
+
+#true trees
+folder <- "/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/true_trees/window_based/5k/"
+plot_lines(folder=folder, LTY=2)
+
+#relate trees
+folder <- "/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/relate_trees/window_based/5k/"
+plot_lines(folder=folder, LTY=1)
+
+abline(v=cutoff_rep, lty=1)
+
+legend(x="topright", legend=c("true trees / all variants","Relate / typed variants", "GWAS", "ACAT-V", "local GRM", "local eGRM"), col=c("gray", "gray", org, "black", pin , blu), bty='n', pch=c(NA, NA, 15, 15, 15, 15), lty=c(2,1, NA, NA, NA, NA))
+
+dev.off()
 
