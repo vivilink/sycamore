@@ -1,12 +1,19 @@
 reps <- 200
 base_dir <- "/data/ARGWAS/power_sims/stdpopsim/"
 
-make_confusion_m <- function(dir, tree_type, window_size_causal, window_size_testing, propCausal){
+make_confusion_m <- function(dir, tree_type, window_size_causal, window_size_testing, propCausal, null_sims = FALSE){
   
-  p_GWAS <- read.table(paste(dir,"/association_results_GWAS.txt", sep=''), header=TRUE)$GWAS
-  p_acat <- read.table(paste(dir,"/association_results_acat.txt", sep=''), header=TRUE)$acat
-  p_eGRM <- read.table(paste(dir,"/association_results_eGRM.txt", sep=''), header=TRUE)$REML
-  p_GRM <- read.table(paste(dir,"/association_results_GRM.txt", sep=''), header=TRUE)$REML
+  if(null_sims == TRUE){
+    p_GWAS <- read.table(paste(dir,"/p_values_replicates_GWAS.csv", sep=''), sep=',', header=TRUE)$GWAS_min_p_value
+    p_acat <- read.table(paste(dir,"/p_values_replicates_acat.csv", sep=''), sep=',', header=TRUE)$ACAT_min_p_value
+    p_eGRM <- read.table(paste(dir,"/p_values_replicates_eGRM.csv", sep=''), sep=',', header=TRUE)$REML_min_p_value
+    p_GRM <- read.table(paste(dir,"/p_values_replicates_GRM.csv", sep=''), sep=',', header=TRUE)$REML_min_p_value
+  } else{
+    p_GWAS <- read.table(paste(dir,"/association_results_GWAS.txt", sep=''), header=TRUE)$GWAS
+    p_acat <- read.table(paste(dir,"/association_results_acat.txt", sep=''), header=TRUE)$acat
+    p_eGRM <- read.table(paste(dir,"/association_results_eGRM.txt", sep=''), header=TRUE)$REML
+    p_GRM <- read.table(paste(dir,"/association_results_GRM.txt", sep=''), header=TRUE)$REML
+  }
   
   cutoff_GWAS <- read.csv(paste("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/", tree_type, "/window_based/", window_size_testing, "/p_value_cutoffs_GWAS.csv", sep=''))$x
   cutoff_acat <- read.csv(paste("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/", tree_type, "/window_based/", window_size_testing, "/p_value_cutoffs_acat.csv", sep=''))$x
@@ -41,6 +48,8 @@ make_confusion_m <- function(dir, tree_type, window_size_causal, window_size_tes
   
 }
 
+# AH
+
 tree_type <- "relate_trees"
 window_size_testing <- "5k"
 window_size_causal <- "5k"
@@ -56,6 +65,9 @@ propCausal <- 0.1
 dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type,"/oneRegion/eGRM_GRM/window_based/", window_size_causal, "/tested",window_size_testing,"/propCausal",propCausal,"/h0.02", sep='')
 make_confusion_m(dir=dir, tree_type=tree_type, window_size_causal=window_size_causal, window_size_testing=window_size_testing, propCausal=propCausal)
 
+
+# one causal variant
+
 tree_type <- "relate_trees"
 window_size_testing <- "10k"
 window_size_causal <- NA
@@ -70,3 +82,18 @@ propCausal <- "commonVariant"
 dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type,"/oneVariant/commonVariant/eGRM_GRM/window_based/",window_size_testing,"/h0.02", sep='')
 make_confusion_m(dir=dir, tree_type=tree_type, window_size_causal=window_size_causal, window_size_testing=window_size_testing, propCausal=propCausal)
 
+# null simulations
+
+tree_type <- "relate_trees"
+window_size_testing <- "5k"
+window_size_causal <- NA
+propCausal <- "NULLsims"
+dir <- paste("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/", tree_type, "/window_based/", window_size_testing, sep='')
+make_confusion_m(dir=dir, tree_type=tree_type, window_size_causal=window_size_causal, window_size_testing=window_size_testing, propCausal=propCausal, null_sims=TRUE)
+
+tree_type <- "true_trees"
+window_size_testing <- "5k"
+window_size_causal <- NA
+propCausal <- "NULLsims"
+dir <- paste("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/", tree_type, "/window_based/", window_size_testing, sep='')
+make_confusion_m(dir=dir, tree_type=tree_type, window_size_causal=window_size_causal, window_size_testing=window_size_testing, propCausal=propCausal, null_sims=TRUE)
