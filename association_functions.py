@@ -612,7 +612,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
             f.write(outname + '\n')
             f.write(args.population_structure + '\n')
 
-    pheno_file = outname + "_phenotypes.phen"
+    pheno_file = args.out + "_phenotypes.phen"
     # if args.simulate_phenotypes:
     #     pheno_file = args.out + "_phenotypes.phen"
 
