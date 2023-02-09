@@ -145,6 +145,8 @@ The main directory is /home1/linkv/ARGWAS/power_sims/stdpopsim/. It is further s
 
 The R script used to calculate the association power is 2a_calculate_power.R, which calls 2b_calculate_power_one_experiment.R. It uses the output of R_scripts/1_calculate_significance_cutoffs.R. The results can be plotted with R_scripts/3_plot_with_error_bars_aH.R and R_scripts/3_plot_with_error_bars_oneVariant.R.
 
+The folders with association results called "ownPhenotypes" are old results where the phenotypes were simulated separately for the true trees and the relate trees, and the number of causal variants is thus not consistent
+
 *population structure*
 
 The ARGs of two populations that I used in the end is simulated here: ~/ARGWAS/simulations_two_populations/tree_files/no_migration_highNe_splitTime10k. This is also where the global eGRMs are located. The association tests that correct for population structure are located here: ~/ARGWAS/simulations_two_populations/association_tests/eGRM_GRM/true_trees/window_based/5k/with_strat_correction_highNe_splitTime10k, and the association tests that do not correct for populations structure are here: ~/ARGWAS/simulations_two_populations/association_tests/eGRM_GRM/true_trees/window_based/5k/no_strat_correction_highNe_splitTime10k
