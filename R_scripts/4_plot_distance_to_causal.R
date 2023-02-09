@@ -53,15 +53,15 @@ layout(mat=matrix(c(1,2,3,4,5,6), ncol=3))
 propCausal <- 0.1
 relate_dir <- paste(base_dir, "relate_trees/oneRegion/eGRM_GRM/window_based/5k/tested5k/propCausal", propCausal, "/h0.02/", sep='')
 true_dir <- paste(base_dir, "true_trees/oneRegion/eGRM_GRM/window_based/5k/tested5k/propCausal", propCausal, "/h0.02/", sep='')
-relate_stats <- plot_one(dir=relate_dir, max_y=0.000005, max_x=600000, LTY=1, MAIN="prop causal 0.1", tree_type="relate_trees")
-true_stats <- plot_one(dir=true_dir, max_y=0.00003, max_x=600000, LTY=2, MAIN="prop causal 0.1", tree_type="true_trees")
+relate_stats <- plot_one(dir=relate_dir, max_y=0.000005, max_x=600000, LTY=1, MAIN=paste("prop causal", propCausal), tree_type="relate_trees")
+true_stats <- plot_one(dir=true_dir, max_y=0.00003, max_x=600000, LTY=2, MAIN=paste("prop causal", propCausal), tree_type="true_trees")
 t <- rbind(relate_stats, true_stats)
 
 propCausal <- 0.2
 relate_dir <- paste(base_dir, "relate_trees/oneRegion/eGRM_GRM/window_based/5k/tested5k/propCausal", propCausal, "/h0.02/", sep='')
 true_dir <- paste(base_dir, "true_trees/oneRegion/eGRM_GRM/window_based/5k/tested5k/propCausal", propCausal, "/h0.02/", sep='')
-relate_stats <- plot_one(dir=relate_dir, max_y=0.000005, max_x=600000, LTY=1, MAIN="prop causal 0.5", tree_type="relate_trees")
-true_stats <- plot_one(dir=true_dir, max_y=0.00003, max_x=600000, LTY=2, MAIN="prop causal 0.5", tree_type="true_trees")
+relate_stats <- plot_one(dir=relate_dir, max_y=0.000005, max_x=600000, LTY=1, MAIN=paste("prop causal", propCausal), tree_type="relate_trees")
+true_stats <- plot_one(dir=true_dir, max_y=0.00003, max_x=600000, LTY=2, MAIN=paste("prop causal", propCausal), tree_type="true_trees")
 t <- rbind(t, relate_stats, true_stats)
 
 #rare Variant

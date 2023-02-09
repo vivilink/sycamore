@@ -156,7 +156,10 @@ if args.task == "downsampleVariantsWriteShapeit":
     # --------------------------------
     # create diploids and variants
     # --------------------------------
-    inds = tind.Individuals(args.ploidy, N, args.relate_sample_names)
+    inds = tind.Individuals(ploidy=args.ploidy,
+                            num_haplotypes=N,
+                            relate_sample_names_file=args.relate_sample_names,
+                            logfile=logger)
     inds.write_shapeit2(args.out, logger)
     variants = tvar.TVariantsFiltered(trees, sample_ids, args.min_allele_freq, args.max_allele_freq,
                                       args.prop_typed_variants, args.pos_float, r, logger)
@@ -182,7 +185,10 @@ if args.task == "impute":
     trees = tskit.load(args.tree_file)
     sample_ids = trees.samples()
     N = len(sample_ids)
-    inds = tind.Individuals(args.ploidy, N)
+    inds = tind.Individuals(ploidy=args.ploidy,
+                            num_haplotypes=N,
+                            relate_sample_names_file=args.relate_sample_names,
+                            logfile=logger)
     trees = tt.TTrees.remove_monomorphic(trees)
     variants = tvar.TVariantsFiltered(ts_object=trees, samp_ids=sample_ids, min_allele_freq=args.min_allele_freq,
                                       max_allele_freq=args.max_allele_freq,

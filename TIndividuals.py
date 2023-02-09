@@ -12,6 +12,12 @@ import numpy as np
 
 class Individuals:
     def __init__(self, ploidy, num_haplotypes, logfile, relate_sample_names_file):
+        """
+        @param ploidy:
+        @param num_haplotypes:
+        @param logfile:
+        @param relate_sample_names_file: only needed for real data, can be None if sample names should just be generated
+        """
 
         logfile.info("- Initializing individuals with ploidy " + str(ploidy) + ". Found " + str(num_haplotypes) + " haplotypes.")
 
