@@ -1,5 +1,15 @@
 setwd("/data/ARGWAS/experiments_population_split/association_tests/eGRM_GRM/true_trees/window_based/5k/")
 
+plot_qq <- function(p_values, MAIN){
+  unif <- runif(5000)
+  qqplot(unif, p_values, xlim=c(0,1), ylim=c(0,1), main=MAIN, xlab="", ylab="", bty='n', xaxt='n', yaxt='n', pch=20)
+  axis(side=1, at=seq(0,1,by=0.2), labels = c(0,seq(0.2,0.8,by=0.2),1)) 
+  axis(side=2, at=seq(0,1,by=0.2), labels = c(0,seq(0.2,0.8,by=0.2),1), las=2)
+  title(ylab="p", line=2.8)
+  title(xlab="Uniform(0,1)", line=2.2)
+  abline(a=0, b=1)
+}
+
 pdf("p_value_qqplots.pdf", width=10, height=5)
 par(mfrow=c(1,2))
 n_reps <- 100
@@ -10,8 +20,7 @@ for(r in c(2:13,15:71,73:n_reps)){
   p_values <- c(p_values, df$p_values)
 }
 
-qqplot(runif(1000), p_values, bty='n', ylim=c(0,1), xlim=c(0,1), xlab="U(0,1)", ylab="p-values")
-abline(a=0, b=1)
+plot_qq(p_values, MAIN="")
 
 n_reps <- 100
 p_values <- c()
@@ -21,8 +30,7 @@ for(r in 1:n_reps){
   p_values <- c(p_values, df$p_values)
 }
 
-qqplot(runif(1000), p_values, bty='n', ylim=c(0,1), xlim=c(0,1), xlab="U(0,1)", ylab="p-values")
-abline(a=0, b=1)
+plot_qq(p_values, MAIN="")
 
 dev.off()
 

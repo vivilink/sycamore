@@ -57,7 +57,7 @@ relate_stats <- plot_one(dir=relate_dir, max_y=0.000005, max_x=600000, LTY=1, MA
 true_stats <- plot_one(dir=true_dir, max_y=0.00003, max_x=600000, LTY=2, MAIN="prop causal 0.1", tree_type="true_trees")
 t <- rbind(relate_stats, true_stats)
 
-propCausal <- 0.5
+propCausal <- 0.2
 relate_dir <- paste(base_dir, "relate_trees/oneRegion/eGRM_GRM/window_based/5k/tested5k/propCausal", propCausal, "/h0.02/", sep='')
 true_dir <- paste(base_dir, "true_trees/oneRegion/eGRM_GRM/window_based/5k/tested5k/propCausal", propCausal, "/h0.02/", sep='')
 relate_stats <- plot_one(dir=relate_dir, max_y=0.000005, max_x=600000, LTY=1, MAIN="prop causal 0.5", tree_type="relate_trees")
@@ -78,15 +78,13 @@ t[which(t[,1] == "true_trees" & t[,3] == "local eGRM"),1] <- "true trees"
 t[which(t[,1] == "relate_trees" & t[,3] != "local eGRM"),1] <- "typed variants"
 t[which(t[,1] == "relate_trees" & t[,3] == "local eGRM"),1] <- "Relate trees"
 
-t[which(t[,2] == "rareVariant"),2] <- "rare variant"
-t[which(t[,2] == "commonVariant"),2] <- "common variant"
+t[which(t[,2] == "rare variant"),2] <- "causal variant frequency 0.02"
 
 t[which(t == "5k")] <- "5kb"
 t[which(t == "10k")] <- "10kb"
 
-#write latex table
 legend(x="topright", legend=c("Relate / typed variants", "true trees / all variants", "local eGRM", "local GRM", "GWAS", "ACAT-V"), lty=c(1,2,NA, NA, NA, NA), pch=c(NA, NA, 15, 15, 15, 15), col=c("gray","gray",blu, pin, org, "black"), bty='n')
 dev.off()
 
-
+#write latex table
 print(xtable(t, type = "latex"), file = paste(base_dir,"distance_causal_window.tex", sep=''))

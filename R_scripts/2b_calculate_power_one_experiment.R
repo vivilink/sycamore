@@ -221,34 +221,7 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
   for(m in names(result_matrices)){
     write.table(result_matrices[[m]], file=paste(out_dir, "/association_results_",m,".txt", sep=''), quote=FALSE, row.names=FALSE)
   }
-    
-  #--------------------------
-  # plot distance dist
-  #--------------------------
-  pdf(paste(out_dir, "/distance_from_causal_hsquared",hsquared,"_wsCausal",window_size_causal,".pdf", sep=''), width = 7, height = 3)
-  par(mar=c(5,7,3,3))
-  # par(oma=c(3,3,3,3))
-  max_y <- max(density(result_matrices[["GWAS"]]$distance_min_p_to_causal, bw="SJ")$y, 
-               density(result_matrices[["eGRM"]]$distance_min_p_to_causal_REML, bw="SJ")$y,
-               density(result_matrices[["GRM"]]$distance_min_p_to_causal_REML, bw="SJ")$y
-               )
-  max_x <-  max((result_matrices[["GWAS"]]$distance_min_p_to_causal), 
-                (result_matrices[["eGRM"]]$distance_min_p_to_causal_REML),
-                (result_matrices[["GRM"]]$distance_min_p_to_causal_REML)
-                )
-  plot(density(result_matrices[["GWAS"]]$distance_min_p_to_causal, na.rm = TRUE, bw="SJ"), col="orange2", 
-       ylim=c(0,max_y), bty='n', las=2, xaxt='n', ylab='', xlim=c(0,max_x),
-       xlab="Distance between most significant p-value and causal window start [kb]", main="")
-  axis(side=1, at=seq(0,max(max_x),by=100000), labels=seq(0,max(max_x),by=100000) / 1000)
-  title(ylab = "Density", line = 5) 
-  lines(density(result_matrices[["eGRM"]]$distance_min_p_to_causal_REML, na.rm = TRUE, bw="SJ"), col="dodgerblue")
-  lines(density(result_matrices[["GRM"]]$distance_min_p_to_causal_REML, na.rm = TRUE, bw="SJ"), col="maroon2")
-  if(run_acat){
-    lines(density(result_matrices[["acat"]]$distance_min_p_to_causal, na.rm = TRUE), col="black")
-  }
-  legend(legend=c("local GRM", "local eGRM", "GWAS", "acat"), col=c("maroon2", "dodgerblue", "orange2", "black"), x="topright", lty=1, bty='n')
   
-  dev.off()
   #--------------------------
   # power
   #--------------------------
@@ -272,4 +245,32 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
     out_t <- cbind(power_REML_eGRM, power_REML_GRM, power_GWAS, expected_power_GWAS)#, power_REML_region, power_GWAS_region, power_HE_SD_region, power_HE_CP_region)
     write.table(out_t, file=paste(out_dir, "/power_results.txt", sep=''), quote=FALSE, row.names=FALSE)
   }
+  
+  #--------------------------
+  # plot distance dist
+  #--------------------------
+  # pdf(paste(out_dir, "/distance_from_causal_hsquared",hsquared,"_wsCausal",window_size_causal,".pdf", sep=''), width = 7, height = 3)
+  # par(mar=c(5,7,3,3))
+  # # par(oma=c(3,3,3,3))
+  # max_y <- max(density(result_matrices[["GWAS"]]$distance_min_p_to_causal, bw="SJ", na.rm=TRUE)$y, 
+  #              density(result_matrices[["eGRM"]]$distance_min_p_to_causal_REML, bw="SJ", na.rm=TRUE)$y,
+  #              density(result_matrices[["GRM"]]$distance_min_p_to_causal_REML, bw="SJ", na.rm=TRUE)$y
+  # )
+  # max_x <-  max((result_matrices[["GWAS"]]$distance_min_p_to_causal), 
+  #               (result_matrices[["eGRM"]]$distance_min_p_to_causal_REML),
+  #               (result_matrices[["GRM"]]$distance_min_p_to_causal_REML)
+  # )
+  # plot(density(result_matrices[["GWAS"]]$distance_min_p_to_causal, na.rm = TRUE, bw="SJ"), col="orange2", 
+  #      ylim=c(0,max_y), bty='n', las=2, xaxt='n', ylab='', xlim=c(0,max_x),
+  #      xlab="Distance between most significant p-value and causal window start [kb]", main="")
+  # axis(side=1, at=seq(0,max(max_x),by=100000), labels=seq(0,max(max_x),by=100000) / 1000)
+  # title(ylab = "Density", line = 5) 
+  # lines(density(result_matrices[["eGRM"]]$distance_min_p_to_causal_REML, na.rm = TRUE, bw="SJ"), col="dodgerblue")
+  # lines(density(result_matrices[["GRM"]]$distance_min_p_to_causal_REML, na.rm = TRUE, bw="SJ"), col="maroon2")
+  # if(run_acat){
+  #   lines(density(result_matrices[["acat"]]$distance_min_p_to_causal, na.rm = TRUE), col="black")
+  # }
+  # legend(legend=c("local GRM", "local eGRM", "GWAS", "acat"), col=c("maroon2", "dodgerblue", "orange2", "black"), x="topright", lty=1, bty='n')
+  # 
+  # dev.off()
 }

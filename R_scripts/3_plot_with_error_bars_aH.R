@@ -23,8 +23,10 @@ for(propCausal in c(0.1,0.2,0.5,0.8)){
         run_acat <- FALSE
       }
       
-      plot(0, type='n', ylim=c(0, 1), xlim=c(min(1)-offset, length(hs)+2*offset), ylab="", xlab='', xaxt='n', main=ws_testing, bty='n', las=2)
+      plot(0, type='n', ylim=c(0, 1), xlim=c(min(1)-offset, length(hs)+2*offset), ylab="", xlab='', yaxt='n', xaxt='n', main=ws_testing, bty='n', las=2)
       axis(side=1, at=1:length(hs), labels=hs)
+      axis(side=2, at=seq(0,1,by=0.2), labels=c(0,seq(0.2,0.8,by=0.2), 1), las=2)
+      
       title(ylab=expression("power"), line=2.5)
       title(xlab="local heritability", line=2.2)
       
