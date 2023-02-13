@@ -131,11 +131,11 @@ Analysis descriptions
 
 *simulated ARGs for power analysis*
 
-I simulated 300 random ARG. On the cluster they are located here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees. I downsampled the variants to 20% typed variants and estimated RELATE trees from these variants here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees/minFreq0.01
+I simulated 300 random ARG. On the cluster they are located here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees. I downsampled the variants with an allele frequency of at least 10% to 20% typed variants and estimated Relate trees from these variants here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees/minFreq0.01
 
 *random phenotypes and assoiation tests for cutoff*
 
-The null simulations consisting of random phenotypes and association tests for the true trees and all variants are located here: ~/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/true_trees/window_based. For the RELATE trees and downsampled variants they are located here: /home1/linkv/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/relate_trees/window_based. The directories are further divided into directories 5k and 10k, which contain the association test results with corresponding window sizes.
+The null simulations consisting of random phenotypes and association tests for the true trees and all variants are located here: ~/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/true_trees/window_based. For the Relate trees and downsampled variants they are located here: /home1/linkv/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/relate_trees/window_based. The directories are further divided into directories 5k and 10k, which contain the association test results with corresponding window sizes.
 
 The R script used to calculate the cutoff values is: R_scripts/1_calculate_significance_cutoffs.R
 
