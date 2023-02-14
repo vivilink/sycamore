@@ -100,9 +100,9 @@ for(propCausal in c(0.1,0.2,0.5,0.8)){
         }
       }
       if(run_acat){
-        legend(x="bottomright", legend=c("true trees / all variants","Relate / typed variants", "local eGRM", "local GRM", "GWAS", "ACAT-V"), pch=c(19, 1, 15, 15, 15, 15), col=c("gray","gray", blu, pin, org, "black"), bty='n')
+        legend(x="bottomright", legend=c("true trees / all variants","Relate / typed variants", "local eGRM", "local GRM", "GWAS", "ACAT-V"), pch=c(1, 19, 15, 15, 15, 15), col=c("gray","gray", blu, pin, org, "black"), bty='n')
       } else {
-        legend(x="bottomright", legend=c("true trees / all variants","Relate / typed variants", "local eGRM", "local GRM", "GWAS"), pch=c(19, 1, 15, 15, 15), col=c("gray","gray", blu, pin, org), bty='n')
+        legend(x="bottomright", legend=c("true trees / all variants","Relate / typed variants", "local eGRM", "local GRM", "GWAS"), pch=c(1, 19, 15, 15, 15), col=c("gray","gray", blu, pin, org), bty='n')
       }
     }
   }

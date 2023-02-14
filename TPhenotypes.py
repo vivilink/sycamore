@@ -153,7 +153,8 @@ class Phenotypes:
 
     def initialize_from_file(self, filename, out, inds, logfile):
         if filename is None:
-            raise ValueError("Provide file with phenotype information using 'filename'")
+            raise ValueError("Provide file with phenotype information using 'filename' or simulate phenotypes using "
+                             "'simulate_phenotypes'")
         logfile.info("- Reading phenotype information from " + filename)
         pheno_df = pd.read_csv(filename, names=["0", "ID", "phenotype"], sep=' ')
         self._num_inds = len(pheno_df['ID'])

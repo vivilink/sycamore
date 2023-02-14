@@ -65,8 +65,8 @@ true_stats <- plot_one(dir=true_dir, max_y=0.00003, max_x=600000, LTY=2, MAIN=pa
 t <- rbind(t, relate_stats, true_stats)
 
 #rare Variant
-relate_dir <- paste(base_dir, "/relate_trees/oneVariant/rareVariant/eGRM_GRM/window_based/10k/h0.02/", sep='')
-true_dir <- paste(base_dir, "/true_trees/oneVariant/rareVariant/eGRM_GRM/window_based/10k/h0.02/", sep='')
+relate_dir <- paste(base_dir, "/relate_trees/oneVariant/rareVariant/eGRM_GRM/window_based/tested5k/h0.02/", sep='')
+true_dir <- paste(base_dir, "/true_trees/oneVariant/rareVariant/eGRM_GRM/window_based/tested5k/h0.02/", sep='')
 relate_stats <- plot_one(dir=relate_dir, max_y=0.000006, max_x=600000, LTY=1, MAIN="rare variant", tree_type="relate_trees")
 true_stats <- plot_one(dir=true_dir, max_y=0.00002, max_x=600000, LTY=2, MAIN="rare variant", tree_type="true_trees")
 t <- rbind(t, relate_stats, true_stats)
@@ -87,4 +87,4 @@ legend(x="topright", legend=c("Relate / typed variants", "true trees / all varia
 dev.off()
 
 #write latex table
-print(xtable(t, type = "latex"), file = paste(base_dir,"distance_causal_window.tex", sep=''))
+print(xtable(t, type = "latex"), file = paste(base_dir,"distance_causal_window.tex", sep=''), floating = FALSE)

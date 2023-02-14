@@ -12,9 +12,9 @@ pin <- "#CC79A7"
 hs <- c(0.005, 0.01, 0.02, 0.05, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005,
 offset <- 0.1
 variant <- 
-ws <- "10k"
+ws <- "5k"
 
-pdf(paste("power_", variant, "_errorBars.pdf", sep=''), height=5, width=10)
+pdf(paste("power_", variant,"_", ws, "_errorBars.pdf", sep=''), height=5, width=10)
 par(mfrow=c(1,2))
 # tiff(paste("power_", variant, "_errorBars_onlyTyped.tiff", sep=''), units="in", width=5, height=5, res=300)
 
@@ -29,7 +29,7 @@ for(variant in c("rareVariant", "commonVariant")){
   for(h in hs){
     x_pos <- which(hs == h)
     
-    power_results <- read.table(paste("relate_trees/oneVariant/",variant,"/eGRM_GRM/window_based/", ws, "/h", h, "/power_results.txt", sep=''), header=TRUE)
+    power_results <- read.table(paste("relate_trees/oneVariant/",variant,"/eGRM_GRM/window_based/tested", ws, "/h", h, "/power_results_acat.txt", sep=''), header=TRUE)
     
     #GWAS
     points(y=power_results$power_GWAS, x=x_pos-offset, pch=19, col=org)
@@ -51,7 +51,7 @@ for(variant in c("rareVariant", "commonVariant")){
     
     
     #true
-    power_results <- read.table(paste("true_trees/oneVariant/", variant, "/eGRM_GRM/window_based/", ws, "/h", h, "/power_results.txt", sep=''), header=TRUE)
+    power_results <- read.table(paste("true_trees/oneVariant/", variant, "/eGRM_GRM/window_based/tested", ws, "/h", h, "/power_results_acat.txt", sep=''), header=TRUE)
     
     # REML GWAS
     points(y=power_results$power_GWAS, x=x_pos-offset, pch=1, col=org)
