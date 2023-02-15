@@ -34,14 +34,18 @@ make_confusion_m <- function(dir, tree_type, window_size_causal, window_size_tes
   m <- matrix(ncol=4, nrow=4)
   colnames(m) <- c("GWAS", "ACAT", "local eGRM", "local GRM")
   rownames(m) <- c("GWAS", "ACAT", "local eGRM", "local GRM")
-  diag(m) <- 1
   
   m[GWAS,acat] <- length(intersect(sig_GWAS, sig_acat)) / reps
   m[GWAS,eGRM] <- length(intersect(sig_GWAS, sig_eGRM)) / reps
   m[GWAS,GRM] <- length(intersect(sig_GWAS, sig_GRM)) / reps
-  m[acat,eGRM] <- length(intersect(acat, sig_eGRM)) / reps
-  m[acat,GRM] <- length(intersect(acat, sig_GRM)) / reps
+  m[acat,eGRM] <- length(intersect(sig_acat, sig_eGRM)) / reps
+  m[acat,GRM] <- length(intersect(sig_acat, sig_GRM)) / reps
   m[eGRM,GRM] <- length(intersect(sig_eGRM, sig_GRM)) / reps
+  
+  m[GWAS,GWAS] <- length(sig_GWAS) / reps
+  m[acat,acat] <- length(sig_acat) / reps
+  m[eGRM,eGRM] <- length(sig_eGRM) / reps
+  m[GRM,GRM] <- length(sig_GRM) / reps
   
   #write latex table
   print(xtable(m, type = "latex"), file = paste(base_dir,"confusion_matrix_significant_hits_", tree_type, "_windowTesting", window_size_testing, "_propCausal",propCausal,".tex", sep=''), floating = FALSE)
@@ -72,15 +76,30 @@ tree_type <- "relate_trees"
 window_size_testing <- "10k"
 window_size_causal <- NA
 propCausal <- "commonVariant"
-dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type,"/oneVariant/commonVariant/eGRM_GRM/window_based/",window_size_testing,"/h0.02", sep='')
+dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type,"/oneVariant/commonVariant/eGRM_GRM/window_based/tested",window_size_testing,"/h0.02", sep='')
 make_confusion_m(dir=dir, tree_type=tree_type, window_size_causal=window_size_causal, window_size_testing=window_size_testing, propCausal=propCausal)
 
 tree_type <- "true_trees"
 window_size_testing <- "10k"
 window_size_causal <- NA
 propCausal <- "commonVariant"
-dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type,"/oneVariant/commonVariant/eGRM_GRM/window_based/",window_size_testing,"/h0.02", sep='')
+dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type,"/oneVariant/commonVariant/eGRM_GRM/window_based/tested",window_size_testing,"/h0.02", sep='')
 make_confusion_m(dir=dir, tree_type=tree_type, window_size_causal=window_size_causal, window_size_testing=window_size_testing, propCausal=propCausal)
+
+tree_type <- "relate_trees"
+window_size_testing <- "5k"
+window_size_causal <- NA
+propCausal <- "commonVariant"
+dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type,"/oneVariant/commonVariant/eGRM_GRM/window_based/tested",window_size_testing,"/h0.02", sep='')
+make_confusion_m(dir=dir, tree_type=tree_type, window_size_causal=window_size_causal, window_size_testing=window_size_testing, propCausal=propCausal)
+
+tree_type <- "true_trees"
+window_size_testing <- "5k"
+window_size_causal <- NA
+propCausal <- "commonVariant"
+dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type,"/oneVariant/commonVariant/eGRM_GRM/window_based/tested",window_size_testing,"/h0.02", sep='')
+make_confusion_m(dir=dir, tree_type=tree_type, window_size_causal=window_size_causal, window_size_testing=window_size_testing, propCausal=propCausal)
+
 
 # null simulations
 
