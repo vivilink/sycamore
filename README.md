@@ -169,3 +169,4 @@ Other
 - For the paper, I only use covariance types "eGRM" and "GRM". The "scaled" covariance was the first one implemented and might not have all functionalities. It is calculated based on the TMRCA and the assumption of brownian motion.
 - For the paper, I only use the mixed model association results produced with REML. However, the program can also run the Haseman-Elston algorithm of GCTA. HE is faster but has lower power than REML at small sample sizes, e.g. 1000 diploids.
 - In the code, the names "argwas" and "AIM" are used interchangeably for our new method that uses local eGRMs to test for associations
+- Currently, you need to provide the absolute path for all files (or the relative path from the software folder), please feel free to change that
