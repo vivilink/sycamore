@@ -131,7 +131,7 @@ Analysis descriptions
 
 *simulated ARGs for power analysis*
 
-I simulated 300 random ARG. On the cluster they are located here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees. I downsampled the variants with an allele frequency of at least 10% to 20% typed variants and estimated Relate trees from these variants here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees/minFreq0.01
+I simulated 300 random ARG. On the cluster they are located here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees. I downsampled the variants with an allele frequency of at least 10% to 20% typed variants and estimated Relate trees from these variants here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees/minFreq0.01. I also estimated Relate trees from all variants here: ~/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees/allVariants_relate
 
 *random phenotypes and assoiation tests for cutoff*
 
