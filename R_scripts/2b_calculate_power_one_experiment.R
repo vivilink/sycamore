@@ -106,8 +106,13 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
     
     #read phenotype specs
     df_pheno <- read.csv(paste(pheno_file_dir,"/h", hsquared, "/rep", rep,"/power_sims_", rep, "_pheno_causal_vars.csv", sep=''))
-    # causal_pos <- df_pheno$start[which(df_pheno$causal == TRUE)]
-    
+    if(window_size_causal == "oneVariant"){
+        causal_pos <- df_pheno$start[which(df_pheno$causal == TRUE)]
+        if(length(causal_pos > 1){
+            stop("there should only be one causal variant")
+        }
+    }
+
     #read GWAS results
     df_GWAS <- read.csv(paste(out_dir,"/rep", rep,"/power_sims_", rep, "_GWAS_variants_results.csv", sep=''))
     df_GWAS <- df_GWAS[which(df_GWAS$start > position_interval[1] & df_GWAS$start < position_interval[2]),]

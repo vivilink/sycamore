@@ -173,10 +173,10 @@ for(tree_type in c("relate_trees", "true_trees")){ #, "relate_trees", true_trees
   for(variant_freq in c("commonVariant", "rareVariant")){
     for(region_type in c("window_based")){
       for(ws_testing in c("5k")){ #, "20k", "50k" , "10k", ,"10k"
-        for(ws_causal in  c("5k")){
+        for(ws_causal in  c("oneVariant")){
           power_results_aH <- data.frame()
           for(hsquared in hs_all){
-            folder=paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneVariant/",variant_freq, "/eGRM_GRM/", region_type, "/tested", ws_causal, "/" ,sep="")
+            folder=paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneVariant/",variant_freq, "/eGRM_GRM/", region_type, "/tested", ws_testing, "/" ,sep="")
             print(paste("analyzing folder", folder))
             if(run_acat){
               results_file <- paste(folder, "h", hsquared, "/power_results_acat.txt", sep='')
