@@ -211,14 +211,14 @@ hs_all <- c(0.02, 0.04,  0.06,  0.08, 0.1) #,      , 0.07, 0.04, 0.0025, , 0.2 0
 run_acat <- TRUE
 
 #read low freq true trees
-for(propCausal in c(0.1, 0.5, 0.2, 0.8)){ #0.1, , 0.2, 0.5, 0.8
-  for(tree_type in c("true_trees")){ #, "relate_trees", true_trees
+for(propCausal in c(0.8)){ #0.1, 0.2, 0.5, 0.8
+  for(tree_type in c("true_trees","relate_trees")){ #, "relate_trees", true_trees
     for(region_type in c("window_based")){
-      for(ws_testing in c("5k", "10k")){ #, "20k", "50k" , "10k", ,"10k"
+      for(ws_testing in c("5k")){ #, "20k", "50k" , "10k", ,"10k"
         for(ws_causal in  c("5k")){
           power_results_aH <- data.frame()
           for(hsquared in hs_all){
-            folder=paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_testing, "/propCausal", propCausal, "/" ,sep="")
+            folder=paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_testing, "/propCausal", propCausal, "/allowTyped/",sep="")
             print(paste("analyzing folder", folder))
             if(run_acat){
               results_file <- paste(folder, "h", hsquared, "/power_results_acat.txt", sep='')
@@ -227,7 +227,7 @@ for(propCausal in c(0.1, 0.5, 0.2, 0.8)){ #0.1, , 0.2, 0.5, 0.8
             }
             print(paste(hsquared, file.exists(results_file)))
             if(file.exists(results_file) == FALSE){
-              pheno_file_dir <- paste("/data/ARGWAS/power_sims/stdpopsim/relate_trees/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_causal, "/propCausal", propCausal, "/" ,sep="")
+              pheno_file_dir <- paste("/data/ARGWAS/power_sims/stdpopsim/relate_trees/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_causal, "/propCausal", propCausal, "/allowTyped/" ,sep="")
               power_one_experiment(hsquared = hsquared, REPS = 200, folder=folder, tree_type=tree_type, region_type=region_type, window_size_testing=ws_testing, window_size_causal=ws_causal, pheno_file_dir=pheno_file_dir, run_acat=run_acat)
             }
             t <- read.table(results_file, header=TRUE)

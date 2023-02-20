@@ -5,7 +5,7 @@ org <- "#E69F00"
 blu <- "#56B4E9"
 pin <- "#CC79A7"
 
-df <- read.table("chr5.part-04.CREBRF_eGRM_trees_REML_results.csv_cleaned", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
+df <- read.table("chr5.part-04.CREBRF_pca10_eGRM_trees_REML_results.csv_cleaned", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
 df <- df[!is.na(df$p_values),]
 df <- df[df$start >= 172000000 & df$start <= 173600000,]
 
@@ -52,7 +52,8 @@ label_pos <- seq(172000000, 174000000, 100000)
 axis(1, at=label_pos, labels=label_pos / 1000000, las=1)
 do_annotation()
 index_min_pvalue <- which(df$p_values == min(df$p_values))
-print(paste("distance rs373863828 and most significant REML hit:", round(abs(rs373863828_causal - df$start[index_min_pvalue]) / 1000), "kb"))
+print(paste("min pvalue",min(df$p_values)))
+print(paste("distance rs373863828 and most significant REML hit:", round(abs(rs373863828_causal - df$start[index_min_pvalue]) / 1000), "kb", "pvalue",-log10(df$p_values[index_min_pvalue])))
 abline(h=-log10(5*(10^-8)), col="gray", lty=2)
 legend(legend=c("local eGRM", "GWAS"), pch=20, col=c(blu, org), x="topleft", bty='n')
 
