@@ -1,7 +1,12 @@
-reps <- 200
+library(xtable)
 base_dir <- "/data/ARGWAS/power_sims/stdpopsim/"
 
 make_confusion_m <- function(dir, tree_type, window_size_causal, window_size_testing, propCausal, null_sims = FALSE){
+  if(null_sims){
+    reps <- 300
+  } else {
+    reps <- 200
+  }
   
   if(null_sims == TRUE){
     p_GWAS <- read.table(paste(dir,"/p_values_replicates_GWAS.csv", sep=''), sep=',', header=TRUE)$GWAS_min_p_value
@@ -73,14 +78,14 @@ make_confusion_m(dir=dir, tree_type=tree_type, window_size_causal=window_size_ca
 # one causal variant
 
 tree_type <- "relate_trees"
-window_size_testing <- "10k"
+window_size_testing <- "5k"
 window_size_causal <- NA
 propCausal <- "commonVariant"
 dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type,"/oneVariant/commonVariant/eGRM_GRM/window_based/tested",window_size_testing,"/h0.02", sep='')
 make_confusion_m(dir=dir, tree_type=tree_type, window_size_causal=window_size_causal, window_size_testing=window_size_testing, propCausal=propCausal)
 
 tree_type <- "true_trees"
-window_size_testing <- "10k"
+window_size_testing <- "5k"
 window_size_causal <- NA
 propCausal <- "commonVariant"
 dir <- paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type,"/oneVariant/commonVariant/eGRM_GRM/window_based/tested",window_size_testing,"/h0.02", sep='')

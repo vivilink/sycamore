@@ -10,7 +10,7 @@ plot_qq <- function(p_values, MAIN){
   abline(a=0, b=1)
 }
 
-pdf("p_value_qqplots.pdf", width=10, height=5)
+pdf("p_value_qqplots_PC10.pdf", width=10, height=5)
 par(mfrow=c(1,2))
 n_reps <- 100
 p_values <- c()
@@ -26,7 +26,7 @@ n_reps <- 100
 p_values <- c()
 
 for(r in 1:n_reps){
-  df <- read.csv(paste("with_strat_correction_highNe_splitTime10k/two_pops_", r, "_phenoSeed_eGRMGlobalSeed_PCA_eGRM_trees_REML_results.csv", sep=''))
+  df <- read.csv(paste("with_strat_correction_highNe_splitTime10k/two_pops_", r, "_phenoSeed_eGRMGlobalSeed_PCA_PC10_eGRM_trees_REML_results.csv", sep=''))
   p_values <- c(p_values, df$p_values)
 }
 
