@@ -554,8 +554,8 @@ def write_command_file_grm_pca(testing_method, outname, pheno_file, outfile, num
     if PC_keep is not None:
         PC_keep = [x+1 for x in PC_keep]
         outname2 = outname + "_keep"
-        t = pd.read_csv("chr5.part-05.CREBRF_pca50_eGRM.eigenvec", delimiter=' ')
-        t.iloc[:, PC_keep].to_csv(outname2, header=False, index=False, sep=' ')
+        t = pd.read_csv(outname + ".eigenvec", delimiter=' ')
+        t.iloc[:, PC_keep].to_csv(outname2 + ".eigenvec", header=False, index=False, sep=' ')
 
     if testing_method == "REML":
         outfile.write(
