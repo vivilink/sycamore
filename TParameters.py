@@ -72,7 +72,8 @@ class TParameters:
                          choices=["stdPopsim", "msprime"],
                          help="Method used for simulating. stdPopsim is real human chromosome")
         sim.add_argument('--N', type=int,
-                         help="Number of haploid African individuals to simulate with stdPopsim")
+                         help="Number of haploid African individuals to simulate with stdPopsim, or number of haploid "
+                              "individuals per population when simulating with msprime")
         sim.add_argument('--N_African', type=int,
                          help="Number of haploid African individuals to simulate with stdPopsim")
         sim.add_argument('--N_European', type=int,
@@ -200,6 +201,8 @@ class TParameters:
         assoc.add_argument('--population_structure_pca_num_eigenvectors', type=int,
                            help="Correct for population structure with this number of PCA eigenvectors computed with "
                                 "gcta")
+        assoc.add_argument('--PC_keep', type=int, nargs='+',
+                           help="List of PCs to keep. Must be indeces in PCA file created by GCTA, so PC number + 2")
         assoc.add_argument('--GCTA', type=str, default="gcta-1.94.1-linux-kernel-3-x86_64/gcta-1.94.1",
                            help="path to GCTA executable")
         assoc.add_argument("--num_gcta_threads", type=int, default=2,

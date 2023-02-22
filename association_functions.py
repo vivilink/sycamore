@@ -20,6 +20,7 @@ import TAssociationTesting as at
 import TImputation as impute
 import glob
 import stat
+import pandas as pd
 
 
 def run_association_testing(args, random, logfile):
@@ -531,7 +532,7 @@ def write_command_file_grm(testing_method, outname, pheno_file, outfile, GCTA, n
 
 
 def write_command_file_grm_pca(testing_method, outname, pheno_file, outfile, num_eigenvectors,
-                               population_structure_matrix, GCTA, num_GCTA_threads):
+                               population_structure_matrix, GCTA, num_GCTA_threads, PC_keep):
     """
     Write executable bash script for running association test with local eGRM as random effects and PCA of global
     population structure matrix using GCTA
@@ -549,13 +550,19 @@ def write_command_file_grm_pca(testing_method, outname, pheno_file, outfile, num
     outfile.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
                   + outname + "> " + outname + "_tmp2.out\n\n")
 
+    outname2 = outname
+    if PC_keep is not None:
+        outname2 = outname + "_keep"
+        t = pd.read_csv("chr5.part-05.CREBRF_pca50_eGRM.eigenvec", delimiter=' ')
+        t.iloc[:, PC_keep].to_csv(outname2, header=False, index=False, sep=' ')
+
     if testing_method == "REML":
         outfile.write(
-            GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_REML" + " --qcovar " + outname + ".eigenvec --threads "
+            GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_REML" + " --qcovar " + outname2 + ".eigenvec --threads "
             + str(num_GCTA_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
     elif testing_method == "HE":
         outfile.write(
-            GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_HE --qcovar " + outname + ".eigenvec "
+            GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_HE --qcovar " + outname2 + ".eigenvec "
             + " --threads " + str(num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
         # grep results
         outfile.write("sed -n '2,4p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
@@ -639,8 +646,8 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                            population_structure_matrix=args.population_structure,
                                            outfile=f,
                                            GCTA=args.GCTA,
-                                           num_GCTA_threads=args.num_gcta_threads)
-
+                                           num_GCTA_threads=args.num_gcta_threads,
+                                           PC_keep=args.PC_keep)
             else:
                 write_command_file_grm(testing_method=m,
                                        outname=outname,
