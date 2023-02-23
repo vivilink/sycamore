@@ -155,7 +155,11 @@ The R script to plot the results is R_scripts/population_structure.R.
 
 *CREBRF with REML*
 
-I first estimated piecewise eGRMs for every RELATE tree of the genome using script ~/ARGWAS/hawaiian/run_egrm.sh. The global eGRMs are located here: ~/ARGWAS/hawaiian/global_grm/. I then combined the piecewise eGRMs, except for those of chromosome 5, to a global eGRM using script R_scripts/combine_egrms.R. I ran association tests around the CREBRF gene on chromosome 5 with different number of PCs. The script and results for 20 PCs are in ~/ARGWAS/hawaiian/CREBRF_pca20. The script and results for 10 PCs are in  ~/ARGWAS/hawaiian/CREBRF_pca10. The association results are not all in one file because a) the region of CREBRF overlaps with one of the ARG separations (Caoqi ran Relate on chunks of the genome, so chromosome 5 is split across 5 chunks which each produced an ARG, our region of interest is on  chunks 4 and 5), and b) because I extended the region of interest 3 times.
+I first estimated piecewise eGRMs for every Relate tree of the genome using script ~/ARGWAS/hawaiian/global_eGRM/run_egrm.sh. The global eGRMs are located in the same folder. I then combined the piecewise eGRMs, except for those of chromosome 5, to a global eGRM using script R_scripts/combine_egrms.R. 
+
+I ran association tests around the CREBRF gene on chromosome 5 with different number of PCs. The script and results for 20 PCs are in ~/ARGWAS/hawaiian/CREBRF_pca20. The script and results for 10 PCs are in  ~/ARGWAS/hawaiian/CREBRF_pca10. The association results are not all in one file because a) the region of CREBRF overlaps with one of the ARG separations (Caoqi ran Relate on chunks of the genome, so chromosome 5 is split across 5 chunks which each produced an ARG, our region of interest is on  chunks 4 and 5), and b) because I extended the region of interest 3 times. 
+
+~/ARGWAS/hawaiian/CREBRF_pca50 contains only files needed to check correlations between PC loadings and BMI.
 
 *CREBRF with GWAS*
 
