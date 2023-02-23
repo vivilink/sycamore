@@ -202,7 +202,7 @@ class TParameters:
                            help="Correct for population structure with this number of PCA eigenvectors computed with "
                                 "gcta")
         assoc.add_argument('--PC_keep', type=int, nargs='+',
-                           help="List of PCs to keep. Must be indeces in PCA file created by GCTA, so PC number + 2")
+                           help="List of PCs to keep (1-based)")
         assoc.add_argument('--GCTA', type=str, default="gcta-1.94.1-linux-kernel-3-x86_64/gcta-1.94.1",
                            help="path to GCTA executable")
         assoc.add_argument("--num_gcta_threads", type=int, default=2,
