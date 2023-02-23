@@ -1,7 +1,7 @@
 setwd("/data/ARGWAS/power_sims/stdpopsim/")
 nreps=200
 run_acat <- NA
-
+allowTyped <- "onlyUntyped"   #allowTyped
 # colors
 org <- "#E69F00"
 blu <- "#56B4E9"
@@ -11,8 +11,8 @@ hs <- c(0.02,0.04,0.06,0.08, 0.1)
 # hs <- c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
 offset <- 0.08
 
-for(propCausal in c(0.8)){ #0.1,0.2,0.5,
-  pdf(paste("power_aH_erorBars_window_based_propCausal", propCausal, "_allowTyped.pdf", sep=''), height=5, width=10)
+for(propCausal in c(0.2)){ #0.1,0.2,0.5,
+  pdf(paste("power_aH_erorBars_window_based_propCausal", propCausal, "_relateTreesAllVariants.pdf", sep=''), height=5, width=10)
   par(mfrow=c(1,2))
   for(ws_testing in c("5k")){  # ,"10k"
     for(ws_causal in c("5k")){
@@ -34,9 +34,9 @@ for(propCausal in c(0.8)){ #0.1,0.2,0.5,
         print(paste("h",h))
         x_pos <- which(hs == h)
         if(run_acat){
-          power_results <- read.table(paste("relate_trees/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/propCausal", propCausal, "/allowTyped/h", h, "/power_results_acat.txt", sep=''), header=TRUE)
+          power_results <- read.table(paste("relate_trees/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/", allowTyped, "/propCausal", propCausal,"/h", h, "/power_results_acat.txt", sep=''), header=TRUE)
         } else {
-          power_results <- read.table(paste("relate_trees/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/propCausal", propCausal, "/allowTyped/h", h, "/power_results.txt", sep=''), header=TRUE)
+          power_results <- read.table(paste("relate_trees/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/", allowTyped, "/propCausal", propCausal, "/h", "/power_results.txt", sep=''), header=TRUE)
         }
         # power_results <- read.table(paste("relate_trees/oneRegion/eGRM_GRM/window_based/", ws_causal, "/tested",ws_testing, "/propCausal", propCausal, "/h", h, "/power_results.txt", sep=''), header=TRUE)
   
@@ -68,9 +68,9 @@ for(propCausal in c(0.8)){ #0.1,0.2,0.5,
   
         #true trees
         if(run_acat){
-          power_results <- read.table(paste("true_trees/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/propCausal", propCausal, "/allowTyped/h", h, "/power_results_acat.txt", sep=''), header=TRUE)
+          power_results <- read.table(paste("true_trees/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/", allowTyped, "/propCausal", propCausal, "/h", h, "/power_results_acat.txt", sep=''), header=TRUE)
         } else {
-          power_results <- read.table(paste("true_trees/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/propCausal", propCausal, "/allowTyped/h", h, "/power_results.txt", sep=''), header=TRUE)
+          power_results <- read.table(paste("true_trees/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/", allowTyped, "/propCausal", propCausal, "/h", h, "/power_results.txt", sep=''), header=TRUE)
         }
         
         # REML GWAS
@@ -98,9 +98,47 @@ for(propCausal in c(0.8)){ #0.1,0.2,0.5,
           std <- sqrt(power*(1-power)/nreps)
           segments(x0=x_pos+2*offset, y0=power - std, y1=power + std, col="black")
         }
+        
+        
+        
+        
+        #relate trees all variants
+        allowTyped <- "onlyUntyped"   #allowTyped
+        
+        if(run_acat){
+          power_results <- read.table(paste("relate_trees_allVariants/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/", allowTyped, "/propCausal", propCausal,  "/h", h, "/power_results_acat.txt", sep=''), header=TRUE)
+        } else {
+          power_results <- read.table(paste("relate_trees_allVariants/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/", allowTyped, "/propCausal", propCausal, "/h", h, "/power_results.txt", sep=''), header=TRUE)
+        }
+        
+        # REML GWAS
+        points(y=power_results$power_GWAS, x=x_pos-offset, pch=2, col=org)
+        power <- power_results$power_GWAS
+        std <- sqrt(power*(1-power)/nreps)
+        segments(x0=x_pos-offset, y0=power - std, y1=power + std, col=org)
+        
+        # REML eGRM
+        points(y=power_results$power_REML_eGRM, x=x_pos+0*offset, pch=2, col=blu)
+        power <- power_results$power_REML_eGRM
+        std <- sqrt(power*(1-power)/nreps)
+        segments(x0=x_pos+0*offset, y0=power - std, y1=power + std, col=blu)
+        
+        # REML GRM
+        points(y=power_results$power_REML_GRM, x=x_pos+offset, pch=2, col=pin)
+        power <- power_results$power_REML_GRM
+        std <- sqrt(power*(1-power)/nreps)
+        segments(x0=x_pos+offset, y0=power - std, y1=power + std, col=pin)
+        
+        # acat
+        if(run_acat){
+          points(y=power_results$power_acat, x=x_pos+2*offset, pch=2, col="black")
+          power <- power_results$power_acat
+          std <- sqrt(power*(1-power)/nreps)
+          segments(x0=x_pos+2*offset, y0=power - std, y1=power + std, col="black")
+        }
       }
       if(run_acat){
-        legend(x="bottomright", legend=c("true trees / all variants","Relate / typed variants", "local eGRM", "local GRM", "GWAS", "ACAT-V"), pch=c(1, 19, 15, 15, 15, 15), col=c("gray","gray", blu, pin, org, "black"), bty='n')
+        legend(x="bottomright", legend=c("true trees / all variants","Relate / all variants", "Relate / typed variants", "local eGRM", "local GRM", "GWAS", "ACAT-V"), pch=c(1,2, 19,  15, 15, 15, 15), col=c("gray","gray","gray", blu, pin, org, "black"), bty='n')
       } else {
         legend(x="bottomright", legend=c("true trees / all variants","Relate / typed variants", "local eGRM", "local GRM", "GWAS"), pch=c(1, 19, 15, 15, 15), col=c("gray","gray", blu, pin, org), bty='n')
       }

@@ -108,7 +108,7 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
     df_pheno <- read.csv(paste(pheno_file_dir,"/h", hsquared, "/rep", rep,"/power_sims_", rep, "_pheno_causal_vars.csv", sep=''))
     if(window_size_causal == "oneVariant"){
         causal_pos <- df_pheno$start[which(df_pheno$causal == TRUE)]
-        if(length(causal_pos > 1){
+        if(length(causal_pos) > 1){
             stop("there should only be one causal variant")
         }
     }

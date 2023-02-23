@@ -184,10 +184,10 @@ for(tree_type in c("relate_trees", "true_trees")){ #, "relate_trees", true_trees
               results_file <- paste(folder, "h", hsquared, "/power_results.txt", sep='')
             }
             print(paste(hsquared, file.exists(results_file)))
-            if(file.exists(results_file) == FALSE){
+#            if(file.exists(results_file) == FALSE){
                 pheno_file_dir <- paste("/data/ARGWAS/power_sims/stdpopsim/relate_trees/oneVariant/", variant_freq,"/eGRM_GRM/", region_type, "/tested", ws_testing, "/" ,sep="")
               power_one_experiment(hsquared = hsquared, REPS = 200, folder=folder, tree_type=tree_type, region_type=region_type, window_size_testing=ws_testing, window_size_causal=ws_causal, pheno_file_dir=pheno_file_dir, run_acat=run_acat)
-            }
+ #           }
             t <- read.table(results_file, header=TRUE)
             power_results_aH <- rbind(power_results_aH, t)
           }
@@ -197,28 +197,29 @@ for(tree_type in c("relate_trees", "true_trees")){ #, "relate_trees", true_trees
   }
 }
 
-#--------------------------
+# --------------------------
 # power files allelic heterogeneity
-#--------------------------
+# --------------------------
+
 library(ACAT)
 setwd("/data/ARGWAS/power_sims/stdpopsim")
 
 source("/home/linkv/git/argwas/R_scripts/2b_calculate_power_one_experiment.R")
 library("pwr")
 options(scipen = 100, digits = 4)
-hs_all <- c(0.02, 0.04,  0.06,  0.08, 0.1) #,      , 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
-# hs_all <- c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005, 
+hs_all <- c(0.02, 0.04,  0.06,  0.08, 0.1) #,      , 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005,
+# hs_all <- c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1) #, 0.07, 0.04, 0.0025, , 0.2 0.001, 0.0001, 0.0002, 0.0005,
 run_acat <- TRUE
 
 #read low freq true trees
-for(propCausal in c(0.8)){ #0.1, 0.2, 0.5, 0.8
-  for(tree_type in c("true_trees","relate_trees")){ #, "relate_trees", true_trees
+for(propCausal in c(0.2)){ #0.1, 0.2, 0.5, 0.8
+  for(tree_type in c("relate_trees_allVariants")){ #, "relate_trees", true_trees
     for(region_type in c("window_based")){
       for(ws_testing in c("5k")){ #, "20k", "50k" , "10k", ,"10k"
         for(ws_causal in  c("5k")){
           power_results_aH <- data.frame()
           for(hsquared in hs_all){
-            folder=paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_testing, "/propCausal", propCausal, "/allowTyped/",sep="")
+            folder=paste("/data/ARGWAS/power_sims/stdpopsim/", tree_type, "/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_testing, "/onlyUntyped/", "/propCausal", propCausal,"/",sep="")
             print(paste("analyzing folder", folder))
             if(run_acat){
               results_file <- paste(folder, "h", hsquared, "/power_results_acat.txt", sep='')
@@ -227,7 +228,7 @@ for(propCausal in c(0.8)){ #0.1, 0.2, 0.5, 0.8
             }
             print(paste(hsquared, file.exists(results_file)))
             if(file.exists(results_file) == FALSE){
-              pheno_file_dir <- paste("/data/ARGWAS/power_sims/stdpopsim/relate_trees/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_causal, "/propCausal", propCausal, "/allowTyped/" ,sep="")
+              pheno_file_dir <- paste("/data/ARGWAS/power_sims/stdpopsim/relate_trees/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_causal, "/propCausal", propCausal, "/" ,sep="")
               power_one_experiment(hsquared = hsquared, REPS = 200, folder=folder, tree_type=tree_type, region_type=region_type, window_size_testing=ws_testing, window_size_causal=ws_causal, pheno_file_dir=pheno_file_dir, run_acat=run_acat)
             }
             t <- read.table(results_file, header=TRUE)
