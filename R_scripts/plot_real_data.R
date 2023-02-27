@@ -11,7 +11,7 @@ region_end <- 175000000
 
 
 
-df_GWAS <- read.table("plink_GWAS/plink.assoc.linear", header=TRUE)
+df_GWAS <- read.table("plink_GWAS/plink.assoc.linear_PC20", header=TRUE)
 df_GWAS <- df_GWAS[df_GWAS$TEST == "ADD",]
 df_GWAS <- df_GWAS[df_GWAS$BP >= region_start & df_GWAS$BP <= region_end,]
 
@@ -41,10 +41,14 @@ do_annotation <- function(rs373863828_causal, rs12513649_proxy, other_GWAS){
   abline(v=rs12513649_proxy,col="gray")
   
 
+  abline(h=-log10(5*(10^-8)), col=org, lty=2)
+  abline(h=-log10(4.5*10^-7), col=blu, lty=2)
+
 }
 
 plot_association <- function(df, num_PCs){
   pdf(paste("CREBRF_PC", num_PCs, ".pdf", sep=''), width=8, height=4)
+  #png(paste("CREBRF_PC", num_PCs, "_GWAS.png", sep=''), width=8, height=4, units="in", res=1200)
   
   par(mfrow=c(1,1))
   
@@ -59,7 +63,7 @@ plot_association <- function(df, num_PCs){
   # both
   plot(x=df$start, y=-log10(df$p_values), xaxt='n', las=2, xlab="", ylab="", col=blu, pch=20, xlim=c(region_start,region_end), bty='n')
   title(ylab=expression("-log"[10]*"(p)"), line=2)
-  title(xlab="genomic position [mb]", line=2.2)
+  title(xlab="genomic position [Mb]", line=2.2)
   
   points(x=df_GWAS$BP, y=-log10(df_GWAS$P), col=org, pch=20)
   label_pos <- seq(region_start, region_end, 500000)
@@ -68,8 +72,9 @@ plot_association <- function(df, num_PCs){
   index_min_pvalue <- which(df$p_values == min(df$p_values))
   print(paste("min pvalue",min(df$p_values)))
   print(paste("distance rs373863828 and most significant REML hit:", round(abs(rs373863828_causal - df$start[index_min_pvalue]) / 1000), "kb", "pvalue",-log10(df$p_values[index_min_pvalue])))
-  abline(h=-log10(5*(10^-8)), col="gray", lty=2)
+
   legend(legend=c("local eGRM", "GWAS"), pch=20, col=c(blu, org), x="topleft", bty='n')
+#  legend(legend=c("GWAS"), pch=20, col=c(org), x="topleft", bty='n')
   
   dev.off()
 }
@@ -110,10 +115,33 @@ df <- read.table("chr5.part-04.CREBRF_pca12_eGRM_trees_REML_results.csv", sep=',
 df <- df[!is.na(df$p_values),]
 df <- df[df$start >= region_start & df$start <= region_end,]
 
+# read REML chunk 5
+df2 <- read.table("chr5.part-05.CREBRF_pca12_eGRM_trees_REML_results.csv_cleaned", sep=',', header=TRUE) 
+df2 <- df2[!is.na(df2$p_values),]
+df2 <- df2[df2$start >= region_start & df2$start <= region_end,]
+
+df <- rbind(df, df2)
+
 #plot
 plot_association(df=df, num_PCs = 12)
 
 # -----------------------
 # PC20
 # -----------------------
+# read REML chunk 4
+df <- read.table("chr5.part-04.CREBRF_eGRM_trees_REML_results.csv_cleaned", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
+df <- df[!is.na(df$p_values),]
+df <- df[df$start >= region_start & df$start <= region_end,]
+
+# read REML chunk 5
+df2 <- read.table("chr5.part-05.CREBRF_pca20_eGRM_trees_REML_results.csv", sep=',', header=TRUE) 
+df2 <- df2[!is.na(df2$p_values),]
+df2 <- df2[df2$start >= region_start & df2$start <= region_end,]
+
+df <- rbind(df, df2)
+
+#plot
+plot_association(df=df, num_PCs = 20)
+
+
 
