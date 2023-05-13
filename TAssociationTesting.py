@@ -7,16 +7,18 @@ Created on Mon Aug 16 17:37:12 2021
 import numpy as np
 import statsmodels.api as sm
 import scipy
-import TTree as tt
-# from limix_lmm.lmm_core import LMMCore
 import utils as ut
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
 import subprocess
-import os
-import sys
+# from limix_lmm.lmm_core import LMMCore
+from glimix_core.lmm import LMM
+from numpy_sugar.linalg import economic_qs
+from scipy import stats
+import jax.numpy as jnp
 import association_functions as af
+import TTree as tt
 
 
 class TAssociationTesting:
@@ -290,9 +292,83 @@ class TAssociationTestingRegions(TAssociationTesting):
         subplot.axhline(y=8, color="red", lw=0.5)
 
 
+class TAssociationTestingRegionsGlimix(TAssociationTestingRegions):
+    """
+    tree-based association testing using glimix lmm (https://glimix-core.readthedocs.io/en/latest/lmm.html)
+    """
+
+    def __init__(self, phenotypes, num_associations):
+
+        super().__init__(phenotypes, num_associations)
+        self.name = "regions_glimix"
+
+        # p-value container
+        self.p_values = np.empty(self.num_associations)
+        self.p_values.fill(np.nan)
+
+        # other statistics
+        self.V_G = np.empty(self.num_associations)
+        self.V_G.fill(np.nan)
+        self.V_G_over_Vp = np.empty(self.num_associations)
+        self.V_G_over_Vp.fill(np.nan)
+
+    def run_association(self, GRM, y, covar, n, index, out):
+        """
+        Run LMM to test for association between a GRM and phenotypes using limix, copied from
+        https://github.com/mancusolab/sushie/blob/main/sushie/utils.py
+
+        :param n: number of individuals
+        :param covar: :math:`n \\times m` matrix for covariates.
+        :param GRM:
+        :param y: phenotypes
+        :param index: index of genomic window
+        :param out: prefix for output files
+
+        Returns:
+            :py:obj:`Tuple[float, float, float, float, float]`: A tuple of
+                #. genetic variance (:py:obj:`float`) of the complex trait,
+                #. :math:`h_g^2` (:py:obj:`float`) from `limix <https://github.com/limix/limix>`_ definition,
+                #. :math:`h_g^2` (:py:obj:`float`) from `gcta <https://yanglab.westlake.edu.cn/software/gcta/>`_ definition,
+                #. LRT test statistics (:py:obj:`float`) for :math:`h_g^2`,
+                #. LRT :math:`p` value (:py:obj:`float`) for :math:`h_g^2`.
+        """
+
+        QS = economic_qs(GRM)
+        if covar is not None:
+            covar = jnp.ones(n)
+
+        # create REML object
+        method = LMM(y, covar, QS, restricted=True)
+
+        # alternative model
+        method.fit(verbose=False)
+        genetic_variance = method.scale * (1 - method.delta)
+        random_variance = method.scale * method.delta
+        v = np.var(method.mean()) # mean of the prior
+        h2g_w_v = genetic_variance / (v + genetic_variance + random_variance) # limix definition of heritability
+        h2g_wo_v = genetic_variance / (genetic_variance + random_variance) # GCTA definition of heritability
+        alt_lk = method.lml()
+
+        # null model, delta = 1 removes genetic variance component
+        method.delta = 1
+        method.fix("delta")
+        method.fit(verbose=False)
+        null_lk = method.lml()
+
+        # likelihood ratio test
+        lrt_stats = -2 * (null_lk - alt_lk)
+        p_value = stats.chi2.sf(lrt_stats, 1) / 2
+
+        # store values
+        self.p_values[index] = p_value
+        self.V_G[index] = genetic_variance
+        self.V_G_over_Vp[index] = h2g_wo_v
+        # return genetic_variance, h2g_w_v, h2g_wo_v, lrt_stats, p_value
+
+
 class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
     """
-    tree-based asssociation testing using GCTA 
+    Run LMM to test for association between a GRM and phenotypes using GCTA
     """
 
     def __init__(self, phenotypes, num_associations):
