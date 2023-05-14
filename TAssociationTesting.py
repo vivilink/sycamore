@@ -365,6 +365,32 @@ class TAssociationTestingRegionsGlimix(TAssociationTestingRegions):
         self.V_G_over_Vp[index] = h2g_wo_v
         # return genetic_variance, h2g_w_v, h2g_wo_v, lrt_stats, p_value
 
+    def write_association_results_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
+        table = pd.DataFrame()
+        table['start'] = window_starts
+        table['end'] = window_ends
+
+        # p-values
+        table['p_values'] = self.p_values
+
+        # other stats
+        table['V_G'] = self.V_G
+        table['V_G_over_Vp'] = self.V_G_over_Vp
+
+        # causal or not
+        table['causal'] = np.repeat("FALSE", self.num_associations)
+        table.loc[phenotypes.causal_window_indeces, 'causal'] = "TRUE"
+        # table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
+
+        table.to_csv(out + "_trees_glimix_results.csv", index=False, header=True)
+        logfile.info("- Wrote results from tree association tests to '" + out + "_trees_glimix_results.csv'")
+
+        stats = pd.DataFrame({'min_p_value': [np.nanmin(self.p_values)],
+                              'max_p_value': [np.nanmax(self.p_values)]
+                              })
+        stats.to_csv(out + "_trees_glimix_stats.csv", index=False, header=True)
+        logfile.info("- Wrote stats from glimix to '" + out + "_trees_HE_stats.csv'")
+
 
 class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
     """

@@ -172,7 +172,8 @@ class TParameters:
                            help="Provide association method [AIM, GWAS] and for AIM covariance type [eGRM, GRM, "
                                 "scaled] with the following format: 'method:covariance'")
         assoc.add_argument('--AIM_method', type=str, nargs='+',
-                           help="Use Haseman-Elston or REML or both to test trees for association")
+                           help="Use GCTA Haseman-Elston, GCTA REML, glimix REML, or any combination of these to test "
+                                "GRM for association")
         assoc.add_argument('--no_clean_up', action='store_true',
                            help="don't clean up temporary files created during association testing")
         assoc.add_argument('--test_only_tree_at', type=float,
