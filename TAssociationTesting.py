@@ -16,7 +16,6 @@ import subprocess
 from glimix_core.lmm import LMM
 from numpy_sugar.linalg import economic_qs
 from scipy import stats
-import jax.numpy as jnp
 import association_functions as af
 import TTree as tt
 
@@ -448,7 +447,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
     def run_association_one_window_gcta(self, index, out):
         # create gcta input files, run gcta and parse output
 
-        exit_code = subprocess.call([out + "_run_gcta_HE.sh"])
+        exit_code = subprocess.call([out + "_run_GCTA_HE.sh"])
 
         # read results
         HE_CP = pd.read_table(out + "_HE-CP_result.txt")
@@ -507,8 +506,8 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         table.loc[phenotypes.causal_window_indeces, 'causal'] = "TRUE"
         # table.loc[self.phenotypes.causal_tree_indeces, 'causal'] = "TRUE"
 
-        table.to_csv(out + "_trees_HE_results.csv", index=False, header=True)
-        logfile.info("- Wrote results from tree association tests to '" + out + "_trees_HE_results.csv'")
+        table.to_csv(out + "_trees_GCTA_HE_results.csv", index=False, header=True)
+        logfile.info("- Wrote results from tree association tests to '" + out + "_trees_GCTA_HE_results.csv'")
 
         stats = pd.DataFrame({'min_p_value_HECP_OLS': [np.nanmin(self.p_values_HECP_OLS)],
                               'min_p_value_HECP_Jackknife': [np.nanmin(self.p_values_HECP_Jackknife)],
@@ -519,8 +518,8 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
                               'max_p_value_HESD_OLS': [np.nanmax(self.p_values_HESD_OLS)],
                               'max_p_value_HESD_Jackknife': [np.nanmax(self.p_values_HESD_Jackknife)]
                               })
-        stats.to_csv(out + "_trees_HE_stats.csv", index=False, header=True)
-        logfile.info("- Wrote stats from HE to '" + out + "_trees_HE_stats.csv'")
+        stats.to_csv(out + "_trees_GCTA_HE_stats.csv", index=False, header=True)
+        logfile.info("- Wrote stats from HE to '" + out + "_trees_GCTA_HE_stats.csv'")
 
 
 class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
@@ -572,7 +571,7 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         @return:
         """
         # create gcta input files, run gcta and parse output
-        exit_code = subprocess.call([out + "_run_gcta_REML.sh"])
+        exit_code = subprocess.call([out + "_run_GCTA_REML.sh"])
 
         # read results
         result = pd.read_table(out + "_REML.hsq")
@@ -627,14 +626,14 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         table['causal'] = np.repeat("FALSE", self.num_associations)
         table.loc[phenotypes.causal_window_indeces, 'causal'] = "TRUE"
 
-        table.to_csv(out + "_trees_REML_results.csv", index=False, header=True)
-        logfile.info("- Wrote results from tree association tests to '" + out + "_trees_REML_results.csv'")
+        table.to_csv(out + "_trees_GCTA_REML_results.csv", index=False, header=True)
+        logfile.info("- Wrote results from tree association tests to '" + out + "_trees_GCTA_REML_results.csv'")
 
         stats = pd.DataFrame({'min_p_value': [np.nanmin(self.p_values)],
                               'max_p_value': [np.nanmax(self.p_values)]
                               })
-        stats.to_csv(out + "_trees_REML_stats.csv", index=False, header=True)
-        logfile.info("- Wrote stats from tree association tests to '" + out + "_trees_REML_stats.csv'")
+        stats.to_csv(out + "_trees_GCTA_REML_stats.csv", index=False, header=True)
+        logfile.info("- Wrote stats from tree association tests to '" + out + "_trees_GCTA_REML_stats.csv'")
 
 
 class TTreeAssociationMantel(TAssociationTestingRegions):

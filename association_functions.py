@@ -225,7 +225,7 @@ def run_association_GWAS(trees, inds, variants, pheno, args, logfile):
 
 
 def write_GCTA_command_script(test_name, pheno_file, outname, args):
-    with open(outname + "_run_gcta_" + test_name + ".sh", 'w') as f:
+    with open(outname + "_run_" + test_name + ".sh", 'w') as f:
         f.write("#!/bin/bash\n")
         if args.population_structure and args.population_structure_pca_num_eigenvectors is None:
             write_GCTA_command_file_mgrm(testing_method=test_name,
@@ -252,8 +252,8 @@ def write_GCTA_command_script(test_name, pheno_file, outname, args):
                                         GCTA=args.GCTA,
                                         num_GCTA_threads=args.num_gcta_threads)
 
-    st = os.stat(outname + "_run_gcta_" + test_name + ".sh")
-    os.chmod(outname + "_run_gcta_" + test_name + ".sh", st.st_mode | stat.S_IEXEC)
+    st = os.stat(outname + "_run_" + test_name + ".sh")
+    os.chmod(outname + "_run_" + test_name + ".sh", st.st_mode | stat.S_IEXEC)
 
 
 def get_AIM_test_object(test_name, phenotypes, pheno_file, num_associations, outname, logfile, args):
@@ -533,6 +533,7 @@ def write_GCTA_command_file_mgrm(testing_method, outname, pheno_file, outfile, G
     @param num_GCTA_threads:
     @return:
     """
+
     if testing_method == "REML":
         outfile.write(GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
                       + outname + "_REML --reml-lrt 1 --threads " + str(
@@ -561,11 +562,11 @@ def write_GCTA_command_file_grm(testing_method, outname, pheno_file, outfile, GC
     @param num_GCTA_threads:
     @return:
     """
-    if testing_method == "REML":
+    if testing_method == "GCTA_REML":
         outfile.write(GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname
                       + "_REML --threads " + str(
             num_GCTA_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
-    elif testing_method == "HE":
+    elif testing_method == "GCTA_HE":
         outfile.write(GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname
                       + "_HE --threads " + str(
             num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
@@ -574,6 +575,8 @@ def write_GCTA_command_file_grm(testing_method, outname, pheno_file, outfile, GC
                       + outname + "_HE-CP_result.txt\n")
         outfile.write("sed -n '7,9p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
                       + outname + "_HE-SD_result.txt\n")
+    else:
+        raise ValueError("Unrecognized AIM testing method")
 
 
 def write_GCTA_command_file_grm_pca(testing_method, outname, pheno_file, outfile, num_eigenvectors,
