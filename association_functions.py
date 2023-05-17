@@ -333,15 +333,30 @@ def get_proportion_of_tree_within_window(window_start, window_end, tree_start, t
         return 0.0
 
 
-def write_and_test_window_for_association(covariance_obj, inds, AIM_methods, outname, window_index,
-                                          covariances_picklefile):
-    if covariance_obj.covariance_matrix_haploid is None:
-        raise ValueError("trying to test empty covariance matrix for association at window index " + str(window_index))
+def test_window_for_association(covariance_obj, inds, AIM_methods, outname, window_index, phenotypes_obj,
+                                covariances_picklefile):
+
     covariance_obj.finalize(inds=inds)
-    covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile)
 
     for m in AIM_methods:
-        m.run_association(index=window_index, out=outname)
+        if m.name == "regions_glimix":
+            m.run_association(index=window_index,
+                              out=outname,
+                              inds=inds,
+                              phenotypes_object=phenotypes_obj,
+                              covariance_object=covariance_obj,
+                              covar=None,
+                              covariances_picklefile=None,
+                              )
+        else:
+            m.run_association(index=window_index,
+                              out=outname,
+                              inds=inds,
+                              phenotypes_object=None,
+                              covariance_object=covariance_obj,
+                              covar=None,
+                              covariances_picklefile=covariances_picklefile)
+
     covariance_obj.clear()
 
 
@@ -369,11 +384,15 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
     start = time.time()
 
     for w in range(num_tests):  #
-        tmpCov, tmpMu = covariance_obj.get_GRM(window_beginning=window_starts[w], window_end=window_ends[w],
+        covariance_obj.calculate_GRM(window_beginning=window_starts[w], window_end=window_ends[w],
                                                variants=variants, inds=inds)
+        tmpCov = covariance_obj.covariance_matrix
+
         if tmpCov is not None:
-            covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile, logfile=logfile)
             for m in AIM_methods:
+
+                covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile,
+                                     logfile=logfile)
                 m.run_association(index=w, out=outname)
             covariance_obj.clear()
 
@@ -429,12 +448,13 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
             if tree_obj.is_testable(skip_first_tree):
                 if window_size is None:
                     covariance_obj.add_tree(tree_obj=tree_obj, inds=inds, proportion=1.0)
-                    write_and_test_window_for_association(covariance_obj=covariance_obj,
-                                                          inds=inds,
-                                                          AIM_methods=AIM_methods,
-                                                          outname=outname,
-                                                          window_index=window_index,
-                                                          covariances_picklefile=covariances_picklefile)
+                    test_window_for_association(covariance_obj=covariance_obj,
+                                                inds=inds,
+                                                AIM_methods=AIM_methods,
+                                                phenotypes_obj=pheno,
+                                                outname=outname,
+                                                window_index=window_index,
+                                                covariances_picklefile=covariances_picklefile)
 
             window_index += 1
             # log progress
@@ -481,12 +501,13 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                     while (proportion < 1.0 and tree_obj.end >= window_ends[0]) \
                             or (proportion == 1.0 and tree_obj.end >= window_ends[
                         0]) and window_index < limit_association_tests:
-                        write_and_test_window_for_association(covariance_obj=covariance_obj,
-                                                              inds=inds,
-                                                              AIM_methods=AIM_methods,
-                                                              outname=outname,
-                                                              window_index=window_index,
-                                                              covariances_picklefile=covariances_picklefile)
+                        test_window_for_association(covariance_obj=covariance_obj,
+                                                    inds=inds,
+                                                    AIM_methods=AIM_methods,
+                                                    outname=outname,
+                                                    window_index=window_index,
+                                                    phenotypes_obj=pheno,
+                                                    covariances_picklefile=covariances_picklefile)
 
                         if len(window_ends) == 1:  # that was the last window
                             break

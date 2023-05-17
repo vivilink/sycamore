@@ -218,20 +218,20 @@ class TTree:
             TMRCA = self.TMRCA(inds.num_haplotypes)
             self.covariance = -TMRCA + self.height
 
-        if self.covariance_scaled.covariance_matrix_haploid is None:
-            self.covariance_scaled.covariance_matrix_haploid = self.covariance * float(inds.num_haplotypes) / np.trace(
+        if self.covariance_scaled._covariance_matrix_haploid is None:
+            self.covariance_scaled._covariance_matrix_haploid = self.covariance * float(inds.num_haplotypes) / np.trace(
                 self.covariance)
 
         if inds.ploidy == 1:
-            return self.covariance_scaled.covariance_matrix_haploid
+            return self.covariance_scaled._covariance_matrix_haploid
 
         # calculate diploid covariance scaled
         else:
-            if self.covariance_scaled.covariance_matrix_diploid is None:
+            if self.covariance_scaled._covariance_matrix_diploid is None:
                 # logfile.add()
 
                 # add together unscaled covariance of haplotypes of one individual
-                self.covariance_scaled.covariance_matrix_diploid = np.zeros([inds.num_inds, inds.num_inds])
+                self.covariance_scaled._covariance_matrix_diploid = np.zeros([inds.num_inds, inds.num_inds])
 
                 # off-diagonals upper triangle (this only works if ind assignment is equal to neighboring pairs!)
                 for i in range(inds.num_inds):
@@ -242,14 +242,14 @@ class TTree:
                     for j in range(i + 1, inds.num_inds):
                         j1 = j * 2
                         j2 = j1 + 1
-                        self.covariance_scaled.covariance_matrix_diploid[i, j] = self.covariance[i1, j1] + \
-                                                                                 self.covariance[i1, j2] + \
-                                                                                 self.covariance[i2, j1] + \
-                                                                                 self.covariance[i2, j2]
+                        self.covariance_scaled._covariance_matrix_diploid[i, j] = self.covariance[i1, j1] + \
+                                                                                  self.covariance[i1, j2] + \
+                                                                                  self.covariance[i2, j1] + \
+                                                                                  self.covariance[i2, j2]
 
                 # lower triangle
-                self.covariance_diploid = self.covariance_scaled.covariance_matrix_diploid \
-                                          + self.covariance_scaled.covariance_matrix_diploid.T
+                self.covariance_diploid = self.covariance_scaled._covariance_matrix_diploid \
+                                          + self.covariance_scaled._covariance_matrix_diploid.T
 
                 # diagonals
                 for ii in range(inds.num_inds):
@@ -257,10 +257,10 @@ class TTree:
                     ii2 = inds.get_haplotypes(ii)[1]
                     self.covariance_diploid[ii, ii] = 2.0 * self.height + 2.0 * self.covariance[ii1, ii2]
 
-                self.covariance_scaled.covariance_matrix_diploid = self.covariance_scaled.covariance_matrix_diploid \
-                                                                   * float(inds.num_inds) \
-                                                                   / np.trace(
-                    self.covariance_scaled.covariance_matrix_diploid)
+                self.covariance_scaled._covariance_matrix_diploid = self.covariance_scaled._covariance_matrix_diploid \
+                                                                    * float(inds.num_inds) \
+                                                                    / np.trace(
+                    self.covariance_scaled._covariance_matrix_diploid)
 
                 # logfile.sub()
 
@@ -281,7 +281,7 @@ class TTree:
         local eGRM as calculated by egrm (Fan et al. 2022).
         """
 
-        if self.eGRM.covariance_matrix_haploid is None:
+        if self.eGRM._covariance_matrix_haploid is None:
             # extract tree and write to file
             # TTrees.extract_single_tree(tree_obj=tree_obj, out=out, logfile=logfile, position=self.start)
 
@@ -290,11 +290,11 @@ class TTree:
             self.EK_relate_mu = EK_relate_mu
 
         if inds.ploidy == 2:
-            if self.eGRM.covariance_matrix_diploid is None:
+            if self.eGRM._covariance_matrix_diploid is None:
                 self.eGRM.calculate_diploid()
-            return self.eGRM.covariance_matrix_diploid, self.EK_relate_mu
+            return self.eGRM._covariance_matrix_diploid, self.EK_relate_mu
         else:
-            return self.eGRM.covariance_matrix_haploid, self.EK_relate_mu
+            return self.eGRM._covariance_matrix_haploid, self.EK_relate_mu
 
     @staticmethod
     def get_unnormalized_eGRM(tree_obj, inds):

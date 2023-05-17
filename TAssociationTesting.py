@@ -290,6 +290,9 @@ class TAssociationTestingRegions(TAssociationTesting):
 
         subplot.axhline(y=8, color="red", lw=0.5)
 
+    def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
+        raise ValueError("Function not defined for base class")
+
 
 class TAssociationTestingRegionsGlimix(TAssociationTestingRegions):
     """
@@ -297,7 +300,6 @@ class TAssociationTestingRegionsGlimix(TAssociationTestingRegions):
     """
 
     def __init__(self, phenotypes, num_associations):
-
         super().__init__(phenotypes, num_associations)
         self.name = "regions_glimix"
 
@@ -311,14 +313,14 @@ class TAssociationTestingRegionsGlimix(TAssociationTestingRegions):
         self.V_G_over_Vp = np.empty(self.num_associations)
         self.V_G_over_Vp.fill(np.nan)
 
-    def run_association(self, GRM, y, covar, n, index, out):
+    def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
         """
         Run LMM to test for association between a GRM and phenotypes using limix, copied from
         https://github.com/mancusolab/sushie/blob/main/sushie/utils.py
 
+        :param covariance_object: TCovariance, has GRM
         :param n: number of individuals
         :param covar: :math:`n \\times m` matrix for covariates.
-        :param GRM:
         :param y: phenotypes
         :param index: index of genomic window
         :param out: prefix for output files
@@ -331,21 +333,20 @@ class TAssociationTestingRegionsGlimix(TAssociationTestingRegions):
                 #. LRT test statistics (:py:obj:`float`) for :math:`h_g^2`,
                 #. LRT :math:`p` value (:py:obj:`float`) for :math:`h_g^2`.
         """
-
-        QS = economic_qs(GRM)
-        if covar is not None:
-            covar = jnp.ones(n)
+        QS = economic_qs(covariance_object.covariance_matrix)
+        if covar is None:
+            covar = np.ones(inds.num_inds)
 
         # create REML object
-        method = LMM(y, covar, QS, restricted=True)
+        method = LMM(phenotypes_object.y, covar, QS, restricted=True)
 
         # alternative model
         method.fit(verbose=False)
         genetic_variance = method.scale * (1 - method.delta)
         random_variance = method.scale * method.delta
-        v = np.var(method.mean()) # mean of the prior
-        h2g_w_v = genetic_variance / (v + genetic_variance + random_variance) # limix definition of heritability
-        h2g_wo_v = genetic_variance / (genetic_variance + random_variance) # GCTA definition of heritability
+        v = np.var(method.mean())  # mean of the prior
+        h2g_w_v = genetic_variance / (v + genetic_variance + random_variance)  # limix definition of heritability
+        h2g_wo_v = genetic_variance / (genetic_variance + random_variance)  # GCTA definition of heritability
         alt_lk = method.lml()
 
         # null model, delta = 1 removes genetic variance component
@@ -400,7 +401,8 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
         super().__init__(phenotypes, num_associations)
         self.name = "regions_GCTA"
 
-    def run_association(self, index, out):
+    def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
+        covariance_object.write(out=out, inds=inds, covariances_picklefile=covariances_picklefile)
         self.run_association_one_window_gcta(index=index, out=out)
 
     def run_association_one_window_gcta(self, index, out):
@@ -441,8 +443,9 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         self.V_G_over_Vp_SE_Jackknife_HESD = np.empty(self.num_associations)
         self.V_G_over_Vp_SE_Jackknife_HESD.fill(np.nan)
 
-    def run_association(self, index, out):
-        self.run_association_one_window_gcta(index=index, out=out)
+    # def run_association(self, covariance_object, covariances_picklefile, inds, y=None, covar=None, n=None, index=None, out=None):
+    #     covariance_object.write(out=out, inds=inds, covariances_picklefile=covariances_picklefile)
+    #     self.run_association_one_window_gcta(index=index, out=out)
 
     def run_association_one_window_gcta(self, index, out):
         # create gcta input files, run gcta and parse output
@@ -559,8 +562,8 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         self.V_G_over_Vp_SE = np.empty(self.num_associations)
         self.V_G_over_Vp_SE.fill(np.nan)
 
-    def run_association(self, index, out):
-        self.run_association_one_window_gcta(index=index, out=out)
+    # def run_association(self, GRM=None, y=None, covar=None, n=None, index=None, out=None):
+    #     self.run_association_one_window_gcta(index=index, out=out)
 
     def run_association_one_window_gcta(self, index, out):
         """

@@ -37,19 +37,19 @@ class TSimulator:
         logfile.add()
         trees = tskit.load(arguments.tree_file)
 
-        rate = arguments.mu
+        rate = arguments._mu
         if arguments.AH_tree_pos is not None:
             focal_tree = trees.at(arguments.AH_tree_pos)
             rate = msprime.RateMap(
                 position=[0, focal_tree.interval.left, focal_tree.interval.right, trees.sequence_length],
-                rate=[0, arguments.mu, 0]
+                rate=[0, arguments._mu, 0]
             )
             logfile.info("- Adding more mutations to tree covering " + str(
                 arguments.AH_tree_pos) + " in tree sequence read from " + arguments.tree_file + " with rate " + str(
-                arguments.mu))
+                arguments._mu))
         else:
             logfile.info("- Adding more mutations to trees read from " + arguments.tree_file + " with rate " + str(
-                arguments.mu) + " across the whole tree sequence")
+                arguments._mu) + " across the whole tree sequence")
 
         # set discrete genome to false to assume infinite sites model to avoid triallelic sites
         trees = msprime.sim_mutations(trees, rate=rate, random_seed=arguments.seed, discrete_genome=False)
@@ -197,9 +197,9 @@ class TSimulatorMSPrime(TSimulator):
     def get_mut_obj(arguments, randomGenerator, logfile):
         mut_obj = None
 
-        if arguments.mu is not None:
-            mut_obj = float(arguments.mu)
-            logfile.info("- Simulating fixed mutation rate of " + str(arguments.mu))
+        if arguments._mu is not None:
+            mut_obj = float(arguments._mu)
+            logfile.info("- Simulating fixed mutation rate of " + str(arguments._mu))
         else:
             num_windows = int(np.floor(arguments.sequence_length / arguments.mut_window_size))
             positions = [0 + w * arguments.mut_window_size for w in range(num_windows + 1)]

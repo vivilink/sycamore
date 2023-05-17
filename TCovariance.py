@@ -32,8 +32,37 @@ def get_covariance_object(covariance_name):
 class TCovariance:
     def __init__(self):
         self.covariance_type = "base"
-        self.covariance_matrix_haploid = None
-        self.covariance_matrix_diploid = None
+        self._covariance_matrix_haploid = None
+        self._covariance_matrix_diploid = None
+        self._covariance_matrix = None  # this is either the diploid or haploid matrix, depending on the inds
+        self._mu = None
+
+    @property
+    def covariance_matrix(self):
+        if self._covariance_matrix is None:
+            raise ValueError("Covariance matrix has not been calculated yet!")
+        return self._covariance_matrix
+
+    @covariance_matrix.setter
+    def covariance_matrix(self, covariance_matrix):
+        self.covariance_matrix = covariance_matrix
+
+    @property
+    def mu(self):
+        return self._mu
+
+    @mu.setter
+    def mu(self, mu):
+        self._mu = mu
+
+    @staticmethod
+    def remove_inds_with_missing_phenotypes(covariance_matrix, inds):
+        print("indeces_to_remove", inds.get_indeces_inds_no_phenotype())
+        indeces_to_remove = inds.get_indeces_inds_no_phenotype()
+        cleaned_covariance_matrix = (
+            np.delete(np.delete(covariance_matrix, indeces_to_remove, 0), indeces_to_remove, 1))
+
+        return cleaned_covariance_matrix
 
     def write_for_gcta(self, covariance_matrix, mu, inds, out):
         """
@@ -70,41 +99,30 @@ class TCovariance:
                 grmfile.write("\t".join([str(fid), str(iid)]) + os.linesep)
 
     def clear(self):
-        self.covariance_matrix_haploid = None
-
-    @staticmethod
-    def remove_inds_with_missing_phenotypes(covariance_matrix, inds):
-        print("indeces_to_remove", inds.get_indeces_inds_no_phenotype())
-        indeces_to_remove = inds.get_indeces_inds_no_phenotype()
-        cleaned_covariance_matrix = (np.delete(np.delete(covariance_matrix, indeces_to_remove, 0), indeces_to_remove, 1))
-
-        return cleaned_covariance_matrix
+        self._covariance_matrix_haploid = None
+        self._covariance_matrix_diploid = None
+        self._covariance_matrix = None
+        self._mu = None
 
 
 class TCovarianceeGRM(TCovariance):
     def __init__(self):
         super().__init__()
-
         self.covariance_type = "eGRM"
-        self.covariance_matrix_haploid = None
-        self.covariance_matrix_diploid = None
-        self.mu = None
-
-    def clear(self):
-        self.covariance_matrix_haploid = None
-        self.covariance_matrix_diploid = None
-        self.mu = None
 
     def finalize(self, inds):
-        if self.covariance_matrix_haploid is None:
+        if self._covariance_matrix_haploid is None:
             return False
-        if self.mu is None:
+        if self._mu is None:
             raise ValueError("mu is not defined but covariance matrix is, this should not happen")
 
         self.normalize()
 
         if inds.ploidy == 2:
             self.calculate_diploid()
+            self._covariance_matrix = self._covariance_matrix_diploid
+        else:
+            self._covariance_matrix = self._covariance_matrix_haploid
 
         return True
 
@@ -118,16 +136,16 @@ class TCovarianceeGRM(TCovariance):
         @param out: str
         @param inds: TInds
         """
-        if self.covariance_matrix_haploid is None:
+        if self._covariance_matrix_haploid is None:
             return False
         if inds.ploidy == 2:
-            self.write_for_gcta(covariance_matrix=self.covariance_matrix_diploid, mu=self.mu, inds=inds, out=out)
+            self.write_for_gcta(covariance_matrix=self._covariance_matrix_diploid, mu=self._mu, inds=inds, out=out)
             if covariances_picklefile is not None:
-                pickle.dump(self.covariance_matrix_diploid, covariances_picklefile)
+                pickle.dump(self._covariance_matrix_diploid, covariances_picklefile)
         else:
-            self.write_for_gcta(covariance_matrix=self.covariance_matrix_haploid, mu=self.mu, inds=inds, out=out)
+            self.write_for_gcta(covariance_matrix=self._covariance_matrix_haploid, mu=self._mu, inds=inds, out=out)
             if covariances_picklefile is not None:
-                pickle.dump(self.covariance_matrix_haploid, covariances_picklefile)
+                pickle.dump(self._covariance_matrix_haploid, covariances_picklefile)
 
         return True
 
@@ -145,65 +163,63 @@ class TCovarianceeGRM(TCovariance):
         cov, mu = tree_obj.get_unnormalized_eGRM(tree_obj=tree_obj, inds=inds)
         if cov is None:
             return None
-        if self.covariance_matrix_haploid is None:
-            self.covariance_matrix_haploid = proportion * cov
-            self.mu = proportion * mu
+        if self._covariance_matrix_haploid is None:
+            self._covariance_matrix_haploid = proportion * cov
+            self._mu = proportion * mu
         else:
-            self.covariance_matrix_haploid += proportion * cov
-            self.mu += proportion * mu
+            self._covariance_matrix_haploid += proportion * cov
+            self._mu += proportion * mu
 
     def calculate_diploid(self):
         """
         As in Fan et al. 2022
         @return:
         """
-        N = self.covariance_matrix_haploid.shape[0]
+        N = self._covariance_matrix_haploid.shape[0]
         maternals = np.array(range(0, N, 2))
         paternals = np.array(range(1, N, 2))
-        self.covariance_matrix_diploid = 0.5 * (self.covariance_matrix_haploid[maternals, :][:, maternals]
-                                                + self.covariance_matrix_haploid[maternals, :][:, paternals]
-                                                + self.covariance_matrix_haploid[paternals, :][:, maternals]
-                                                + self.covariance_matrix_haploid[paternals, :][:, paternals])
+        self._covariance_matrix_diploid = 0.5 * (self._covariance_matrix_haploid[maternals, :][:, maternals]
+                                                 + self._covariance_matrix_haploid[maternals, :][:, paternals]
+                                                 + self._covariance_matrix_haploid[paternals, :][:, maternals]
+                                                 + self._covariance_matrix_haploid[paternals, :][:, paternals])
 
     def normalize(self):
         """
         As in Fan et al. 2022, divide haploid matrix by total number of expected mutations in window and center by
         column and row.
         """
-        self.covariance_matrix_haploid /= self.mu
-        self.covariance_matrix_haploid -= self.covariance_matrix_haploid.mean(axis=0)
-        self.covariance_matrix_haploid -= self.covariance_matrix_haploid.mean(axis=1, keepdims=True)
+        self._covariance_matrix_haploid /= self._mu
+        self._covariance_matrix_haploid -= self._covariance_matrix_haploid.mean(axis=0)
+        self._covariance_matrix_haploid -= self._covariance_matrix_haploid.mean(axis=1, keepdims=True)
 
 
 class TCovarianceGRM(TCovariance):
     def __init__(self):
         super().__init__()
-
         self.covariance_type = "GRM"
-        self.covariance_matrix = None
-        self.mu = None
-
-    def clear(self):
-        self.covariance_matrix = None
-        self.mu = None
 
     def write(self, out, inds, covariances_picklefile, logfile):
-        if self.covariance_matrix is None:
+        # checks
+        if self._covariance_matrix is None:
             return False
-        if np.trace(self.covariance_matrix) < 0:
+        if np.trace(self._covariance_matrix) < 0:
             raise ValueError("Trace of matrix cannot be negative")
-        if inds.ploidy == 1 and not math.isclose(np.trace(self.covariance_matrix), inds.num_inds):
+        if inds.ploidy == 1 and not math.isclose(np.trace(self._covariance_matrix), inds.num_inds):
             # trace for haploids is expected to be equal to number of individuals (not true for diploids if they
             # are not in perfect HWE)
             logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
-                inds.num_inds) + " but obtained " + str(np.trace(self.covariance_matrix)))
+                inds.num_inds) + " but obtained " + str(np.trace(self._covariance_matrix)))
 
-        self.write_for_gcta(covariance_matrix=self.covariance_matrix, mu=self.mu, inds=inds, out=out)
+        # write matrix
+        self.write_for_gcta(covariance_matrix=self.covariance_matrix(), mu=self.mu(), inds=inds, out=out)
+
+        # write matrix to picklefile if debugging
         if covariances_picklefile is not None:
-            pickle.dump(self.covariance_matrix, covariances_picklefile)
+            pickle.dump(self._covariance_matrix, covariances_picklefile)
+
         return True
 
-    def get_GRM(self, window_beginning, window_end, variants, inds):
+    def calculate_GRM(self, window_beginning, window_end, variants, inds):
         """
         Calculate GRM matrix based on variants in a window (can bee tree interval)
 
@@ -241,10 +257,10 @@ class TCovarianceGRM(TCovariance):
             M_sum += M
         M_window = M_sum / float(num_vars)
         # M_window = self.remove_inds_with_missing_phenotypes(covariance_matrix=M_window, inds=inds)
-        self.covariance_matrix = M_window
-        self.mu = num_vars
+        self._covariance_matrix = M_window
+        self._mu = num_vars
 
-        return self.covariance_matrix, self.mu
+        return self._covariance_matrix, self._mu
 
     def finalize(self):
         pass
@@ -255,26 +271,26 @@ class TCovarianceScaled(TCovariance):
         super().__init__()
 
         self.covariance_type = "scaled"
-        self.covariance_matrix_haploid = None
-        self.covariance_matrix_diploid = None
+        self._covariance_matrix_haploid = None
+        self._covariance_matrix_diploid = None
 
     def clear(self):
-        self.covariance_matrix_haploid = None
-        self.covariance_matrix_diploid = None
+        self._covariance_matrix_haploid = None
+        self._covariance_matrix_diploid = None
 
     def write(self, covariance_matrix, mu, inds, out):
-        if self.covariance_matrix_haploid is None:
+        if self._covariance_matrix_haploid is None:
             return False
 
         with open(out + '_GRM_covariance.txt', 'w') as f:
-            np.savetxt(f, self.covariance_matrix_haploid)
+            np.savetxt(f, self._covariance_matrix_haploid)
         f.close()
 
         subprocess.call(["Rscript", os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])
 
     def add_tree(self, tree_obj, proportion, inds):
         cov = tree_obj.get_covariance_scaled(inds=inds)
-        self.covariance_matrix_haploid += proportion * cov
+        self._covariance_matrix_haploid += proportion * cov
 
     def finalize(self):
         pass
