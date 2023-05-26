@@ -431,12 +431,12 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
     """
     window_ends_copy = window_ends.copy()
     window_starts_copy = window_starts.copy()
+    window_index = 0
 
     # log progress
     start = time.time()
 
     # windows are given by trees
-    window_index = 0
     if window_size is None:
         tree = tskit.Tree(trees)
         while tree.next() and window_index < limit_association_tests:
