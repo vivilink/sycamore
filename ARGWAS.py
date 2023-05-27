@@ -135,8 +135,39 @@ if args.task == "getTreeAtPosition":
                                                trees_interval_start=args.trees_interval_start,
                                                trees_interval_end=args.trees_interval_end,
                                                logfile=logger)
-    trees_class = tt.TTrees(trees)
-    trees_class.extract_single_tree(trees, args.out, logger, position=args.test_only_tree_at)
+    trees_object = tt.TTrees(trees)
+    trees_object.extract_single_tree(trees, args.out, logger, position=args.test_only_tree_at)
+
+# -----------------------
+# Output tree chunks
+# -----------------------
+
+if args.task == "makeTreeChunks":
+    """
+    Cut an ARG into chunks. Output tskit tree files with size 'chunk_size' 
+    """
+    logger.info("- TASK: makeTreeChunks")
+    trees, args.trees_interval = tt.read_trees(tree_file=args.tree_file,
+                                               trees_interval=args.trees_interval,
+                                               trees_interval_start=args.trees_interval_start,
+                                               trees_interval_end=args.trees_interval_end,
+                                               logfile=logger)
+    trees_object = tt.TTrees(trees)
+    print(args.trees_interval)
+
+    if args.chunk_size is None:
+        raise ValueError("Must provide window size")
+    chunk_ends = af.get_window_ends(window_size=args.chunk_size, trees_interval=args.trees_interval)
+    chunk_starts = [x - args.chunk_size for x in chunk_ends]
+    num_windows = len(chunk_ends)
+
+    for w in range(num_windows):
+        trees_extract = trees.keep_intervals([[chunk_starts[w], chunk_ends[w]]], simplify=True)
+        print("coords of trees_extract", trees_extract.sequence_length)
+        outname = args.out + "_chunk" + str(w) + ".trees"
+        trees_extract.dump(outname)
+        logger.info("- Wrote trees with coordinates " + str([chunk_starts[w], chunk_ends[w]])
+                    + " to " + outname)
 
 # -----------------------
 # Downsample variants

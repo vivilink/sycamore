@@ -21,7 +21,7 @@ class TParameters:
         parser.add_argument('--task', required=True,
                             choices=['simulate', 'impute', 'associate', 'downsampleVariantsWriteShapeit',
                                      'ARGStatistics', 'getTreeAtPosition', 'simulateMoreMutations',
-                                     'covarianceCorrelations', 'simulatePhenotypes'],
+                                     'covarianceCorrelations', 'simulatePhenotypes', 'makeTreeChunks'],
                             help='The task to be executed (simulate or associate)')
         parser.add_argument('--out', required=True, type=str,
                             help='Prefix of all output files')
@@ -65,6 +65,7 @@ class TParameters:
         parser.add_argument('--trees_interval_end', type=int,
                             help="Only test the trees and variants starting with trees_interval_end and the orginial "
                                  "start for association")
+        parser.add_argument('--chunk_size', type=int, help="Chunk size for task 'makeTreeChunks'")
 
         # simulating trees
         sim = parser.add_argument_group('simulating trees')
