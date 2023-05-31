@@ -555,11 +555,11 @@ def write_GCTA_command_file_mgrm(testing_method, outname, pheno_file, outfile, G
     @return:
     """
 
-    if testing_method == "REML":
+    if testing_method == "GCTA_REML":
         outfile.write(GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
                       + outname + "_REML --reml-lrt 1 --threads " + str(
             num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
-    elif testing_method == "HE":
+    elif testing_method == "GCTA_HE":
         outfile.write(
             GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
             + outname + "_HE --reml-lrt 1 --threads " + str(
@@ -619,11 +619,11 @@ def write_GCTA_command_file_grm_pca(testing_method, outname, pheno_file, outfile
     outfile.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
                   + outname + "> " + outname + "_tmp2.out\n\n")
 
-    if testing_method == "REML":
+    if testing_method == "GCTA_REML":
         outfile.write(
             GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_REML" + " --qcovar " + outname + ".eigenvec --threads "
             + str(num_GCTA_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
-    elif testing_method == "HE":
+    elif testing_method == "GCTA_HE":
         outfile.write(
             GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_HE --qcovar " + outname + ".eigenvec "
             + " --threads " + str(num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
@@ -632,6 +632,8 @@ def write_GCTA_command_file_grm_pca(testing_method, outname, pheno_file, outfile
                       + outname + "_HE-CP_result.txt\n")
         outfile.write("sed -n '7,9p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
                       + outname + "_HE-SD_result.txt\n")
+    else:
+        raise ValueError("Unknown testing method '" + str(testing_method) + "'")
 
 
 def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_size,
