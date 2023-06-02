@@ -26,7 +26,7 @@ class TVariants:
 
     def fill_info(self, ts_object, samp_ids, pos_float, logfile):
         if len(list(ts_object.variants(samples=samp_ids))) < 1:
-            raise ValueError("Found no variants in tree file")
+            logfile.info("WARNING: Found no variants")
         for v, var in enumerate(list(ts_object.variants(samples=samp_ids))):
             tmp = sum(var.genotypes) / len(var.genotypes)
 
@@ -354,9 +354,12 @@ class TVariantsFiltered(TVariants):
 
         # set number typed for both cases (built from scratch or file)
         if len(self._info.index) < 1:
-            raise ValueError("Variant info table is empty")
-        self._number_typed = self._info['typed'].value_counts()[True]
-        self._info['causal_region'] = "FALSE"
+            logfile.info("WARNING: Variant info table is empty. This may be expected and in "
+                         "that case can be ignored.")
+            # raise ValueError("Variant info table is empty")
+        else:
+            self._number_typed = self._info['typed'].value_counts()[True]
+            self._info['causal_region'] = "FALSE"
 
     def print_genotypes(self, index):
         file = "genotypes_variant" + str(index) + ".txt"
