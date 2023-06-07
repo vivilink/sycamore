@@ -16,35 +16,75 @@ from egrm import egrm_one_tree_no_normalization_C
 # ---------------------
 # read tree file
 # ---------------------
-def read_trees(tree_file, trees_interval, trees_interval_start, trees_interval_end, logfile):
-    logfile.info("- Reading tree from " + tree_file)
-    trees_full = tskit.load(tree_file)
-    # if args.trees_interval is not None and (args.trees_interval_start is not None or args.trees_interval_end is not
-    # None): raise ValueError("Cannot set 'trees_interval' and 'trees_interval_start' or 'trees_interval_end' at the
-    # same time.")
-    if trees_interval is None:
-        trees_interval = [0, trees_full.sequence_length]
-    if trees_interval_start:
-        trees_interval[0] = trees_interval_start
-    if trees_interval_end:
-        trees_interval[1] = trees_interval_end
-
-    if trees_interval != [0, trees_full.sequence_length]:
-        logfile.info(
-            "- Extracting trees overlapping the following interval: " + str(trees_interval))
-        trees_extract = trees_full.keep_intervals([trees_interval], simplify=True)
-    else:
-        trees_extract = trees_full.simplify()
-
-    trees_extract = TTrees.remove_monomorphic(trees_extract)
-
-    return trees_extract, trees_interval
 
 
 class TTrees:
-    def __init__(self, ts_object):
-        # self.trees = ts_object.trees()
-        self.number = ts_object.num_trees
+    def __init__(self, tree_file, skip_first_tree, trees_interval, trees_interval_start, trees_interval_end, logfile):
+        self.trees, self.actual_trees_interval = self.read_trees(tree_file,
+                                                                 trees_interval,
+                                                                 trees_interval_start,
+                                                                 trees_interval_end,
+                                                                 logfile)
+        print("actual trees interval at first", self.actual_trees_interval)
+
+        self.number = self.trees.num_trees  # this contains potential empty border trees
+        self.actual_trees_interval = self.remove_border_trees_if_empty(skip_first_tree)
+
+    def read_trees(self, tree_file, trees_interval, trees_interval_start, trees_interval_end, logfile):
+        """
+        Read in tskit file and extract only a certain region, if defined by user
+
+        @param tree_file: tskit file
+        @param trees_interval:
+        @param trees_interval_start:
+        @param trees_interval_end:
+        @param logfile:
+        @return:
+        """
+        logfile.info("- Reading tree from " + tree_file)
+        trees_full = tskit.load(tree_file)
+
+        # define interval
+        if trees_interval is None:
+            trees_interval = [0, trees_full.sequence_length]
+        if trees_interval_start:
+            trees_interval[0] = trees_interval_start
+        if trees_interval_end:
+            trees_interval[1] = trees_interval_end
+
+        if trees_interval != [0, trees_full.sequence_length]:
+            logfile.info(
+                "- Extracting trees overlapping the following interval: " + str(trees_interval))
+            trees_extract = trees_full.keep_intervals([trees_interval], simplify=True)
+        else:
+            trees_extract = trees_full.simplify()
+
+        trees_extract = TTrees.remove_monomorphic(trees_extract)
+
+        return trees_extract, trees_interval
+
+    def remove_border_trees_if_empty(self, skip_first_tree):
+        """
+        @param skip_first_tree:
+        remove untestable trees (can happen for first and last tree if tskit object was extracted from a larger one)
+        """
+        actual_trees_interval = self.actual_trees_interval
+        first = self.trees.first()
+        first_tree_obj = TTree(first)
+        print("height", first_tree_obj.height)
+        print("num roots", first_tree_obj.tree.roots)
+        print("first tree is testable", first_tree_obj.is_testable(skip_first_tree=skip_first_tree))
+        if not first_tree_obj.is_testable(skip_first_tree=skip_first_tree):
+            # tree sequence starts at second tree
+            actual_trees_interval[0] = self.trees.breakpoints(as_array=True)[1]
+
+        last_tree_obj = TTree(self.trees.last())
+        if not last_tree_obj.is_testable(skip_first_tree=skip_first_tree):
+            # tree sequence ends at second to last tree
+            actual_trees_interval[1] = self.trees.breakpoints(as_array=True)[-2]
+
+        print("actual_trees_interval at end of remove border trees", actual_trees_interval)
+        return actual_trees_interval
 
     @staticmethod
     def writeStats(ts_object, out, logfile):

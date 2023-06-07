@@ -7,6 +7,7 @@ import TAssociationTesting as at
 import association_functions as af
 import stdpopsim
 import numpy as np
+import TTree as tt
 
 
 @pytest.fixture(scope="package")
@@ -38,7 +39,7 @@ class TestAssociationTesting:
         trees, trees_interval = simulate
 
         # get windows when skipping first tree, sequence length is multiple of window_size
-        window_ends = af.get_window_ends(window_size=window_size, trees_interval=trees_interval)
+        window_ends = af.get_window_starts_and_ends(window_size=window_size, trees_interval=trees_interval)
         # get windows when skipping first tree, sequence length is not multiple of window_size
         assert window_ends == window_ends_true
 

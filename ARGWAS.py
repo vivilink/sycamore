@@ -116,27 +116,28 @@ if args.task == "simulateMoreMutations":
 # -----------------------
 if args.task == "ARGStatistics":
     logger.info("- TASK: ARGStatistics")
-    trees, args.trees_interval = tt.read_trees(tree_file=args.tree_file,
-                                               trees_interval=args.trees_interval,
-                                               trees_interval_start=args.trees_interval_start,
-                                               trees_interval_end=args.trees_interval_end,
-                                               logfile=logger)
-
-    trees_class = tt.TTrees(ts_object=trees)
-    trees_class.writeStats(ts_object=trees, out=args.out, logfile=logger)
+    trees_object = tt.TTrees(tree_file=args.tree_file,
+                             trees_interval=args.trees_interval,
+                             trees_interval_start=args.trees_interval_start,
+                             trees_interval_end=args.trees_interval_end,
+                             skip_first_tree=args.skip_first_tree,
+                             logfile=logger)
+    trees_object.writeStats(ts_object=trees_object.trees, out=args.out, logfile=logger)
 
 # -----------------------
 # Output single tree
 # -----------------------
 if args.task == "getTreeAtPosition":
     logger.info("- TASK: getTreeAtPosition")
-    trees, args.trees_interval = tt.read_trees(tree_file=args.tree_file,
-                                               trees_interval=args.trees_interval,
-                                               trees_interval_start=args.trees_interval_start,
-                                               trees_interval_end=args.trees_interval_end,
-                                               logfile=logger)
-    trees_object = tt.TTrees(trees)
-    trees_object.extract_single_tree(trees, args.out, logger, position=args.test_only_tree_at)
+
+    trees_object = tt.TTrees(tree_file=args.tree_file,
+                             trees_interval=args.trees_interval,
+                             trees_interval_start=args.trees_interval_start,
+                             trees_interval_end=args.trees_interval_end,
+                             skip_first_tree=args.skip_first_tree,
+                             logfile=logger)
+
+    trees_object.extract_single_tree(trees_object.trees, args.out, logger, position=args.test_only_tree_at)
 
 # -----------------------
 # Output tree chunks
@@ -147,26 +148,26 @@ if args.task == "makeTreeChunks":
     Cut an ARG into chunks. Output tskit tree files with size 'chunk_size' 
     """
     logger.info("- TASK: makeTreeChunks")
-    trees, args.trees_interval = tt.read_trees(tree_file=args.tree_file,
-                                               trees_interval=args.trees_interval,
-                                               trees_interval_start=args.trees_interval_start,
-                                               trees_interval_end=args.trees_interval_end,
-                                               logfile=logger)
-    trees_object = tt.TTrees(trees)
-    print(args.trees_interval)
+    trees_object = tt.TTrees(tree_file=args.tree_file,
+                             trees_interval=args.trees_interval,
+                             trees_interval_start=args.trees_interval_start,
+                             trees_interval_end=args.trees_interval_end,
+                             skip_first_tree=args.skip_first_tree,
+                             logfile=logger)
+    print("trees_object.actual_trees_interval in ARGWAS.py", trees_object.actual_trees_interval)
 
     if args.chunk_size is None:
         raise ValueError("Must provide window size")
-    chunk_ends = af.get_window_ends(window_size=args.chunk_size, trees_interval=args.trees_interval)
-    chunk_starts = [x - args.chunk_size for x in chunk_ends]
+    chunk_starts, chunk_ends = af.get_window_starts_and_ends(window_size=args.chunk_size, trees_interval=trees_object.actual_trees_interval)
     num_windows = len(chunk_ends)
 
     for w in range(num_windows):
-        trees_extract = trees.keep_intervals([[chunk_starts[w], chunk_ends[w]]], simplify=True)
+        trees_extract = trees_object.trees.keep_intervals([[chunk_starts[w], chunk_ends[w]]], simplify=True)
+        print("trees_extract.num_trees", trees_extract.num_trees)
         print("coords of trees_extract", trees_extract.sequence_length)
         outname = args.out + "_chunk" + str(w) + ".trees"
         trees_extract.dump(outname)
-        logger.info("- Wrote trees with coordinates " + str([chunk_starts[w], chunk_ends[w]])
+        logger.info("- Wrote trees with coordinates [" + str(chunk_starts[w]) + "," + str(chunk_ends[w]) + ")"
                     + " to " + outname)
 
 # -----------------------
@@ -176,12 +177,13 @@ if args.task == "downsampleVariantsWriteShapeit":
     if args.prop_typed_variants is None:
         raise ValueError("Must provide downsampling probability to task 'downsampleVariantsWriteShapeit'")
     logger.info("- TASK: Downsampling variants")
-    trees, args.trees_interval = tt.read_trees(tree_file=args.tree_file,
-                                               trees_interval=args.trees_interval,
-                                               trees_interval_start=args.trees_interval_start,
-                                               trees_interval_end=args.trees_interval_end,
-                                               logfile=logger)
-    sample_ids = trees.samples()
+    trees_object = tt.TTrees(tree_file=args.tree_file,
+                             trees_interval=args.trees_interval,
+                             trees_interval_start=args.trees_interval_start,
+                             trees_interval_end=args.trees_interval_end,
+                             skip_first_tree=args.skip_first_tree,
+                             logfile=logger)
+    sample_ids = trees_object.trees.samples()
     N = len(sample_ids)
 
     # --------------------------------
@@ -212,23 +214,27 @@ if args.task == "impute":
                 + " with reference panel trees from "
                 + args.imputation_ref_panel_tree_file)
 
-    # TODO: this needs to be standardized and used in all tasks
-    trees = tskit.load(args.tree_file)
+    trees_object = tt.TTrees(tree_file=args.tree_file,
+                             trees_interval=args.trees_interval,
+                             trees_interval_start=args.trees_interval_start,
+                             trees_interval_end=args.trees_interval_end,
+                             skip_first_tree=args.skip_first_tree,
+                             logfile=logger)
+
     sample_ids = trees.samples()
     N = len(sample_ids)
     inds = tind.Individuals(ploidy=args.ploidy,
                             num_haplotypes=N,
                             relate_sample_names_file=args.relate_sample_names,
                             logfile=logger)
-    trees = tt.TTrees.remove_monomorphic(trees)
-    variants = tvar.TVariantsFiltered(ts_object=trees, samp_ids=sample_ids, min_allele_freq=args.min_allele_freq,
+    variants = tvar.TVariantsFiltered(ts_object=trees_object.trees, samp_ids=sample_ids, min_allele_freq=args.min_allele_freq,
                                       max_allele_freq=args.max_allele_freq,
                                       prop_typed_variants=args.prop_typed_variants, pos_float=args.pos_float, random=r,
                                       logfile=logger, filtered_variants_file=None)
 
     # impute
     imputation_obj = impute.TImpute()
-    name_imputation_output = imputation_obj.run_impute(trees_sample=trees,
+    name_imputation_output = imputation_obj.run_impute(trees_sample=trees_object.trees,
                                                        variants_sample=variants,
                                                        inds=inds,
                                                        imputation_ref_panel_tree_file=args.imputation_ref_panel_tree_file,
@@ -251,12 +257,13 @@ if args.task == "simulatePhenotypes":
     if args.tree_file is None:
         raise ValueError("The estimated trees need to be provided with 'tree_file'.")
 
-    trees, args.trees_interval = tt.read_trees(tree_file=args.tree_file,
-                                               trees_interval=args.trees_interval,
-                                               trees_interval_start=args.trees_interval_start,
-                                               trees_interval_end=args.trees_interval_end,
-                                               logfile=logger)
-    sample_ids = trees.samples()
+    trees_object = tt.TTrees(tree_file=args.tree_file,
+                             trees_interval=args.trees_interval,
+                             trees_interval_start=args.trees_interval_start,
+                             trees_interval_end=args.trees_interval_end,
+                             skip_first_tree=args.skip_first_tree,
+                             logfile=logger)
+    sample_ids = trees_object.trees.samples()
 
     plots_dir = args.out + "_plots/"
     if not os.path.exists(plots_dir):

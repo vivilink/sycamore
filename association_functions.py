@@ -43,11 +43,14 @@ def run_association_testing(args, random, logfile):
     if args.tree_file is None:
         raise ValueError("The estimated trees need to be provided with 'tree_file'.")
 
-    trees, args.trees_interval = tt.read_trees(tree_file=args.tree_file,
-                                               trees_interval=args.trees_interval,
-                                               trees_interval_start=args.trees_interval_start,
-                                               trees_interval_end=args.trees_interval_end,
-                                               logfile=logfile)
+    trees_object = tt.TTrees(tree_file=args.tree_file,
+                             trees_interval=args.trees_interval,
+                             trees_interval_start=args.trees_interval_start,
+                             trees_interval_end=args.trees_interval_end,
+                             skip_first_tree=args.skip_first_tree,
+                             logfile=logfile)
+
+    trees = trees_object.trees
 
     # interval = np.array([173584350,175000000])
     # trees_tmp = trees.keep_intervals([interval], simplify=True)
@@ -128,6 +131,7 @@ def run_association_testing(args, random, logfile):
                                 args=args,
                                 ass_method=m,
                                 window_size=args.ass_window_size,
+                                trees_interval=trees_object.actual_trees_interval,
                                 logfile=logfile)
 
         else:
@@ -280,26 +284,36 @@ def get_AIM_test_object(test_name, phenotypes, pheno_file, num_associations, out
     return test_obj
 
 
-def get_window_ends(window_size, trees_interval):
+def get_window_starts_and_ends(window_size, trees_interval):
     """
-    @param window_size int: window size
-    @param trees_interval int: genomic region covered by ARG
+    @param skip_first_tree: bool
+    @param trees_object: TTrees
+    @param trees_interval: int genomic region covered by ARG
+    @param window_size: int
     @return list: list of window ends
+
+    Get coordinates of windows of non-overlapping windows of size window_size
     """
+
+
+    # get window ends
     window_ends = []
     if window_size >= (trees_interval[1] - trees_interval[0]):
         window_ends.append(trees_interval[1])
-
     else:
         num_tests = (trees_interval[1] - trees_interval[0]) / window_size
-
         for w in range(int(np.floor(num_tests))):
             window_ends.append(trees_interval[0] + (w + 1) * window_size)
         # add last bit (smaller window)
         if window_ends[-1] < trees_interval[1]:
             window_ends.append(trees_interval[1])
 
-    return window_ends
+    # get window starts
+    window_starts = [x - window_size for x in window_ends[:-1]]
+    window_starts.append(window_starts[-1] + window_size) # the last start should not be last end - window size
+
+    print("window_ends at end of get window ends", window_ends)
+    return window_starts, window_ends
 
 
 def get_proportion_of_tree_within_window(window_start, window_end, tree_start, tree_end):
@@ -636,7 +650,7 @@ def write_GCTA_command_file_grm_pca(testing_method, outname, pheno_file, outfile
         raise ValueError("Unknown testing method '" + str(testing_method) + "'")
 
 
-def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_size,
+def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_size, trees_interval,
                         logfile):
     # ----------------
     # initialize
@@ -664,8 +678,10 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     window_ends = trees.breakpoints(as_array=True)[1:]
 
     if window_size is not None:
-        window_ends = get_window_ends(window_size=window_size, trees_interval=args.trees_interval)
-        window_starts = [x - window_size for x in window_ends]
+        window_ends = get_window_starts_and_ends(window_size=window_size, trees_interval=trees_interval)
+        window_starts = [x - args.chunk_size for x in window_ends[:-1]]
+        window_starts.append(window_starts[-1] + window_size) # the last start should not be last end - window size
+
         num_tests = len(window_ends)
 
     # initialize and write phenotypes
