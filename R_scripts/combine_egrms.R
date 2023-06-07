@@ -36,7 +36,8 @@ ReadGRMBin=function(prefix, AllN=F, size=4){
   close(IDFileName)
 }
 
-files <- read.table("list_trees_global_egrm.txt")
+args = commandArgs(trailingOnly=TRUE)
+files <- read.table(args[1])
 
 # read first egrm to get dimensions
 prefix <- strsplit(files$V1[1], split=".trees")[[1]]
