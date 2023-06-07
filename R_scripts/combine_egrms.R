@@ -38,6 +38,7 @@ ReadGRMBin=function(prefix, AllN=F, size=4){
 
 args = commandArgs(trailingOnly=TRUE)
 files <- read.table(args[1])
+out_prefix <- args[2]
 
 # read first egrm to get dimensions
 prefix <- strsplit(files$V1[1], split=".trees")[[1]]
@@ -68,7 +69,7 @@ m <- m / total_N
 print(paste("total_N", total_N))
 
 #write global egrm to file
-saveGRM(pfx="global", grm=m, vcm = total_N, fid = ".")
+saveGRM(pfx=out_prefix, grm=m, vcm = total_N, fid = ".")
 
 
 
