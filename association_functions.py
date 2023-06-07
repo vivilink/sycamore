@@ -671,17 +671,12 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     logfile.add()
 
     # define number and coordinates of windows
-    num_tests = trees.num_trees
-
-    # remove the next start that is included, i think this tree is removed due to incompleteness when taking tree subset
     window_starts = trees.breakpoints(as_array=True)[0:trees.num_trees]
     window_ends = trees.breakpoints(as_array=True)[1:]
+    num_tests = trees.num_trees
 
     if window_size is not None:
-        window_ends = get_window_starts_and_ends(window_size=window_size, trees_interval=trees_interval)
-        window_starts = [x - args.chunk_size for x in window_ends[:-1]]
-        window_starts.append(window_starts[-1] + window_size) # the last start should not be last end - window size
-
+        window_starts, window_ends = get_window_starts_and_ends(window_size=window_size, trees_interval=trees_interval)
         num_tests = len(window_ends)
 
     # initialize and write phenotypes

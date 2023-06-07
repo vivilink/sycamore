@@ -180,7 +180,8 @@ class TParameters:
         assoc.add_argument('--test_only_tree_at', type=float,
                            help="Only test tree that is overlapping the given position for association")
         assoc.add_argument('--skip_first_tree', action='store_true',
-                           help='Do not run association test on first tree')
+                           help='Do not run association test on first tree. This is useful when tskit file was '
+                                'extracted from a larger set of trees (the first tree in that case will be empty)')
         assoc.add_argument('--do_imputation', action='store_true',
                            help="Imputation takes a long time to run. Use this parameter if imputation was already run "
                                 "and you just want to read in files")
