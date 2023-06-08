@@ -169,7 +169,7 @@ I ran association tests around the CREBRF gene on chromosome 5 with different nu
 
 *CREBRF with GWAS*
 
-The original plink files with genotypes around the CREBRF gene and 10 principle components calculated based on the whole genome, which were shared with me, are here:/home1/linkv/ARGWAS/hawaiian/plink_files_original/ (this is a copy for safety). The analysis for the paper are here: ~/ARGWAS/hawaiian/plink_files_analysis/. I first added the standardized phenotypes that I calculated in the REML analysis to the .fam file with other_scripts/add_phenotype_to_fam.py. I then ran /home1/linkv/ARGWAS/hawaiian/plink_files/run_plink.sh to transform the .fam and .bed files into .ped and .map files, and to perform the GWAS association tests.
+The original plink files with genotypes around the CREBRF gene and 10 principle components calculated based on the whole genome, which were shared with me, are here:/home1/linkv/ARGWAS/hawaiian/plink_files_original/ (this is a copy for safety). The analysis for the paper are here: ~/ARGWAS/hawaiian/plink_files_analysis_CREBRF/PC20. I first added the standardized phenotypes that I calculated in the REML analysis to the .fam file with other_scripts/add_phenotype_to_fam.py. I then ran ~/ARGWAS/hawaiian/plink_files_analysis_CREBRF/PC20/run_plink.sh to transform the .fam and .bed files into .ped and .map files, and to perform the GWAS association tests.
 
 
 Other
