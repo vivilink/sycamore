@@ -55,7 +55,7 @@ do_annotation <- function(rs373863828_causal, rs12513649_proxy, other_GWAS){
 }
 
 plot_association <- function(df, num_PCs){
-  pdf(paste("CREBRF_PC", num_PCs, ".pdf", sep=''), width=10, height=12)
+  pdf(paste("hawaiians_BMI_chr5_PC", num_PCs, ".pdf", sep=''), width=10, height=12)
   #png(paste("CREBRF_PC", num_PCs, "_GWAS.png", sep=''), width=8, height=4, units="in", res=1200)
   
   par(mfrow=c(3,1))
