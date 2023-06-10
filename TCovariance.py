@@ -39,8 +39,9 @@ class TCovariance:
 
     @property
     def covariance_matrix(self):
-        if self._covariance_matrix is None:
-            raise ValueError("Covariance matrix has not been calculated yet!")
+        # do not check for this because in GRM it may be none because there are no variants!
+        # if self._covariance_matrix is None:
+        #     raise ValueError("Covariance matrix has not been calculated yet!")
         return self._covariance_matrix
 
     @covariance_matrix.setter
@@ -198,20 +199,20 @@ class TCovarianceGRM(TCovariance):
         super().__init__()
         self.covariance_type = "GRM"
 
-    def write(self, out, inds, covariances_picklefile, logfile):
+    def write(self, out, inds, covariances_picklefile):
         # checks
         if self._covariance_matrix is None:
             return False
         if np.trace(self._covariance_matrix) < 0:
             raise ValueError("Trace of matrix cannot be negative")
-        if inds.ploidy == 1 and not math.isclose(np.trace(self._covariance_matrix), inds.num_inds):
+       # if inds.ploidy == 1 and not math.isclose(np.trace(self._covariance_matrix), inds.num_inds):
             # trace for haploids is expected to be equal to number of individuals (not true for diploids if they
             # are not in perfect HWE)
-            logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
-                inds.num_inds) + " but obtained " + str(np.trace(self._covariance_matrix)))
+            # logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
+            #    inds.num_inds) + " but obtained " + str(np.trace(self._covariance_matrix)))
 
         # write matrix
-        self.write_for_gcta(covariance_matrix=self.covariance_matrix(), mu=self.mu(), inds=inds, out=out)
+        self.write_for_gcta(covariance_matrix=self._covariance_matrix, mu=self._mu, inds=inds, out=out)
 
         # write matrix to picklefile if debugging
         if covariances_picklefile is not None:

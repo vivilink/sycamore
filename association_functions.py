@@ -295,7 +295,6 @@ def get_window_starts_and_ends(window_size, trees_interval):
     Get coordinates of windows of non-overlapping windows of size window_size
     """
 
-
     # get window ends
     window_ends = []
     if window_size >= (trees_interval[1] - trees_interval[0]):
@@ -310,7 +309,7 @@ def get_window_starts_and_ends(window_size, trees_interval):
 
     # get window starts
     window_starts = [x - window_size for x in window_ends[:-1]]
-    window_starts.append(window_starts[-1] + window_size) # the last start should not be last end - window size
+    window_starts.append(window_starts[-1] + window_size)  # the last start should not be last end - window size
 
     print("window_ends at end of get window ends", window_ends)
     return window_starts, window_ends
@@ -349,7 +348,6 @@ def get_proportion_of_tree_within_window(window_start, window_end, tree_start, t
 
 def test_window_for_association(covariance_obj, inds, AIM_methods, outname, window_index, phenotypes_obj,
                                 covariances_picklefile):
-
     covariance_obj.finalize(inds=inds)
 
     for m in AIM_methods:
@@ -390,6 +388,7 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
     @param logfile: Tlogger
     @param outname: str
     @return: None
+    :param pheno: TPhenotype
     """
     window_ends_copy = window_ends.copy()
     window_starts_copy = window_starts.copy()
@@ -399,15 +398,19 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
 
     for w in range(num_tests):  #
         covariance_obj.calculate_GRM(window_beginning=window_starts[w], window_end=window_ends[w],
-                                               variants=variants, inds=inds)
+                                     variants=variants, inds=inds)
         tmpCov = covariance_obj.covariance_matrix
 
         if tmpCov is not None:
             for m in AIM_methods:
-
-                covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile,
-                                     logfile=logfile)
-                m.run_association(index=w, out=outname)
+                covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile)
+                m.run_association(index=w,
+                                  out=outname,
+                                  covariance_object=covariance_obj,
+                                  phenotypes_object=pheno,
+                                  inds=inds,
+                                  covar=None,
+                                  covariances_picklefile=covariances_picklefile)
             covariance_obj.clear()
 
         # log progress
