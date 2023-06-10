@@ -1,4 +1,4 @@
-setwd("~/ARGWAS/hawaiian")
+setwd("/home1/linkv/ARGWAS/hawaiian/global_grm")
 library("plinkFile")
 
 ReadGRMBin=function(prefix, AllN=F, size=4){
@@ -49,7 +49,7 @@ grm_obj <- ReadGRMBin(prefix)
 # prepare empty containers (need to name rows with individual IDs or else they are inferred wrongly)
 m <- matrix(0, nrow(grm_obj$total_grm), ncol(grm_obj$total_grm))
 total_N <- 0
-sample_names <- read.table("relate.sample", header=T)
+sample_names <- read.table("relate.sample", header=T) # taken from Caoqi's hawaiian relate folder
 sample_names <- sample_names[-1,]
 rownames(m) <- sample_names$ID_1
 colnames(m) <- sample_names$ID_1
