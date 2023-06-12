@@ -5,10 +5,10 @@ import os
 #pca = open("All_MEGA_GWAS.and.CIDR_GDA_GWAS.nh.intersect1M.drop5k.chr1-22.asVCF.rmvoutoforder.geno05.hwe1e-6.ld50-5-.8.prune.in.maf01.smartpca.evec", "r")
 #pca_new = open("All_MEGA_GWAS.and.CIDR_GDA_GWAS.nh.intersect1M.drop5k.chr1-22.asVCF.rmvoutoforder.geno05.hwe1e-6.ld50-5-.8.prune.in.maf01.smartpca_reformatted.evec", "w")
 
-os.chdir("/home/vivian/postdoc_USC/AIM/hawaiians/plink_analysis")
+os.chdir("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr16/")
 
-pca = open("nh.megaandgda.geno05.hwe1e-6.ld50-5-.8.maf01.rmvChr5.smartpca.evec", "r")
-pca_new = open("nh.megaandgda.geno05.hwe1e-6.ld50-5-.8.maf01.rmvChr5.smartpca_reformatted.evec", "w")
+pca = open("nh.megaandgda.geno05.hwe1e-6.ld50-5-.8.maf01.rmvChr16.smartpca.evec", "r")
+pca_new = open("nh.megaandgda.geno05.hwe1e-6.ld50-5-.8.maf01.rmvChr16.smartpca_reformatted.evec", "w")
 
 eigvals = pca.readline()
 
