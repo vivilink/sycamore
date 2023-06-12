@@ -289,6 +289,8 @@ class TCovarianceScaled(TCovariance):
 
         subprocess.call(["Rscript", os.path.dirname(sys.argv[0]) + "/create_gcta_GRM.R", out])
 
+        return True
+
     def add_tree(self, tree_obj, proportion, inds):
         cov = tree_obj.get_covariance_scaled(inds=inds)
         self._covariance_matrix_haploid += proportion * cov

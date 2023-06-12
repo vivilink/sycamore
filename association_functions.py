@@ -311,7 +311,6 @@ def get_window_starts_and_ends(window_size, trees_interval):
     window_starts = [x - window_size for x in window_ends[:-1]]
     window_starts.append(window_starts[-1] + window_size)  # the last start should not be last end - window size
 
-    print("window_ends at end of get window ends", window_ends)
     return window_starts, window_ends
 
 
@@ -403,7 +402,8 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
 
         if tmpCov is not None:
             for m in AIM_methods:
-                covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile)
+                # covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile) removed
+                # because already in run association function
                 m.run_association(index=w,
                                   out=outname,
                                   covariance_object=covariance_obj,

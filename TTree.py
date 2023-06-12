@@ -71,9 +71,6 @@ class TTrees:
         actual_trees_interval = self.actual_trees_interval
         first = self.trees.first()
         first_tree_obj = TTree(first)
-        print("height", first_tree_obj.height)
-        print("num roots", first_tree_obj.tree.roots)
-        print("first tree is testable", first_tree_obj.is_testable(skip_first_tree=skip_first_tree))
         if not first_tree_obj.is_testable(skip_first_tree=skip_first_tree):
             # tree sequence starts at second tree
             actual_trees_interval[0] = self.trees.breakpoints(as_array=True)[1]
