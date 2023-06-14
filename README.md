@@ -153,11 +153,15 @@ The R script used to calculate the association power is 2a_calculate_power.R, wh
 
 The folders with association results called "ownPhenotypes" are old results where the phenotypes were simulated separately for the true trees and the relate trees, and the number of causal variants is thus not consistent
 
-*population structure*
+*population stratification correction with simulated ARG*
 
 The ARGs of two populations that I used in the end is simulated here: ~/ARGWAS/simulations_two_populations/tree_files/no_migration_highNe_splitTime10k. This is also where the global eGRMs are located. The association tests that correct for population structure are located here: ~/ARGWAS/simulations_two_populations/association_tests/eGRM_GRM/true_trees/window_based/5k/with_strat_correction_highNe_splitTime10k, and the association tests that do not correct for populations structure are here: ~/ARGWAS/simulations_two_populations/association_tests/eGRM_GRM/true_trees/window_based/5k/no_strat_correction_highNe_splitTime10k
 
 The R script to plot the results is R_scripts/population_structure.R.
+
+*population stratification correction with hawaiian ARG*
+
+I simulated phenotypes with script other_scripts/simulate_phenotypes.py. This script samples 100 random variants from the whole genome except chromosome 5, assigns them with an effect size, and with heritability = 1 simulates phenotypes. 
 
 *CREBRF with REML*
 
