@@ -1,4 +1,4 @@
-setwd("/home1/linkv/ARGWAS/hawaiian/all_chr5_for_review")
+setwd("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr5")
 
 # colors
 org <- "#E69F00"
@@ -11,7 +11,7 @@ region_end <- 182045439
 
 
 
-df_GWAS <- read.table("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/plink.assoc.linear_chr5", header=TRUE)
+df_GWAS <- read.table("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr5/plink.assoc.linear_chr5", header=TRUE)
 df_GWAS <- df_GWAS[df_GWAS$TEST == "ADD",]
 df_GWAS <- df_GWAS[df_GWAS$BP >= region_start & df_GWAS$BP <= region_end,]
 
@@ -21,12 +21,12 @@ df_GWAS <- df_GWAS[df_GWAS$BP >= region_start & df_GWAS$BP <= region_end,]
 rs373863828_causal <- 173108771 #causal variant  
 rs12513649_proxy <- 173044949 #proxy variant
 
-other_GWAS <- read.table("/home1/linkv/ARGWAS/argwas/R_scripts/gwascat_hitsnearcrebrf.csv", sep=',', header=TRUE)
+other_GWAS <- read.table("/home1/linkv/ARGWAS/argwas/R_scripts/GWAScat_BMIweight_chr5.csv", sep=',', header=TRUE)
 other_GWAS <- other_GWAS[-which(other_GWAS$gwasCatalog.name == "rs12513649"),]
 
 do_annotation <- function(rs373863828_causal, rs12513649_proxy, other_GWAS){
   
-  for(snp in other_GWAS$position_GR38){
+  for(snp in other_GWAS$gwasCatalog.chromStart){
     abline(v=snp, col="gray")
   }
   

@@ -7,8 +7,8 @@ pin <- "#CC79A7"
 
 # region to plot
 #53,703,963-54,114,467
-region_start <- 53000000
-region_end <- 54600000
+region_start <- 52000000  #53000000
+region_end <- 56000000
 
 
 
@@ -22,14 +22,15 @@ df_GWAS <- df_GWAS[df_GWAS$BP >= region_start & df_GWAS$BP <= region_end,]
 # rs373863828_causal <- 173108771 #causal variant  
 # rs12513649_proxy <- 173044949 #proxy variant
 
-# other_GWAS <- read.table("/home1/linkv/ARGWAS/argwas/R_scripts/gwascat_hitsnearcrebrf.csv", sep=',', header=TRUE)
+other_GWAS <- read.table("/home1/linkv/ARGWAS/argwas/R_scripts/GWAScat_BMIweight_chr16.csv", sep=',', header=TRUE)
 # other_GWAS <- other_GWAS[-which(other_GWAS$gwasCatalog.name == "rs12513649"),]
 
-do_annotation <- function(){
+do_annotation <- function(other_GWAS){
   
- # for(snp in other_GWAS$position_GR38){
- #   abline(v=snp, col="gray")
- # }
+  for(snp in other_GWAS$gwasCatalog.chromStart){
+    abline(v=snp, col="gray")
+#	print(snp)
+  }
   
   #FTO
   xmin <- 53703963
@@ -46,7 +47,7 @@ do_annotation <- function(){
   abline(h=-log10(4.5*10^-7), col=blu, lty=2)
 
   # axes
-  label_pos <- seq(region_start, region_end, 10000000)
+  label_pos <- seq(region_start, region_end, 1000000)
   axis(1, at=label_pos, labels=label_pos / 1000000, las=1)
   title(ylab=expression("-log"[10]*"(p)"), line=2)
   title(xlab="genomic position [Mb]", line=2.2)
@@ -71,13 +72,13 @@ plot_association <- function(df, num_PCs){
   points(x=df_GWAS$BP, y=-log10(df_GWAS$P), col=org, pch=20)
   points(x=df_GRM$start, y=-log10(df_GRM$p_values), col=pin, pch=20)
 
-  do_annotation()
+  do_annotation(other_GWAS)
 
   index_min_pvalue <- which(df$p_values == min(df$p_values))
   # print(paste("min pvalue",min(df$p_values)))
   # print(paste("distance rs373863828 and most significant REML hit:", round(abs(rs373863828_causal - df$start[index_min_pvalue]) / 1000), "kb", "pvalue",-log10(df$p_values[index_min_pvalue])))
 
-  legend(legend=c("local eGRM", "GWAS"), pch=20, col=c(blu, org), x="topleft", bty='n')
+  legend(legend=c("local eGRM","local GRM", "GWAS"), pch=20, col=c(blu,pin, org), x="topright", box.lwd = 0, box.col = "white", bg = "white")
   
   dev.off()
 }
