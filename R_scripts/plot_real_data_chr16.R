@@ -29,7 +29,7 @@ other_GWAS <- read.table("/home1/linkv/ARGWAS/argwas/R_scripts/GWAScat_BMIweight
 do_annotation <- function(other_GWAS){
   
   for(snp in other_GWAS$gwasCatalog.chromStart){
-    abline(v=snp, col="gray")
+    abline(v=snp, col="snow2")
   }
   
   # CREBRF
@@ -48,51 +48,42 @@ do_annotation <- function(other_GWAS){
   axis(1, at=label_pos, labels=label_pos / 1000000, las=1)
   title(ylab=expression("-log"[10]*"(p)"), line=2)
   title(xlab="genomic position [Mb]", line=2.2)
-
-
-
 }
 
 plot_association <- function(df, num_PCs){
-  pdf(paste("hawaiians_BMI_chr16.pdf", sep=''), width=10, height=12)
+  pdf(paste("hawaiians_BMI_chr16.pdf", sep=''), width=8, height=4)
   #png(paste("CREBRF_PC", num_PCs, "_GWAS.png", sep=''), width=8, height=4, units="in", res=1200)
   
-  par(mfrow=c(3,1))
+  par(mfrow=c(1,1))
   
-  # # REML
-  # plot(x=df$start, y=-log10(df$p_values), xaxt='n', las=2, xlab="window start [mb]", ylab=expression('log'[10]*'(p-value)'))
-  # label_pos <- seq(172000000, 173500000, 100000)
-  # axis(1, at=label_pos, labels=label_pos / 1000000, las=1)
-  # do_annotation()
-  # index_min_pvalue <- which(df$p_values == min(df$p_values))
-  # print(paste("distance rs373863828 and most significant REML hit:", round(abs(rs373863828 - df$start[index_min_pvalue]) / 1000), "kb"))
-  
-  # all
-  plot(x=df$start, y=-log10(df$p_values), xaxt='n', las=2, xlab="", ylab="", col=blu, pch=20, xlim=c(region_start,region_end), bty='n')
-  points(x=df_GWAS$BP, y=-log10(df_GWAS$P), col=org, pch=20)
-  points(x=df_GRM$start, y=-log10(df_GRM$p_values), col=pin, pch=20)   
+  plot(type='n', x=100, xaxt='n', las=2, xlab="", ylab="", col=blu, pch=20, xlim=c(region_start,region_end), ylim=c(0,max(-log10(df$p_values))), bty='n')
   do_annotation(other_GWAS)
-
-  #only REML
-  plot(x=df$start, y=-log10(df$p_values), xaxt='n', las=2, xlab="", ylab="", col=blu, pch=20, xlim=c(region_start,region_end), bty='n')
+  points(x=df$start, y=-log10(df$p_values), col=blu, pch=20, bty='n')
+  points(x=df_GWAS$BP, y=-log10(df_GWAS$P), col=org, pch=20)
   points(x=df_GRM$start, y=-log10(df_GRM$p_values), col=pin, pch=20)
-  do_annotation(other_GWAS)
-
-  # eGRM and GWAS
-  plot(x=df$start, y=-log10(df$p_values), xaxt='n', las=2, xlab="", ylab="", col=blu, pch=20, xlim=c(region_start,region_end), bty='n')
-  points(x=df_GWAS$BP, y=-log10(df_GWAS$P), col=org, pch=20)
-  do_annotation(other_GWAS)
 
   index_min_pvalue <- which(df$p_values == min(df$p_values))
   print(paste("min pvalue",min(df$p_values)))
   #print(paste("distance rs373863828 and most significant REML hit:", round(abs(rs373863828_causal - df$start[index_min_pvalue]) / 1000), "kb", "pvalue",-log10(df$p_values[index_min_pvalue])))
 
   legend(legend=c("local eGRM", "GWAS", "local GRM"), pch=20, col=c(blu, org, pin), x="topleft", bty='n')
-#  legend(legend=c("GWAS"), pch=20, col=c(org), x="topleft", bty='n')
+# legend(legend=c("local eGRM", "GWAS"), pch=20, col=c(blu, org), x="topleft", bty='n')
   
   dev.off()
 }
 
+remove_regions <- function(df_results, regions){
+	df_results$start <- as.numeric(df_results$start)
+	for(r in 1:nrow(regions)){
+		region_start <- regions$start[r]
+		region_end <- regions$end[r]
+		if(length(df_results$start[which(df_results$start >= region_start & df_results$start <= region_end)]) > 0){
+			df_results <- df_results[-which(df_results$start >= region_start & df_results$start <= region_end),]
+       		}
+
+	}
+	return(df_results)
+}
 
 # -----------------------
 # PC20
@@ -103,6 +94,17 @@ df <- df[!is.na(df$p_values),]
 df <- df[df$start >= region_start & df$start <= region_end,]
 df <- df[order(df$start, decreasing=FALSE),]
 
+# remove encode regions
+regions <- read.table("~/ARGWAS/argwas/R_scripts/encode_blacklist.bed", sep='\t', header=FALSE)
+colnames(regions) <- c("chr", "start", "end", "type")
+regions <- regions[regions$chr == paste("chr", chromosome, sep=''),]
+df <- remove_regions(df_results=df, regions=regions)
+
+# remove centromere
+regions <- read.table("~/ARGWAS/argwas/R_scripts/centromeres.bed", sep='\t', header=FALSE)
+colnames(regions) <- c("chr", "start", "end", "type")
+regions <- regions[regions$chr == paste("chr", chromosome, sep=''),]
+df <- remove_regions(df_results=df, regions=regions)
 
 # read REML GRM 
 df_GRM <- read.table(paste("chr", chromosome, "_all_chunks_GRM_pca20_results.csv", sep=''), sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed

@@ -1,4 +1,4 @@
-setwd("/home1/linkv/ARGWAS/hawaiian/all_chr5_for_review")
+setwd("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr5")
 
 # colors
 org <- "#E69F00"
@@ -11,7 +11,7 @@ region_end <- 175000000
 
 
 
-df_GWAS <- read.table("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/plink.assoc.linear_chr5", header=TRUE)
+df_GWAS <- read.table("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr5/plink.assoc.linear_chr5", header=TRUE)
 df_GWAS <- df_GWAS[df_GWAS$TEST == "ADD",]
 df_GWAS <- df_GWAS[df_GWAS$BP >= region_start & df_GWAS$BP <= region_end,]
 
@@ -40,10 +40,14 @@ do_annotation <- function(rs373863828_causal, rs12513649_proxy, other_GWAS){
   abline(v=rs373863828_causal,col=pin)
   abline(v=rs12513649_proxy,col="gray")
   
-
   abline(h=-log10(5*(10^-8)), col=org, lty=2)
   abline(h=-log10(4.5*10^-7), col=blu, lty=2)
 
+  # axes
+  label_pos <- seq(region_start, region_end, 500000)
+  axis(1, at=label_pos, labels=label_pos / 1000000, las=1)
+  title(ylab=expression("-log"[10]*"(p)"), line=2)
+  title(xlab="genomic position [Mb]", line=2.2)
 }
 
 plot_association <- function(df, num_PCs){
@@ -61,21 +65,18 @@ plot_association <- function(df, num_PCs){
   # print(paste("distance rs373863828 and most significant REML hit:", round(abs(rs373863828 - df$start[index_min_pvalue]) / 1000), "kb"))
   
   # both
-  plot(x=df$start, y=-log10(df$p_values), xaxt='n', las=2, xlab="", ylab="", col=blu, pch=20, xlim=c(region_start,region_end), bty='n')
-  title(ylab=expression("-log"[10]*"(p)"), line=2)
-  title(xlab="genomic position [Mb]", line=2.2)
-  
+  plot(type='n', x=0, xaxt='n', las=2, xlab="", ylab="", ylim=c(0,10), xlim=c(region_start,region_end), bty='n')
+  do_annotation(rs373863828_causal, rs12513649_proxy, other_GWAS)
+  points(x=df$start, y=-log10(df$p_values), col=blu, pch=20)
   points(x=df_GWAS$BP, y=-log10(df_GWAS$P), col=org, pch=20)
   points(x=df_GRM$start, y=-log10(df_GRM$p_values), col=pin, pch=20)
 
-  label_pos <- seq(region_start, region_end, 500000)
-  axis(1, at=label_pos, labels=label_pos / 1000000, las=1)
-  do_annotation(rs373863828_causal, rs12513649_proxy, other_GWAS)
   index_min_pvalue <- which(df$p_values == min(df$p_values))
   print(paste("min pvalue",min(df$p_values)))
   print(paste("distance rs373863828 and most significant REML hit:", round(abs(rs373863828_causal - df$start[index_min_pvalue]) / 1000), "kb", "pvalue",-log10(df$p_values[index_min_pvalue])))
 
   legend(legend=c("local eGRM", "GWAS"), pch=20, col=c(blu, org), x="topleft", bty='n')
+  #legend(legend=c("local eGRM","local GRM", "GWAS"), pch=20, col=c(blu,pin, org), x="topright", box.lwd = 0, box.col = "white", bg = "white")
 #  legend(legend=c("GWAS"), pch=20, col=c(org), x="topleft", bty='n')
   
   dev.off()

@@ -28,7 +28,7 @@ other_GWAS <- read.table("/home1/linkv/ARGWAS/argwas/R_scripts/GWAScat_BMIweight
 do_annotation <- function(other_GWAS){
   
   for(snp in other_GWAS$gwasCatalog.chromStart){
-    abline(v=snp, col="gray")
+    abline(v=snp, col="snow2")
 #	print(snp)
   }
   
@@ -39,10 +39,6 @@ do_annotation <- function(other_GWAS){
   mygray <- rgb(mygray[1], mygray[2], mygray[3], max = 255,  alpha = 50)
   polygon(c(xmin,xmin, xmax, xmax), c(-100,100,100,-100), col = mygray, border=NA)
 
-  # causal SNPs
-  #abline(v=rs373863828_causal,col=pin)
-  #abline(v=rs12513649_proxy,col="gray")
-  
   abline(h=-log10(5*(10^-8)), col=org, lty=2)
   abline(h=-log10(4.5*10^-7), col=blu, lty=2)
 
@@ -75,6 +71,18 @@ plot_association <- function(df, num_PCs){
   dev.off()
 }
 
+remove_regions <- function(df_results, regions){
+	df_results$start <- as.numeric(df_results$start)
+	for(r in 1:nrow(regions)){
+		region_start <- regions$start[r]
+		region_end <- regions$end[r]
+		if(length(df_results$start[which(df_results$start >= region_start & df_results$start <= region_end)]) > 0){
+			df_results <- df_results[-which(df_results$start >= region_start & df_results$start <= region_end),]
+       		}
+
+	}
+	return(df_results)
+}
 
 
 # -----------------------
@@ -86,12 +94,20 @@ df <- df[!is.na(df$p_values),]
 df <- df[df$start >= region_start & df$start <= region_end,]
 df <- df[order(df$start, decreasing=FALSE),]
 
+# remove encode regions
+regions <- read.table("~/ARGWAS/argwas/R_scripts/encode_blacklist.bed", sep='\t', header=FALSE)
+colnames(regions) <- c("chr", "start", "end", "type")
+regions <- regions[regions$chr == "chr16",]
+df <- remove_regions(df_results=df, regions=regions)
 
 # read REML GRM 
 df_GRM <- read.table("chr16_all_chunks_GRM_pca20_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
 df_GRM <- df_GRM[!is.na(df$p_values),]
 df_GRM <- df_GRM[df_GRM$start >= region_start & df_GRM$start <= region_end,]
 df_GRM <- df_GRM[order(df_GRM$start, decreasing=FALSE),]
+
+# remove encode regions
+df_GRM <- remove_regions(df_results=df_GRM, regions=regions)
 
 
 #plot
