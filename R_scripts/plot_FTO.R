@@ -59,20 +59,12 @@ plot_association <- function(df, num_PCs){
   
   par(mfrow=c(1,1))
   
-  # # REML
-  # plot(x=df$start, y=-log10(df$p_values), xaxt='n', las=2, xlab="window start [mb]", ylab=expression('log'[10]*'(p-value)'))
-  # label_pos <- seq(172000000, 173500000, 100000)
-  # axis(1, at=label_pos, labels=label_pos / 1000000, las=1)
-  # do_annotation()
-  # index_min_pvalue <- which(df$p_values == min(df$p_values))
-  # print(paste("distance rs373863828 and most significant REML hit:", round(abs(rs373863828 - df$start[index_min_pvalue]) / 1000), "kb"))
-  
   # both
-  plot(x=df$start, y=-log10(df$p_values), xaxt='n', las=2, xlab="", ylab="", col=blu, pch=20, xlim=c(region_start,region_end), ylim=c(0,8), bty='n')  
+  plot(x=0, type='n', xaxt='n', las=2, xlab="", ylab="", col=blu, pch=20, xlim=c(region_start,region_end), ylim=c(0,8), bty='n') 
+  do_annotation(other_GWAS)
+  points(x=df$start, y=-log10(df$p_values), col=blu, pch=20)
   points(x=df_GWAS$BP, y=-log10(df_GWAS$P), col=org, pch=20)
   points(x=df_GRM$start, y=-log10(df_GRM$p_values), col=pin, pch=20)
-
-  do_annotation(other_GWAS)
 
   index_min_pvalue <- which(df$p_values == min(df$p_values))
   # print(paste("min pvalue",min(df$p_values)))

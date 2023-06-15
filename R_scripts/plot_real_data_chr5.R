@@ -9,6 +9,8 @@ pin <- "#CC79A7"
 region_start <- 0
 region_end <- 182045439
 
+centromere <- c(46485900,50059807)
+high_signal_region <- c(69540701, 71359500)
 
 
 df_GWAS <- read.table("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr5/plink.assoc.linear_chr5", header=TRUE)
@@ -103,6 +105,11 @@ df <- read.table("chr5_all_chunks_eGRM_pca20_results.csv", sep=',', header=TRUE)
 df <- df[!is.na(df$p_values),]
 df <- df[df$start >= region_start & df$start <= region_end,]
 df <- df[order(df$start, decreasing=FALSE),]
+
+df <- df[-which(df$start >= centromere[1] & df$start <= centromere[2]),]
+df <- df[-which(df$start >= high_signal_region[1] & df$start <= high_signal_region[2]),]
+
+print(df)
 
 
 # read REML GRM 
