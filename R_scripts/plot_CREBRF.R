@@ -1,4 +1,5 @@
 setwd("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr5")
+source("/home1/linkv/ARGWAS/argwas/R_scripts/functions.R")
 
 # colors
 org <- "#E69F00"
@@ -93,6 +94,11 @@ df <- df[!is.na(df$p_values),]
 df <- df[df$start >= region_start & df$start <= region_end,]
 df <- df[order(df$start, decreasing=FALSE),]
 
+# remove encode regions
+regions <- read.table("~/ARGWAS/argwas/R_scripts/encode_blacklist.bed", sep='\t', header=FALSE)
+colnames(regions) <- c("chr", "start", "end", "type")
+regions <- regions[regions$chr == "chr5",]
+df <- remove_regions(df_results=df, regions=regions)
 
 # read REML GRM 
 df_GRM <- read.table("chr5_all_chunks_GRM_pca20_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
@@ -100,6 +106,8 @@ df_GRM <- df_GRM[!is.na(df$p_values),]
 df_GRM <- df_GRM[df_GRM$start >= region_start & df_GRM$start <= region_end,]
 df_GRM <- df_GRM[order(df_GRM$start, decreasing=FALSE),]
 
+# remove encode regions
+df_GRM <- remove_regions(df_results=df_GRM, regions=regions)
 
 #plot
 plot_association(df=df, num_PCs = 20)

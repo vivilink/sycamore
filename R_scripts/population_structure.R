@@ -1,14 +1,5 @@
 setwd("/data/ARGWAS/experiments_population_split/association_tests/eGRM_GRM/true_trees/window_based/5k/")
-
-plot_qq <- function(p_values, MAIN){
-  unif <- runif(5000)
-  qqplot(unif, p_values, xlim=c(0,1), ylim=c(0,1), main=MAIN, xlab="", ylab="", bty='n', xaxt='n', yaxt='n', pch=20)
-  axis(side=1, at=seq(0,1,by=0.2), labels = c(0,seq(0.2,0.8,by=0.2),1)) 
-  axis(side=2, at=seq(0,1,by=0.2), labels = c(0,seq(0.2,0.8,by=0.2),1), las=2)
-  title(ylab="p", line=2.8)
-  title(xlab="Uniform(0,1)", line=2.2)
-  abline(a=0, b=1)
-}
+source("/home1/linkv/ARGWAS/argwas/R_scripts/functions.R")
 
 pdf("p_value_qqplots_PC1.pdf", width=10, height=5)
 par(mfrow=c(1,2))

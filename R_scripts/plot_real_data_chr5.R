@@ -1,4 +1,5 @@
 setwd("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr5")
+source("/home1/linkv/ARGWAS/argwas/R_scripts/functions.R")
 
 # colors
 org <- "#E69F00"
@@ -70,21 +71,6 @@ plot_association <- function(df, num_PCs){
   
   dev.off()
 }
-
-
-remove_regions <- function(df_results, regions){
-	df_results$start <- as.numeric(df_results$start)
-	for(r in 1:nrow(regions)){
-		region_start <- regions$start[r]
-		region_end <- regions$end[r]
-		if(length(df_results$start[which(df_results$start >= region_start & df_results$start <= region_end)]) > 0){
-			df_results <- df_results[-which(df_results$start >= region_start & df_results$start <= region_end),]
-       		}
-
-	}
-	return(df_results)
-}
-
 
 # -----------------------
 # PC20

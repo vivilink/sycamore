@@ -1,4 +1,5 @@
 chromosome <- 16
+source("/home1/linkv/ARGWAS/argwas/R_scripts/functions.R")
 
 setwd(paste("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr", chromosome, sep=''))
 
@@ -70,19 +71,6 @@ plot_association <- function(df, num_PCs){
 # legend(legend=c("local eGRM", "GWAS"), pch=20, col=c(blu, org), x="topleft", bty='n')
   
   dev.off()
-}
-
-remove_regions <- function(df_results, regions){
-	df_results$start <- as.numeric(df_results$start)
-	for(r in 1:nrow(regions)){
-		region_start <- regions$start[r]
-		region_end <- regions$end[r]
-		if(length(df_results$start[which(df_results$start >= region_start & df_results$start <= region_end)]) > 0){
-			df_results <- df_results[-which(df_results$start >= region_start & df_results$start <= region_end),]
-       		}
-
-	}
-	return(df_results)
 }
 
 # -----------------------
