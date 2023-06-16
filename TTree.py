@@ -25,7 +25,6 @@ class TTrees:
                                                                  trees_interval_start,
                                                                  trees_interval_end,
                                                                  logfile)
-        print("actual trees interval at first", self.actual_trees_interval)
 
         self.number = self.trees.num_trees  # this contains potential empty border trees
         self.actual_trees_interval = self.remove_border_trees_if_empty(skip_first_tree)
@@ -80,7 +79,6 @@ class TTrees:
             # tree sequence ends at second to last tree
             actual_trees_interval[1] = self.trees.breakpoints(as_array=True)[-2]
 
-        print("actual_trees_interval at end of remove border trees", actual_trees_interval)
         return actual_trees_interval
 
     @staticmethod

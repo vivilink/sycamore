@@ -266,8 +266,8 @@ if args.task == "simulatePhenotypes":
     sample_ids = trees_object.trees.samples()
 
     plots_dir = args.out + "_plots/"
-    if not os.path.exists(plots_dir):
-        os.mkdir(plots_dir)
+    # if not os.path.exists(plots_dir):
+    #     os.mkdir(plots_dir)
     N = len(sample_ids)
     inds = tind.Individuals(ploidy=args.ploidy, num_haplotypes=N, relate_sample_names_file=args.relate_sample_names,
                             logfile=logger)

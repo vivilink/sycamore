@@ -88,6 +88,14 @@ class Phenotypes:
     def y(self, y: np.ndarray):
         self._y = y
 
+    @property
+    def num_inds(self):
+        return self._num_inds
+
+    @num_inds.setter
+    def num_inds(self, num_inds: int):
+        self._num_inds = num_inds
+
     @staticmethod
     def set_missing_phenotype_status(inds):
         tmp = np.repeat(True, inds.num_inds)
