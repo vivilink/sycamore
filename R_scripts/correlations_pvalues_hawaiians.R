@@ -1,0 +1,76 @@
+library("psych")
+
+setwd("/data/ARGWAS/hawaiians/correlations_p_values")
+chrom <- 5
+source("~/git/argwas/R_scripts/functions.R")
+
+# colors
+org <- "#E69F00"
+blu <- "#56B4E9"
+pin <- "#CC79A7"
+
+
+# region to plot
+region_start <- 0
+region_end <- 182045439
+
+df_GWAS <- read.table(paste("plink.assoc.linear_chr", chrom, sep=''), header=TRUE)
+df_GWAS <- df_GWAS[df_GWAS$TEST == "ADD",]
+df_GWAS <- df_GWAS[df_GWAS$BP >= region_start & df_GWAS$BP <= region_end,]
+
+
+# read REML 
+df <- read.table(paste("chr", chrom, "_all_chunks_eGRM_pca20_results.csv", sep=''), sep=',', header=TRUE) 
+df <- df[!is.na(df$p_values),]
+df <- df[df$start >= region_start & df$start <= region_end,]
+df <- df[order(df$start, decreasing=FALSE),]
+
+# remove encode regions
+regions <- read.table("~/git/argwas/R_scripts/encode_blacklist.bed", sep='\t', header=FALSE)
+colnames(regions) <- c("chr", "start", "end", "type")
+regions <- regions[regions$chr == paste("chr", chrom, paste=''),]
+df <- remove_regions(df_results=df, regions=regions)
+
+# remove centromere
+regions <- read.table("~/git/argwas/R_scripts/centromeres.bed", sep='\t', header=FALSE)
+colnames(regions) <- c("chr", "start", "end", "type")
+regions <- regions[regions$chr == paste("chr", chrom, paste=''),]
+df <- remove_regions(df_results=df, regions=regions)
+
+# read REML GRM 
+df_GRM <- read.table("chr5_all_chunks_GRM_pca20_results.csv", sep=',', header=TRUE) 
+df_GRM <- df_GRM[!is.na(df$p_values),]
+df_GRM <- df_GRM[df_GRM$start >= region_start & df_GRM$start <= region_end,]
+df_GRM <- df_GRM[order(df_GRM$start, decreasing=FALSE),]
+
+eGRM <- log10(df$p_values)
+gwas_mean_arithmetic <- numeric(length=nrow(df))
+gwas_mean_geometric <- numeric(length=nrow(df))
+gwas_mean_harmonic <- numeric(length=nrow(df))
+
+for(w in 1:nrow(df)){
+  window_start <- df$start[w]
+  window_end <- df$end[w]
+  
+  p_GWAS_in_window <- log10(df_GWAS$P[which(df_GWAS$BP >= window_start & df_GWAS$BP < window_end)])
+  gwas_mean_arithmetic[w] <- mean(p_GWAS_in_window, na.rm=TRUE)
+  gwas_mean_geometric[w] <- geometric.mean(p_GWAS_in_window,na.rm=TRUE)
+  gwas_mean_harmonic[w] <- harmonic.mean(p_GWAS_in_window,na.rm=TRUE)
+}
+
+
+plot(eGRM[-is.na(gwas_mean_arithmetic)], gwas_mean_arithmetic[-is.na(gwas_mean_arithmetic)], ylim=c(-8, 0), xlim=c(-8,0))
+plot(eGRM, gwas_mean_geometric, ylim=c(-8, 0), xlim=c(-8,0))
+plot(eGRM, gwas_mean_harmonic, ylim=c(-8, 0), xlim=c(-8,0))
+
+cor(eGRM[-is.nan(gwas_mean_arithmetic)], gwas_mean_arithmetic[-is.nan(gwas_mean_arithmetic)])
+
+
+
+
+
+
+
+
+
+
