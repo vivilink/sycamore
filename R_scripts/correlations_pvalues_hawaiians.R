@@ -47,6 +47,7 @@ eGRM <- log10(df$p_values)
 gwas_mean_arithmetic <- numeric(length=nrow(df))
 gwas_mean_geometric <- numeric(length=nrow(df))
 gwas_mean_harmonic <- numeric(length=nrow(df))
+gwas_min <- numeric(length=nrow(df))
 
 for(w in 1:nrow(df)){
   window_start <- df$start[w]
@@ -54,8 +55,9 @@ for(w in 1:nrow(df)){
   
   p_GWAS_in_window <- (df_GWAS$P[which(df_GWAS$BP >= window_start & df_GWAS$BP < window_end)])
   gwas_mean_arithmetic[w] <- mean(p_GWAS_in_window, na.rm=TRUE)
-  gwas_mean_geometric[w] <- geometric.mean(p_GWAS_in_window)
+  gwas_mean_geometric[w] <- geometric.mean(p_GWAS_in_window, na.rm=TRUE)
   gwas_mean_harmonic[w] <- harmonic.mean(p_GWAS_in_window,na.rm=TRUE)
+  gwas_min[w] <- min(p_GWAS_in_window, na.rm=TRUE)
 }
 
 plot_correlation <- function(eGRM, gwas, XLAB){
@@ -66,6 +68,7 @@ plot_correlation <- function(eGRM, gwas, XLAB){
 plot_correlation(eGRM, gwas=gwas_mean_arithmetic, XLAB="arithmetic mean")
 plot_correlation(eGRM, gwas=gwas_mean_geometric, XLAB="geometric mean")
 plot_correlation(eGRM, gwas=gwas_mean_harmonic, XLAB="harmonic mean")
+plot_correlation(eGRM, gwas=gwas_min, XLAB="min")
 
 
 
