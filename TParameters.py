@@ -206,6 +206,9 @@ class TParameters:
                                 "gcta")
         assoc.add_argument('--PC_keep', type=int, nargs='+',
                            help="List of PCs to keep (1-based)")
+        assoc.add_argument('--do_all_stratification_correction', action='store_true',
+                           help="Correct for stratification with global GRM provided with '--population_strucure' and "
+                                "also with PCs")
         assoc.add_argument('--GCTA', type=str, default="gcta-1.94.1-linux-kernel-3-x86_64/gcta-1.94.1",
                            help="path to GCTA executable")
         assoc.add_argument("--num_gcta_threads", type=int, default=2,
