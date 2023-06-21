@@ -746,7 +746,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
         pheno.find_causal_windows(window_ends=window_ends, window_starts=window_starts)
 
     # write GCTA files and scripts
-    if args.population_structure and args.population_structure_pca_num_eigenvectors is None:
+    if args.population_structure:
         with open(outname + '_multi_grm.txt', 'w') as f:
             f.write(outname + '\n')
             f.write(args.population_structure + '\n')
@@ -756,8 +756,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     #     pheno_file = args.out + "_phenotypes.phen"
 
     # create association method objects
-    logfile.info("- Running associations tests using test methods " + str(
-        args.AIM_method) + " for a sequence of trees")
+    logfile.info("- Using association test methods " + str(args.AIM_method) + " for a sequence of trees")
     AIM_methods = []
     for m in args.AIM_method:
         test_obj = get_AIM_test_object(test_name=m,
@@ -775,6 +774,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     # ----------------
     # run association tests
     # ----------------
+    logfile.info("- Running association tests")
 
     # write covariances to picklefile for later comparison?
     covariances_picklefile = None
