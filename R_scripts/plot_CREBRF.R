@@ -52,7 +52,7 @@ do_annotation <- function(rs373863828_causal, rs12513649_proxy, other_GWAS){
 }
 
 plot_association <- function(df, num_PCs){
-  pdf(paste("CREBRF_PC", num_PCs, ".pdf", sep=''), width=8, height=4)
+  pdf(paste("CREBRF_PC", num_PCs, "_only_grm_correction.pdf", sep=''), width=8, height=4)
   #png(paste("CREBRF_PC", num_PCs, "_GWAS.png", sep=''), width=8, height=4, units="in", res=1200)
   
   par(mfrow=c(1,1))
@@ -89,7 +89,7 @@ plot_association <- function(df, num_PCs){
 # PC20
 # -----------------------
 
-df <- read.table("chr5_all_chunks_eGRM_pca20_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
+df <- read.table("chr5_all_chunks_eGRM_pca20_only_grm_correction_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
 df <- df[!is.na(df$p_values),]
 df <- df[df$start >= region_start & df$start <= region_end,]
 df <- df[order(df$start, decreasing=FALSE),]
@@ -101,7 +101,7 @@ regions <- regions[regions$chr == "chr5",]
 df <- remove_regions(df_results=df, regions=regions)
 
 # read REML GRM 
-df_GRM <- read.table("chr5_all_chunks_GRM_pca20_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
+df_GRM <- read.table("only_PC_correction/chr5_all_chunks_GRM_pca20_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
 df_GRM <- df_GRM[!is.na(df$p_values),]
 df_GRM <- df_GRM[df_GRM$start >= region_start & df_GRM$start <= region_end,]
 df_GRM <- df_GRM[order(df_GRM$start, decreasing=FALSE),]
