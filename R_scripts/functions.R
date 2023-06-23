@@ -26,3 +26,39 @@ plot_qq <- function(p_values, MAIN){
   title(xlab="Uniform(0,1)", line=2.2)
   abline(a=0, b=1)
 }
+
+
+ReadGRMBin=function(prefix, AllN=F, size=4){
+
+  #part of script that is from gcta website
+  sum_i=function(i){
+    return(sum(1:i))
+  }
+  BinFileName=paste(prefix,".grm.bin",sep="")
+  NFileName=paste(prefix,".grm.N.bin",sep="")
+  IDFileName=paste(prefix,".grm.id",sep="")
+  id = read.table(IDFileName)
+  n=dim(id)[1]
+  BinFile=file(BinFileName, "rb");
+  grm=readBin(BinFile, n=n*(n+1)/2, what=numeric(0), size=size)
+  NFile=file(NFileName, "rb");
+  if(AllN==T){
+    N=readBin(NFile, n=n*(n+1)/2, what=numeric(0), size=size)
+  }  else {N=readBin(NFile, n=1, what=numeric(0), size=size)}
+  i=sapply(1:n, sum_i)
+
+  #written by me, putting parts together
+  diag=grm[i]
+  off=grm[-i]
+  m <- matrix(nrow=n, ncol=n)
+  m[upper.tri(m, diag=FALSE)] <- off
+  diag(m) <- diag
+  m[lower.tri(m)] <- t(m)[lower.tri(m)]
+  total_grm <- m
+
+  return(list(diag=grm[i], off=grm[-i], id=id, N=N, total_grm=total_grm))
+
+  close(BinFileName)
+  close(NFileName)
+  close(IDFileName)
+}
