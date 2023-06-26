@@ -239,7 +239,8 @@ def write_GCTA_command_script(test_name, pheno_file, outname, logfile, args):
                                          pheno_file=pheno_file,
                                          outfile=f,
                                          GCTA=args.GCTA,
-                                         num_GCTA_threads=args.num_gcta_threads)
+                                         num_GCTA_threads=args.num_gcta_threads,
+                                         additional_gcta_params=args.additional_gcta_params)
 
         elif args.population_structure and args.population_structure_pca_num_eigenvectors \
                 and args.do_all_stratification_correction:
@@ -579,7 +580,7 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                                             logfile=logfile)
 
 
-def write_GCTA_command_file_mgrm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads):
+def write_GCTA_command_file_mgrm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads, additional_gcta_params):
     """
     Write executable bash script for running association test with multiple random effects using GCTA
 
@@ -593,14 +594,18 @@ def write_GCTA_command_file_mgrm(testing_method, outname, pheno_file, outfile, G
     """
 
     if testing_method == "GCTA_REML":
-        outfile.write(GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
-                      + outname + "_REML --reml-lrt 1 --threads " + str(
-            num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+        gcta_string = GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
+                      + outname + "_REML --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+        for p in additional_gcta_params:
+            gcta_string += " --" + additional_gcta_params[p]
+        outfile.write(gcta_string + "> " + outname + "_tmp.out\n")
     elif testing_method == "GCTA_HE":
-        outfile.write(
-            GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
-            + outname + "_HE --reml-lrt 1 --threads " + str(
-                num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+        gcta_string = GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "\
+                      + outname + "_HE --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+        for p in additional_gcta_params:
+            gcta_string += " --" + additional_gcta_params[p]
+        outfile.write(gcta_string + "> " + outname + "_tmp.out\n")
+
         # grep results
         outfile.write("sed -n '2,6p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
                       + outname + "_HE-CP_result.txt\n")
