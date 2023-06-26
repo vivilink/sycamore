@@ -596,14 +596,16 @@ def write_GCTA_command_file_mgrm(testing_method, outname, pheno_file, outfile, G
     if testing_method == "GCTA_REML":
         gcta_string = GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
                       + outname + "_REML --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
-        for p in additional_gcta_params:
-            gcta_string += " --" + p
+        if additional_gcta_params is not None:
+            for p in additional_gcta_params:
+                gcta_string += " --" + p
         outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
     elif testing_method == "GCTA_HE":
         gcta_string = GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "\
                       + outname + "_HE --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
-        for p in additional_gcta_params:
-            gcta_string += " --" + p
+        if additional_gcta_params is not None:
+            for p in additional_gcta_params:
+                gcta_string += " --" + p
         outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
 
         # grep results
