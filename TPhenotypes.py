@@ -124,7 +124,7 @@ class Phenotypes:
         logfile.info("- Writing phenotype data in gcta format to '" + out + "_phenotypes.phen'")
 
         tmp_pheno = pd.DataFrame()
-        tmp_pheno['1'] = np.repeat(0, inds.num_inds)
+        tmp_pheno['1'] = inds.names
         tmp_pheno['2'] = inds.names
         tmp_pheno['3'] = self._y
 
