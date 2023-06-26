@@ -598,13 +598,13 @@ def write_GCTA_command_file_mgrm(testing_method, outname, pheno_file, outfile, G
                       + outname + "_REML --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
         for p in additional_gcta_params:
             gcta_string += " --" + p
-        outfile.write(gcta_string + "> " + outname + "_tmp.out\n")
+        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
     elif testing_method == "GCTA_HE":
         gcta_string = GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "\
                       + outname + "_HE --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
         for p in additional_gcta_params:
             gcta_string += " --" + p
-        outfile.write(gcta_string + "> " + outname + "_tmp.out\n")
+        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
 
         # grep results
         outfile.write("sed -n '2,6p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
