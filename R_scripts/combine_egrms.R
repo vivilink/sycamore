@@ -1,7 +1,8 @@
-setwd("/home1/linkv/ARGWAS/hawaiian/global_grm")
-source("functions.R")
+source("/home1/linkv/ARGWAS/argwas/R_scripts/functions.R")
 library("plinkFile")
 
+
+setwd("/home1/linkv/ARGWAS/hawaiian/global_grm")
 
 args = commandArgs(trailingOnly=TRUE)
 files <- read.table(args[1])
