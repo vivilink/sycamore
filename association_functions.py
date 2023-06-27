@@ -275,6 +275,7 @@ def write_GCTA_command_script(test_name, pheno_file, outname, logfile, args):
                                         pheno_file=pheno_file,
                                         outfile=f,
                                         GCTA=args.GCTA,
+                                        additional_gcta_params=args.additional_gcta_params,
                                         num_GCTA_threads=args.num_gcta_threads)
 
     st = os.stat(outname + "_run_" + test_name + ".sh")
