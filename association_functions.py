@@ -648,7 +648,7 @@ def write_GCTA_command_file_mgrm_pca(testing_method, outname, pheno_file, outfil
                       + outname + "_HE-SD_result.txt\n")
 
 
-def write_GCTA_command_file_grm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads):
+def write_GCTA_command_file_grm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads, additional_gcta_params):
     """
     Write executable bash script for running association test with only the local eGRM as random effects using GCTA
 
@@ -661,13 +661,21 @@ def write_GCTA_command_file_grm(testing_method, outname, pheno_file, outfile, GC
     @return:
     """
     if testing_method == "GCTA_REML":
-        outfile.write(GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname
-                      + "_REML --threads " + str(
-            num_GCTA_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
+        gcta_string = GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname\
+                      + "_REML --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+        if additional_gcta_params is not None:
+            for p in additional_gcta_params:
+                gcta_string += " --" + p
+        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
+
     elif testing_method == "GCTA_HE":
-        outfile.write(GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname
-                      + "_HE --threads " + str(
-            num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+        gcta_string = GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname \
+                      + "_HE --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+        if additional_gcta_params is not None:
+            for p in additional_gcta_params:
+                gcta_string += " --" + p
+        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
+
         # grep results
         outfile.write("sed -n '2,4p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
                       + outname + "_HE-CP_result.txt\n")
