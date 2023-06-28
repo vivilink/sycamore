@@ -105,7 +105,7 @@ class Phenotypes:
         self.causal_tree_indeces = []
         self.causal_window_indeces = []
         self.filled = False
-        self._pheno_df = None
+        self._pheno_df = None #this is needed when the phentypes are not simulated but initialized from file (there might be missing individuals)
 
     @property
     def y(self):
@@ -213,7 +213,7 @@ class Phenotypes:
                                         "remove added ones.")
 
         for i in missing_in_phenotypes:
-            pheno_df.loc[len(pheno_df.index)] = [i, np.nan, np.nan]
+            pheno_df.loc[len(pheno_df.index)] = [0, i, np.nan]
 
         for i in added_in_phenotypes:
             indexInd = pheno_df[(pheno_df['ID'] == i)].index
