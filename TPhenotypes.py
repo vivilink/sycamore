@@ -204,6 +204,8 @@ class Phenotypes:
             indexInd = pheno_df[(pheno_df['ID'] == i)].index
             pheno_df.drop(indexInd, inplace=True)
 
+        self.set_missing_phenotype_status(inds=inds)
+
         pheno_df = sortPhenotypes(names_correct_order=inds.names, pheno_df=pheno_df)
         self._pheno_df = pheno_df
 
