@@ -65,6 +65,30 @@ def make_phenotypes(args, trees, sample_ids, inds, plots_dir, random, logfile):
     return pheno
 
 
+def sortPhenotypes(names_correct_order, pheno_df):
+    """
+    Sort read-in phenotypes file according to sample names in sample file used to run Relate
+    @param names_correct_order: sample names in order of file used to run Relate
+    @param pheno_df: data frame from read-in phenotype file
+    @return: sorted pheno_df
+    """
+    df_mapping = pd.DataFrame({'names_correct_order': names_correct_order, })
+    sort_mapping = df_mapping.reset_index().set_index('names_correct_order')
+    pheno_df['ind_num'] = pheno_df['ID'].map(sort_mapping['index'])
+    pheno_df = pheno_df.sort_values('ind_num')
+
+    return pheno_df
+
+
+def find_missing_individuals(inds_tree, inds_phenotype):
+    set_tree = set(inds_tree)
+    set_phenotype = set(inds_phenotype)
+    missing_in_phenotypes = list(sorted(set_tree - set_phenotype))
+    added_in_phenotypes = list(sorted(set_phenotype - set_tree))
+
+    return missing_in_phenotypes, added_in_phenotypes
+
+
 class Phenotypes:
     def __init__(self):
         self._sample_IDs = None
@@ -165,6 +189,24 @@ class Phenotypes:
                              "'simulate_phenotypes'")
         logfile.info("- Reading phenotype information from " + filename)
         pheno_df = pd.read_csv(filename, names=["0", "ID", "phenotype"], sep=' ')
+
+        missing_in_phenotypes, added_in_phenotypes = find_missing_individuals(inds_tree=inds.names,
+                                                                                   inds_phenotype=pheno_df['ID'])
+        logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
+                                                                        "and " + str(
+            len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
+                                        "remove added ones.")
+
+        for i in missing_in_phenotypes:
+            pheno_df.loc[len(pheno_df.index)] = [i, np.nan, np.nan, np.nan]
+
+        for i in added_in_phenotypes:
+            indexInd = pheno_df[(pheno_df['ID'] == i)].index
+            pheno_df.drop(indexInd, inplace=True)
+
+        pheno_df = sortPhenotypes(names_correct_order=inds.names, pheno_df=pheno_df)
+        self._pheno_df = pheno_df
+
         self._num_inds = len(pheno_df['ID'])
         self._sample_IDs = np.array(pheno_df['ID'])
         self._y = np.array(pheno_df['phenotype'])
@@ -182,7 +224,7 @@ class PhenotypesBMI(Phenotypes):
             raise ValueError("Provide file with BMI phenotype information using 'filename'")
         logfile.info("- Reading BMI phenotype information from " + filename)
         pheno_df = pd.read_csv(filename, names=["ID", "sex", "age", "BMI"])
-        missing_in_phenotypes, added_in_phenotypes = self.find_missing_individuals(inds_tree=inds.names,
+        missing_in_phenotypes, added_in_phenotypes = find_missing_individuals(inds_tree=inds.names,
                                                                                    inds_phenotype=pheno_df['ID'])
         logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
                                                                         "and " + str(
@@ -196,7 +238,7 @@ class PhenotypesBMI(Phenotypes):
             indexInd = pheno_df[(pheno_df['ID'] == i)].index
             pheno_df.drop(indexInd, inplace=True)
 
-        pheno_df = self.sortPhenotypes(names_correct_order=inds.names, pheno_df=pheno_df)
+        pheno_df = sortPhenotypes(names_correct_order=inds.names, pheno_df=pheno_df)
         self._pheno_df = pheno_df
 
         self._num_inds = len(pheno_df['ID'])
@@ -215,30 +257,6 @@ class PhenotypesBMI(Phenotypes):
         if "outlier" in self._pheno_df.columns:
             tmp[self._pheno_df["outlier"] == True] = False
         inds.ind_has_phenotype = tmp
-
-    @staticmethod
-    def sortPhenotypes(names_correct_order, pheno_df):
-        """
-        Sort read-in phenotypes file according to sample names in sample file used to run Relate
-        @param names_correct_order: sample names in order of file used to run Relate
-        @param pheno_df: data frame from read-in phenotype file
-        @return: sorted pheno_df
-        """
-        df_mapping = pd.DataFrame({'names_correct_order': names_correct_order, })
-        sort_mapping = df_mapping.reset_index().set_index('names_correct_order')
-        pheno_df['ind_num'] = pheno_df['ID'].map(sort_mapping['index'])
-        pheno_df = pheno_df.sort_values('ind_num')
-
-        return pheno_df
-
-    @staticmethod
-    def find_missing_individuals(inds_tree, inds_phenotype):
-        set_tree = set(inds_tree)
-        set_phenotype = set(inds_phenotype)
-        missing_in_phenotypes = list(sorted(set_tree - set_phenotype))
-        added_in_phenotypes = list(sorted(set_phenotype - set_tree))
-
-        return missing_in_phenotypes, added_in_phenotypes
 
     @property
     def sample_IDs(self):
@@ -322,7 +340,7 @@ class PhenotypesSimulated(Phenotypes):
 
     @genetic_variance.setter
     def genetic_variance(self, genetic_variance: float):
-        self._genetic_variance = genetic_variance
+        self._genetic_variance = genetic_variance.find_missing_individuals
 
     def simulate(self, args, r, logfile, variants_orig, inds, trees, plots_dir):
         """
