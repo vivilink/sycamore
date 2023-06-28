@@ -198,7 +198,7 @@ class Phenotypes:
                                         "remove added ones.")
 
         for i in missing_in_phenotypes:
-            pheno_df.loc[len(pheno_df.index)] = [i, np.nan, np.nan, np.nan]
+            pheno_df.loc[len(pheno_df.index)] = [i, np.nan, np.nan]
 
         for i in added_in_phenotypes:
             indexInd = pheno_df[(pheno_df['ID'] == i)].index
