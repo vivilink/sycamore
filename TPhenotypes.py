@@ -105,6 +105,7 @@ class Phenotypes:
         self.causal_tree_indeces = []
         self.causal_window_indeces = []
         self.filled = False
+        self._pheno_df = None
 
     @property
     def y(self):
