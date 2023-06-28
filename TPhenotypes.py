@@ -90,6 +90,8 @@ def find_missing_individuals(inds_tree, inds_phenotype):
 
 
 class Phenotypes:
+    _pheno_df: pd.DataFrame
+
     def __init__(self):
         self._sample_IDs = None
         self._y = np.ndarray
@@ -121,11 +123,15 @@ class Phenotypes:
         self._num_inds = num_inds
 
     def set_missing_phenotype_status(self, inds):
-        tmp = np.repeat(True, inds.num_inds)
-        tmp[self._pheno_df.isna().any(axis=1)] = False
-        if "outlier" in self._pheno_df.columns:
-            tmp[self._pheno_df["outlier"] == True] = False
-        inds.ind_has_phenotype = tmp
+        if self._pheno_df is None:
+            tmp = np.repeat(True, inds.num_inds)
+            inds.ind_has_phenotype = tmp
+        else:
+            tmp = np.repeat(True, inds.num_inds)
+            tmp[self._pheno_df.isna().any(axis=1)] = False
+            if "outlier" in self._pheno_df.columns:
+                tmp[self._pheno_df["outlier"] == True] = False
+            inds.ind_has_phenotype = tmp
 
     # @staticmethod
     # def set_missing_phenotype_status(inds):
