@@ -120,10 +120,17 @@ class Phenotypes:
     def num_inds(self, num_inds: int):
         self._num_inds = num_inds
 
-    @staticmethod
-    def set_missing_phenotype_status(inds):
+    def set_missing_phenotype_status(self, inds):
         tmp = np.repeat(True, inds.num_inds)
+        tmp[self._pheno_df.isna().any(axis=1)] = False
+        if "outlier" in self._pheno_df.columns:
+            tmp[self._pheno_df["outlier"] == True] = False
         inds.ind_has_phenotype = tmp
+
+    # @staticmethod
+    # def set_missing_phenotype_status(inds):
+    #     tmp = np.repeat(True, inds.num_inds)
+    #     inds.ind_has_phenotype = tmp
 
     def diffs(self):
         cols = np.tile(self._y, (self._num_inds, 1))
