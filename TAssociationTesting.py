@@ -293,6 +293,23 @@ class TAssociationTestingRegions(TAssociationTesting):
     def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
         raise ValueError("Function not defined for base class")
 
+class TAssociationTestingRegionsMtg2(TAssociationTestingRegions):
+    """
+    tree-based association testing using GCTA2 (https://datadryad.org/stash/dataset/doi:10.5061/dryad.bk3j9kd8c)
+    """
+
+    def __init__(self, phenotypes, num_associations):
+        super().__init__(phenotypes, num_associations)
+        self.name = "regions_mtg2"
+
+        # p-value container
+        self.p_values = np.empty(self.num_associations)
+        self.p_values.fill(np.nan)
+
+    def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
+        phenotypes_object.write_to_file_fam(inds=inds, out=out)
+        
+
 
 class TAssociationTestingRegionsGlimix(TAssociationTestingRegions):
     """

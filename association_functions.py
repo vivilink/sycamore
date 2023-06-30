@@ -56,9 +56,9 @@ def run_association_testing(args, random, logfile):
     # trees_tmp = trees.keep_intervals([interval], simplify=True)
     # trees_tmp.dump("/data/ARGWAS/hawaiians/chr5.part-05_1mb.trees")
 
-    plots_dir = args.out + "_plots/"
-    if not os.path.exists(plots_dir):
-        os.mkdir(plots_dir)
+    # plots_dir = args.out + "_plots/"
+    # if not os.path.exists(plots_dir):
+    #     os.mkdir(plots_dir)
 
     sample_ids = trees.samples()
     N = len(sample_ids)
@@ -100,7 +100,7 @@ def run_association_testing(args, random, logfile):
                                trees=trees,
                                sample_ids=sample_ids,
                                inds=inds,
-                               plots_dir=plots_dir,
+                               plots_dir="",
                                random=random,
                                logfile=logfile)
 
@@ -300,6 +300,8 @@ def get_AIM_test_object(test_name, phenotypes, pheno_file, num_associations, out
         test_obj = at.TAssociationTestingRegionsGCTA_REML(phenotypes, num_associations)
     elif test_name == "glimix_REML":
         test_obj = at.TAssociationTestingRegionsGlimix(phenotypes, num_associations)
+    elif test_name == "mtg2":
+        test_obj = at.TAssociationTestingRegionsMtg2(phenotypes, num_associations)
     else:
         raise ValueError("Did not recognize " + str(test_name) + " as a association test type")
 
@@ -371,8 +373,18 @@ def test_window_for_association(covariance_obj, inds, AIM_methods, outname, wind
                                 covariances_picklefile):
     covariance_obj.finalize(inds=inds)
 
+
     for m in AIM_methods:
         if m.name == "regions_glimix":
+            m.run_association(index=window_index,
+                              out=outname,
+                              inds=inds,
+                              phenotypes_object=phenotypes_obj,
+                              covariance_object=covariance_obj,
+                              covar=None,
+                              covariances_picklefile=None,
+                              )
+        elif m.name == "regions_mtg2":
             m.run_association(index=window_index,
                               out=outname,
                               inds=inds,
@@ -762,7 +774,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
         pheno.find_causal_windows(window_ends=window_ends, window_starts=window_starts)
 
     # write GCTA files and scripts
-    if args.population_structure:
+    if args.population_structure and args.AIM_method == "REML_GCTA":
         with open(outname + '_multi_grm.txt', 'w') as f:
             f.write(outname + '\n')
             f.write(args.population_structure + '\n')

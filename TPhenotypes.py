@@ -105,7 +105,7 @@ class Phenotypes:
         self.causal_tree_indeces = []
         self.causal_window_indeces = []
         self.filled = False
-        self._pheno_df = None #this is needed when the phentypes are not simulated but initialized from file (there might be missing individuals)
+        self._pheno_df = None  # this is needed when the phentypes are not simulated but initialized from file (there might be missing individuals)
 
     @property
     def y(self):
@@ -148,6 +148,35 @@ class Phenotypes:
     def standardize(self, out, inds, logfile):
         logfile.info("- Standardizing phenotypes")
         self._y = (self._y - np.mean(self._y)) / np.std(self._y)
+
+    def write_to_file_fam(self, inds, out):
+        """
+        Write fam file (plink file format) with missing phenotypes (-9)
+        :param inds:
+        :param out:
+        :param logfile:
+        :return:
+        """
+        # logfile.info("- Writing phenotype data in fam format to '" + out + ".fam")
+        tmp_pheno = pd.DataFrame()
+        tmp_pheno['1'] = np.repeat(0, inds.num_inds)
+        tmp_pheno['2'] = inds.names
+        tmp_pheno['3'] = np.repeat(0, inds.num_inds)
+        tmp_pheno['4'] = np.repeat(0, inds.num_inds)
+        tmp_pheno['5'] = np.repeat(-9, inds.num_inds)
+        tmp_pheno['6'] = np.repeat(-9, inds.num_inds)
+
+        self.set_missing_phenotype_status(inds=inds)
+        indeces_to_remove = inds.get_indeces_inds_no_phenotype()
+
+        if np.count_nonzero(np.isnan(self._y)) > 0 and len(indeces_to_remove) == 0:
+            raise ValueError("There are phenotypes that are nan")
+
+        # remove missing data
+        if len(indeces_to_remove) > 0:
+            tmp_pheno.drop(axis=0, index=indeces_to_remove, inplace=True)
+
+        tmp_pheno.to_csv(out + ".fam", sep=' ', index=False, header=False)
 
     def write_to_file_gcta_eGRM(self, inds, out, logfile):
         """
@@ -206,7 +235,7 @@ class Phenotypes:
         pheno_df = pd.read_csv(filename, names=["0", "ID", "phenotype"], sep=' ')
 
         missing_in_phenotypes, added_in_phenotypes = find_missing_individuals(inds_tree=inds.names,
-                                                                                   inds_phenotype=pheno_df['ID'])
+                                                                              inds_phenotype=pheno_df['ID'])
         logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
                                                                         "and " + str(
             len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
@@ -242,7 +271,7 @@ class PhenotypesBMI(Phenotypes):
         logfile.info("- Reading BMI phenotype information from " + filename)
         pheno_df = pd.read_csv(filename, names=["ID", "sex", "age", "BMI"])
         missing_in_phenotypes, added_in_phenotypes = find_missing_individuals(inds_tree=inds.names,
-                                                                                   inds_phenotype=pheno_df['ID'])
+                                                                              inds_phenotype=pheno_df['ID'])
         logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
                                                                         "and " + str(
             len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
