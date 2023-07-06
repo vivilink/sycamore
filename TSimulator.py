@@ -197,9 +197,9 @@ class TSimulatorMSPrime(TSimulator):
     def get_mut_obj(arguments, randomGenerator, logfile):
         mut_obj = None
 
-        if arguments._mu is not None:
-            mut_obj = float(arguments._mu)
-            logfile.info("- Simulating fixed mutation rate of " + str(arguments._mu))
+        if arguments.mu is not None:
+            mut_obj = float(arguments.mu)
+            logfile.info("- Simulating fixed mutation rate of " + str(arguments.mu))
         else:
             num_windows = int(np.floor(arguments.sequence_length / arguments.mut_window_size))
             positions = [0 + w * arguments.mut_window_size for w in range(num_windows + 1)]
