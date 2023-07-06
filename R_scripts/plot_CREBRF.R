@@ -1,4 +1,4 @@
-setwd("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr5")
+setwd("~/ARGWAS/hawaiian/all_chr_for_review/chr5/BLUP/association_BLUP_residuals")
 source("/home1/linkv/ARGWAS/argwas/R_scripts/functions.R")
 
 # colors
@@ -89,7 +89,7 @@ plot_association <- function(df, num_PCs){
 # PC20
 # -----------------------
 
-df <- read.table("chr5_all_chunks_eGRM_pca20_grm_and_pca_correction_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
+df <- read.table("chr5_all_chunks_eGRM_eGRMBLUP_residuals_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
 df <- df[!is.na(df$p_values),]
 df <- df[df$start >= region_start & df$start <= region_end,]
 df <- df[order(df$start, decreasing=FALSE),]
@@ -101,7 +101,7 @@ regions <- regions[regions$chr == "chr5",]
 df <- remove_regions(df_results=df, regions=regions)
 
 # read REML GRM 
-df_GRM <- read.table("only_PC_correction/chr5_all_chunks_GRM_pca20_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
+df_GRM <- read.table("~/ARGWAS/hawaiian/all_chr_for_review/chr5/only_PC_correction/chr5_all_chunks_GRM_pca20_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
 df_GRM <- df_GRM[!is.na(df$p_values),]
 df_GRM <- df_GRM[df_GRM$start >= region_start & df_GRM$start <= region_end,]
 df_GRM <- df_GRM[order(df_GRM$start, decreasing=FALSE),]
