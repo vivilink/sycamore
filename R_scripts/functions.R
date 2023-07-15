@@ -27,6 +27,26 @@ plot_qq <- function(p_values, MAIN){
   abline(a=0, b=1)
 }
 
+plot_qq_REML <- function(p_values, MAIN){
+  unif <- runif(5000)
+  qqplot(unif, p_values, xlim=c(0,1), ylim=c(0,1), main=MAIN, xlab="", ylab="", bty='n', xaxt='n', yaxt='n', pch=20)
+  axis(side=1, at=seq(0,1,by=0.2), labels = c(0,seq(0.2,0.8,by=0.2),1)) 
+  axis(side=2, at=seq(0,1,by=0.2), labels = c(0,seq(0.2,0.8,by=0.2),1), las=2)
+  title(ylab="p", line=2.8)
+  title(xlab="Uniform(0,1)", line=2.2)
+  segments(x0=0, y0=0, x1=0.5, y1=0.5)
+  segments(x0=0.5, y0=0.5, x1=1, y1=0.5)
+}
+
+plot_qq_log <- function(p_values, MAIN){
+  unif <- runif(5000)
+  qqplot(log(unif), p_values, xlim=c(-10,0), ylim=c(-10,0), main=MAIN, xlab="", ylab="", bty='n', xaxt='n', yaxt='n', pch=20)
+  axis(side=1, at=seq(-10,0,by=1), labels = seq(-10,0,by=1)) 
+  axis(side=2, at=seq(-10,0,by=1), labels = seq(-10,0,by=1), las=2)
+  title(ylab="p", line=2.8)
+  title(xlab="Uniform(0,1)", line=2.2)
+  abline(a=0, b=1)
+}
 
 ReadGRMBin=function(prefix, AllN=F, size=4){
 
