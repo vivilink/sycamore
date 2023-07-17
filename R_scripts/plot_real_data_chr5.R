@@ -1,5 +1,9 @@
-setwd("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr5")
-source("/home1/linkv/ARGWAS/argwas/R_scripts/functions.R")
+# setwd("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr5")
+# source("/home1/linkv/ARGWAS/argwas/R_scripts/functions.R")
+
+setwd("~/postdoc_USC/AIM/correlations_p_values")
+source("~/git/argwas/R_scripts/functions.R")
+source("~/git/argwas/R_scripts/read_data.R")
 
 # colors
 org <- "#E69F00"
@@ -10,17 +14,13 @@ pin <- "#CC79A7"
 region_start <- 0
 region_end <- 182045439
 
-df_GWAS <- read.table("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr5/plink.assoc.linear_chr5", header=TRUE)
-df_GWAS <- df_GWAS[df_GWAS$TEST == "ADD",]
-df_GWAS <- df_GWAS[df_GWAS$BP >= region_start & df_GWAS$BP <= region_end,]
-
-
 # GWAS hits
 
 rs373863828_causal <- 173108771 #causal variant  
 rs12513649_proxy <- 173044949 #proxy variant
 
-other_GWAS <- read.table("/home1/linkv/ARGWAS/argwas/R_scripts/GWAScat_BMIweight_chr5.csv", sep=',', header=TRUE)
+# other_GWAS <- read.table("/home1/linkv/ARGWAS/argwas/R_scripts/GWAScat_BMIweight_chr5.csv", sep=',', header=TRUE)
+other_GWAS <- read.table("~/git/argwas/R_scripts/GWAScat_BMIweight_chr5.csv", sep=',', header=TRUE)
 other_GWAS <- other_GWAS[-which(other_GWAS$gwasCatalog.name == "rs12513649"),]
 
 do_annotation <- function(rs373863828_causal, rs12513649_proxy, other_GWAS){
@@ -50,16 +50,11 @@ do_annotation <- function(rs373863828_causal, rs12513649_proxy, other_GWAS){
   title(xlab="genomic position [Mb]", line=2.2)
 }
 
-plot_association <- function(df, num_PCs){
-  pdf(paste("hawaiians_BMI_chr5_PC", num_PCs, ".pdf", sep=''), width=8, height=4)
-  #png(paste("CREBRF_PC", num_PCs, "_GWAS.png", sep=''), width=8, height=4, units="in", res=1200)
-  
-  par(mfrow=c(1,1))
-  
+plot_association <- function(df, df_GWAS, df_GRM, method=""){
   plot(type='n', x=100, xaxt='n', las=2, xlab="", ylab="", col=blu, pch=20, xlim=c(region_start,region_end), ylim=c(0,max(-log10(df$p_values))), bty='n')
   do_annotation(rs373863828_causal, rs12513649_proxy, other_GWAS)
-  points(x=df$start, y=-log10(df$p_values), col=blu, pch=20, bty='n')
   points(x=df_GWAS$BP, y=-log10(df_GWAS$P), col=org, pch=20)
+  points(x=df$start, y=-log10(df$p_values), col=blu, pch=20, bty='n')
 #  points(x=df_GRM$start, y=-log10(df_GRM$p_values), col=pin, pch=20)
 
   index_min_pvalue <- which(df$p_values == min(df$p_values))
@@ -69,42 +64,56 @@ plot_association <- function(df, num_PCs){
 #  legend(legend=c("local eGRM", "GWAS", "local GRM"), pch=20, col=c(blu, org, pin), x="topleft", bty='n')
   legend(legend=c("local eGRM", "GWAS"), pch=20, col=c(blu, org), x="topleft", bty='n')
   
-  dev.off()
 }
 
 # -----------------------
 # PC20
 # -----------------------
-# read REML 
-df <- read.table("chr5_all_chunks_eGRM_pca20_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
-df <- df[!is.na(df$p_values),]
-df <- df[df$start >= region_start & df$start <= region_end,]
-df <- df[order(df$start, decreasing=FALSE),]
+# read local eGRM
+df_BLUP_res <- df_BLUP_res[df_BLUP_res$start >= region_start & df_BLUP_res$start <= region_end,]
+df_PC100_egrm <- df_PC100_egrm[df_PC100_egrm$start >= region_start & df_PC100_egrm$start <= region_end,]
+
+# read encode regions
+if(CLUSTER==TRUE){
+  regions <- read.table("~/ARGWAS/argwas/R_scripts/encode_blacklist.bed", sep='\t', header=FALSE)
+} else {
+  regions <- read.table("~/git/argwas/R_scripts/encode_blacklist.bed", sep='\t', header=FALSE)
+}
+colnames(regions) <- c("chr", "start", "end", "type")
+regions <- regions[regions$chr == "chr5",]
+df_BLUP_res <- remove_regions(df_results=df_BLUP_res, regions=regions)
+df_PC100_egrm <- remove_regions(df_result=df_PC100_egrm, regions=regions)
+
+# read local GRM 
+df_GRM_PC20 <- df_GRM_PC20[df_GRM_PC20$start >= region_start & df_GRM_PC20$start <= region_end,]
+
+# read GWAS
+df_GWAS_PC20 <- df_GWAS_PC20[df_GWAS_PC20$BP >= region_start & df_GWAS_PC20$BP <= region_end,]
+df_GWAS_GRM <- df_GWAS_GRM[df_GWAS_GRM$BP >= region_start & df_GWAS_GRM$BP <= region_end,]
 
 # remove encode regions
-regions <- read.table("~/ARGWAS/argwas/R_scripts/encode_blacklist.bed", sep='\t', header=FALSE)
+if(CLUSTER==TRUE){
+  regions <- read.table("~/ARGWAS/argwas/R_scripts/encode_blacklist.bed", sep='\t', header=FALSE)
+} else {
+  regions <- read.table("~/git/argwas/R_scripts/encode_blacklist.bed", sep='\t', header=FALSE)
+}
 colnames(regions) <- c("chr", "start", "end", "type")
 regions <- regions[regions$chr == "chr5",]
-df <- remove_regions(df_results=df, regions=regions)
+df_BLUP_res <- remove_regions(df_results=df_BLUP_res, regions=regions)
+df_PC100_egrm <- remove_regions(df_result=df_PC100_egrm, regions=regions)
+df_GRM_PC20 <- remove_regions(df_results=df_GRM_PC20, regions=regions)
 
-# remove centromere
-regions <- read.table("~/ARGWAS/argwas/R_scripts/centromeres.bed", sep='\t', header=FALSE)
-colnames(regions) <- c("chr", "start", "end", "type")
-regions <- regions[regions$chr == "chr5",]
-df <- remove_regions(df_results=df, regions=regions)
-
-# read REML GRM 
-df_GRM <- read.table("chr5_all_chunks_GRM_pca20_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
-df_GRM <- df_GRM[!is.na(df$p_values),]
-df_GRM <- df_GRM[df_GRM$start >= region_start & df_GRM$start <= region_end,]
-df_GRM <- df_GRM[order(df_GRM$start, decreasing=FALSE),]
-
-
-t <- table(as.factor(df$start))
-print(paste("this position is present more than once", names(t)[as.integer(t) > 1]))
+# t <- table(as.factor(df$start))
+# print(paste("this position is present more than once", names(t)[as.integer(t) > 1]))
 
 #plot
-plot_association(df=df, num_PCs = 20)
+# pdf(paste("hawaiians_BMI_chr5.pdf", sep=''), width=8, height=4)
+png(paste("hawaiians_BMI_chr5.png", sep=''), width=8, height=4, units="in", res=600)
+
+par(mfrow=c(1,1))
+plot_association(df=df_BLUP_res, df_GWAS=df_GWAS_GRM, df_GRM=df_GRM_PC20)
+# plot_association(df=df_PC100_egrm, df_GWAS=df_GWAS_GRM, df_GRM=df_GRM_PC20)
+dev.off()
 
 
 
