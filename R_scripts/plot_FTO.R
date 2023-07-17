@@ -1,8 +1,10 @@
 setwd("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr16")
 source("/home1/linkv/ARGWAS/argwas/R_scripts/functions.R")
+library("grDevices")
 
 # colors
-org <- "#E69F00"
+#org <- rgb(red=230, green=159, blue=0, max = 255, alpha=50)
+org <- rgb(red=230, green=159, blue=0, max=255)
 blu <- "#56B4E9"
 pin <- "#CC79A7"
 
@@ -10,12 +12,6 @@ pin <- "#CC79A7"
 #53,703,963-54,114,467
 region_start <- 52000000  #53000000
 region_end <- 56000000
-
-
-
-df_GWAS <- read.table("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr16/plink.assoc.linear_chr16", header=TRUE)
-df_GWAS <- df_GWAS[df_GWAS$TEST == "ADD",]
-df_GWAS <- df_GWAS[df_GWAS$BP >= region_start & df_GWAS$BP <= region_end,]
 
 
 # GWAS hits
@@ -50,8 +46,7 @@ do_annotation <- function(other_GWAS){
   title(xlab="genomic position [Mb]", line=2.2)
 }
 
-plot_association <- function(df, num_PCs){
-  pdf(paste("FTO_PC", num_PCs, ".pdf", sep=''), width=8, height=4)
+plot_association <- function(df, df_GRM, df_GWAS){
   #png(paste("CREBRF_PC", num_PCs, "_GWAS.png", sep=''), width=8, height=4, units="in", res=1200)
   
   par(mfrow=c(1,1))
@@ -59,9 +54,9 @@ plot_association <- function(df, num_PCs){
   # both
   plot(x=0, type='n', xaxt='n', las=2, xlab="", ylab="", col=blu, pch=20, xlim=c(region_start,region_end), ylim=c(0,8), bty='n') 
   do_annotation(other_GWAS)
-  points(x=df$start, y=-log10(df$p_values), col=blu, pch=20)
   points(x=df_GWAS$BP, y=-log10(df_GWAS$P), col=org, pch=20)
-  points(x=df_GRM$start, y=-log10(df_GRM$p_values), col=pin, pch=20)
+  points(x=df$start, y=-log10(df$p_values), col=blu, pch=20)
+  #points(x=df_GRM$start, y=-log10(df_GRM$p_values), col=pin, pch=20)
 
   index_min_pvalue <- which(df$p_values == min(df$p_values))
   # print(paste("min pvalue",min(df$p_values)))
@@ -69,36 +64,52 @@ plot_association <- function(df, num_PCs){
 
   legend(legend=c("local eGRM","local GRM", "GWAS"), pch=20, col=c(blu,pin, org), x="topright", box.lwd = 0, box.col = "white", bg = "white")
   
-  dev.off()
 }
 
 # -----------------------
 # PC20
 # -----------------------
 
-df <- read.table("chr16_all_chunks_eGRM_pca20_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
-df <- df[!is.na(df$p_values),]
-df <- df[df$start >= region_start & df$start <= region_end,]
-df <- df[order(df$start, decreasing=FALSE),]
+df_BLUP <- read.table("~/ARGWAS/hawaiian/all_chr_for_review/chr16/BLUP/association_BLUP_residuals/chr16_all_chunks_eGRM_BLUP_residuals_correction_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
+df_BLUP <- df_BLUP[!is.na(df_BLUP$p_values),]
+df_BLUP <- df_BLUP[df_BLUP$start >= region_start & df_BLUP$start <= region_end,]
+df_BLUP <- df_BLUP[order(df_BLUP$start, decreasing=FALSE),]
 
 # remove encode regions
 regions <- read.table("~/ARGWAS/argwas/R_scripts/encode_blacklist.bed", sep='\t', header=FALSE)
 colnames(regions) <- c("chr", "start", "end", "type")
 regions <- regions[regions$chr == "chr16",]
-df <- remove_regions(df_results=df, regions=regions)
+df_BLUP <- remove_regions(df_results=df_BLUP, regions=regions)
 
 # read REML GRM 
-df_GRM <- read.table("chr16_all_chunks_GRM_pca20_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
-df_GRM <- df_GRM[!is.na(df$p_values),]
-df_GRM <- df_GRM[df_GRM$start >= region_start & df_GRM$start <= region_end,]
-df_GRM <- df_GRM[order(df_GRM$start, decreasing=FALSE),]
+df_GRM_PC20 <- read.table("chr16_all_chunks_GRM_pca20_results.csv", sep=',', header=TRUE) #cleaned just means the empty association tests (lines with ,,,,) are removed
+df_GRM_PC20 <- df_GRM_PC20[!is.na(df_GRM_PC20$p_values),]
+df_GRM_PC20 <- df_GRM_PC20[df_GRM_PC20$start >= region_start & df_GRM_PC20$start <= region_end,]
+df_GRM_PC20 <- df_GRM_PC20[order(df_GRM_PC20$start, decreasing=FALSE),]
+
+# GWAS
+df_GWAS_PC20 <- read.table("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr16/plink.assoc.linear_chr16", header=TRUE)
+df_GWAS_PC20 <- df_GWAS_PC20[df_GWAS_PC20$TEST == "ADD",]
+df_GWAS_PC20 <- df_GWAS_PC20[df_GWAS_PC20$BP >= region_start & df_GWAS_PC20$BP <= region_end,]
+
+ 
+df_GWAS_GRM <- read.table("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/mlma_loco/MLMA_LOCO.loco.mlma", header=TRUE
+)
+df_GWAS_GRM <- df_GWAS_GRM[df_GWAS_GRM$bp >= region_start & df_GWAS_GRM$bp <= region_end,]
+names <- colnames(df_GWAS_GRM)
+names[which(names=="bp")] <- "BP"
+names[which(names=="p")] <- "P"
+colnames(df_GWAS_GRM) <- names
 
 # remove encode regions
-df_GRM <- remove_regions(df_results=df_GRM, regions=regions)
+df_BLUP <- remove_regions(df_results=df_BLUP, regions=regions)
+df_GRM_PC20 <- remove_regions(df_results=df_GRM_PC20, regions=regions)
 
 
 #plot
-plot_association(df=df, num_PCs = 20)
+pdf(paste("FTO.pdf", sep=''), width=8, height=4)
+plot_association(df=df_BLUP, df_GRM=df_GRM_PC20, df_GWAS=df_GWAS_GRM)
+dev.off()
 
 
 # -----------------------

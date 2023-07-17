@@ -49,8 +49,8 @@ do_annotation <- function(rs373863828_causal, rs12513649_proxy, other_GWAS){
 plot_association <- function(df, df_GWAS, df_GRM, method=""){
   plot(type='n', x=0, xaxt='n', las=2, xlab="", ylab="", ylim=c(0,10), xlim=c(region_start,region_end), bty='n')
   do_annotation(rs373863828_causal, rs12513649_proxy, other_GWAS)
-  points(x=df$start, y=-log10(df$p_values), col=blu, pch=20)
   points(x=df_GWAS$BP, y=-log10(df_GWAS$P), col=org, pch=20)
+  points(x=df$start, y=-log10(df$p_values), col=blu, pch=20)
   #points(x=df_GRM$start, y=-log10(df_GRM$p_values), col=pin, pch=20)
 
   index_min_pvalue <- which(df$p_values == min(df$p_values))
