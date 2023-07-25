@@ -26,9 +26,9 @@ plot_ps_eGRM <- function(directory, MAIN, LOG=FALSE, ending="_eGRM_trees_GCTA_RE
 		}
 	}
 	if(LOG==FALSE){
-		plot_qq(p_corrected, MAIN=paste(MAIN, "log"))
+		plot_qq_REML(p_corrected, MAIN=paste(MAIN))
 	} else {
-		plot_qq_log(log(p_corrected), MAIN=paste(MAIN, "log"))
+		plot_qq_log_REML(log(p_corrected), MAIN=paste(MAIN, "log"))
 	}
 
 }
@@ -80,7 +80,7 @@ plot_ps_GWAS_GRM <- function(directory, MAIN, ending){
 		}
 	}
 	
-	plot_qq(p_corrected, MAIN=paste(MAIN))
+	plot_qq_REML(p_corrected, MAIN=paste(MAIN))
 
 }
 
