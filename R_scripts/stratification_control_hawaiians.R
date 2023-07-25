@@ -79,9 +79,7 @@ plot_ps_GWAS_GRM <- function(directory, MAIN, ending){
 			break
 		}
 	}
-	
-	plot_qq_REML(p_corrected, MAIN=paste(MAIN))
-
+	plot_qq(p_corrected, MAIN=paste(MAIN))
 }
 
 
