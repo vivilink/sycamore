@@ -16,6 +16,24 @@ remove_regions <- function(df_results, regions){
   return(df_results)
 }
 
+remove_regions_GWAS <- function(df_results, regions){
+  df_results$BP <- as.numeric(df_results$BP)
+  for(r in 1:nrow(regions)){
+    region_start <- regions$start[r]
+    region_end <- regions$end[r]
+    #start in region
+    if(length(df_results$BP[which(df_results$BP >= region_start & df_results$BP <= region_end)]) > 0){
+      df_results <- df_results[-which(df_results$BP >= region_start & df_results$BP <= region_end),]
+    }
+    #end in region
+    if(length(df_results$BP[which(df_results$BP >= region_start & df_results$BP <= region_end)]) > 0){
+      df_results <- df_results[-which(df_results$BP >= region_start & df_results$BP <= region_end),]
+    }
+    
+  }
+  return(df_results)
+}
+
 
 plot_qq <- function(p_values, MAIN){
   unif <- runif(5000)
@@ -38,13 +56,23 @@ plot_qq_REML <- function(p_values, MAIN){
   segments(x0=0.5, y0=0.5, x1=1, y1=0.5)
 }
 
+plot_qq_log_REML <- function(p_values, MAIN){
+  unif <- runif(5000)
+  qqplot(log(unif), p_values, xlim=c(-10,0), ylim=c(-10,0), main=MAIN, xlab="", ylab="", bty='n', xaxt='n', yaxt='n', pch=20)
+  axis(side=1, at=seq(-10,0,by=1), labels = seq(-10,0,by=1)) 
+  axis(side=2, at=seq(-10,0,by=1), labels = seq(-10,0,by=1), las=2)
+  title(ylab="log(p)", line=2.8)
+  title(xlab="log(Uniform(0,1))", line=2.2)
+  segments(x0=-1000, y0=-1000, x1=log(0.5), y1=log(0.5))
+  segments(x0=log(0.5), y0=log(0.5), x1=log(1), y1=log(0.5))}
+
 plot_qq_log <- function(p_values, MAIN){
   unif <- runif(5000)
   qqplot(log(unif), p_values, xlim=c(-10,0), ylim=c(-10,0), main=MAIN, xlab="", ylab="", bty='n', xaxt='n', yaxt='n', pch=20)
   axis(side=1, at=seq(-10,0,by=1), labels = seq(-10,0,by=1)) 
   axis(side=2, at=seq(-10,0,by=1), labels = seq(-10,0,by=1), las=2)
-  title(ylab="p", line=2.8)
-  title(xlab="Uniform(0,1)", line=2.2)
+  title(ylab="log(p)", line=2.8)
+  title(xlab="log(Uniform(0,1))", line=2.2)
   abline(a=0, b=1)
 }
 
