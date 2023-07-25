@@ -5,7 +5,8 @@ library("psych")
 
 setwd("~/postdoc_USC/AIM/correlations_p_values")
 source("~/git/argwas/R_scripts/functions.R")
-
+source("~/git/argwas/R_scripts/read_data.R")
+num_windows = 1000
 # region to plot
 region_start <- 0
 region_end <- 182045439
@@ -17,74 +18,60 @@ blu <- "#56B4E9"
 pin <- "#CC79A7"
 
 plot_correlation <- function(eGRM, gwas, eGRM_name="eGRM", GWAS_name){
-  c <- cor(eGRM[!is.nan(gwas)], gwas[!is.nan(gwas)])
-  plot(eGRM[!is.na(gwas)], gwas[!is.na(gwas)], main=c, xlab=eGRM_name, ylab=GWAS_name)
+  eGRM <- log10(eGRM)
+  gwas[gwas==0] <- .Machine$double.xmin
+  gwas <- log10(gwas)
+  # eGRM <- eGRM[is.finite(gwas)]
+  # gwas <- gwas[is.finite(gwas)]
+  c <- cor(eGRM, gwas, method="spearman")
+  print(paste("correlation for",GWAS_name,c))
+  print(gwas[eGRM==min(eGRM)])
+  plot(x=eGRM, y=gwas , xlab=eGRM_name, ylab=GWAS_name, yaxt='n', bty='n', main=paste("Spearman correlation", round(c, 3))) #
+  axis(side=2, las=2)
 }
 
 
+# remove encode regions
+df_BLUP_res <- remove_regions(df_results=df_BLUP_res, regions=regions)
+df_PC100_egrm <- remove_regions(df_result=df_PC100_egrm, regions=regions)
+df_GRM_globalGRM <- remove_regions(df_results=df_GRM_globalGRM, regions=regions)
+df_GWAS_GRM <- remove_regions_GWAS(df_results=df_GWAS_GRM, regions=regions)
+df_GWAS_PC20 <- remove_regions_GWAS(df_results=df_GWAS_PC20, regions=regions)
 
-# df_GWAS_PC20 <- read.table(paste("~/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr",chrom,"/plink.assoc.linear_chr", chrom, sep=''), header=TRUE)
-# df_GWAS_PC20 <- df_GWAS_PC20[df_GWAS_PC20$TEST == "ADD",]
-# df_GWAS_PC20 <- df_GWAS_PC20[df_GWAS_PC20$BP >= region_start & df_GWAS_PC20$BP <= region_end,]
-
-# df_GWAS_GRM <- read.table("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/mlma_loco/MLMA_LOCO.loco.mlma", header=TRUE)
-df_GWAS_GRM <- read.table("MLMA_LOCO.loco.mlma", header=TRUE)
-df_GWAS_GRM <- df_GWAS_GRM[df_GWAS_GRM$bp >= region_start & df_GWAS_GRM$bp <= region_end,]
-names <- colnames(df_GWAS_GRM)
-names[which(names=="bp")] <- "BP"
-names[which(names=="p")] <- "P"
-colnames(df_GWAS_GRM) <- names
-
-
-# read REML 
-# df_PC20 <- read.table(paste("~/ARGWAS/hawaiian/all_chr_for_review/chr", chrom, "/chr", chrom, "_all_chunks_eGRM_pca20_results.csv", sep=''), sep=',', header=TRUE) 
-# df_PC20 <- df_PC20[!is.na(df_PC20$p_values),]
-# df_PC20 <- df_PC20[df_PC20$start >= region_start & df_PC20$start <= region_end,]
-# df_PC20 <- df_PC20[order(df_PC20$start, decreasing=FALSE),]
-
-df_egrm_PC100 <- read.table(paste("chr5_all_chunks_eGRM_pca100_egrm_and_pca_correction_results.csv", sep=''), header=TRUE, sep=',')
-
-
-# encode regions
-# regions <- read.table("~/ARGWAS/argwas/R_scripts/encode_blacklist.bed", sep='\t', header=FALSE)
-regions <- read.table("~/git/argwas/R_scripts/encode_blacklist.bed", sep='\t', header=FALSE)
-colnames(regions) <- c("chr", "start", "end", "type")
-regions <- regions[regions$chr == paste("chr", chrom, paste=''),]
-
-# centromere regions
-# regions <- read.table("~/ARGWAS/argwas/R_scripts/centromeres.bed", sep='\t', header=FALSE)
-regions_centro <- read.table("~/git/argwas/R_scripts/centromeres.bed", sep='\t', header=FALSE)
-colnames(regions_centro) <- c("chr", "start", "end", "type")
-regions_centro <- regions_centro[regions_centro$chr == paste("chr", chrom, paste=''),]
-# df_PC20 <- remove_regions(df_results=df_PC20, regions=regions_centro)
-
-# read REML GRM 
-# df_GRM <- read.table(paste("~/ARGWAS/hawaiian/all_chr_for_review/chr5/only_PC_correction/chr5_all_chunks_GRM_pca20_results.csv", sep=''), sep=',', header=TRUE) 
-df_GRM <- read.table(paste("chr5_all_chunks_GRM_pca20_results.csv", sep=''), sep=',', header=TRUE) 
-
+# remove centromere regions
+df_BLUP_res <- remove_regions(df_results=df_BLUP_res, regions=regions_centro)
+df_PC100_egrm <- remove_regions(df_result=df_PC100_egrm, regions=regions_centro)
+df_GRM_globalGRM <- remove_regions(df_results=df_GRM_globalGRM, regions=regions_centro)
+df_GWAS_GRM <- remove_regions_GWAS(df_results=df_GWAS_GRM, regions=regions_centro)
+df_GWAS_PC20 <- remove_regions_GWAS(df_results=df_GWAS_PC20, regions=regions_centro)
 
 
 make_plots <- function(df_eGRM, df_GWAS, df_GRM, MAIN){
-  
-  df_eGRM <- df_eGRM[!is.na(df_eGRM$p_values),]
   df_eGRM <- df_eGRM[df_eGRM$start >= region_start & df_eGRM$start <= region_end,]
-  df_eGRM <- df_eGRM[order(df_eGRM$start, decreasing=FALSE),]
   df_eGRM <- remove_regions(df_results=df_eGRM, regions=regions_centro)
-  
-  df_GRM <- df_GRM[!is.na(df_GRM$p_values),]
   df_GRM <- df_GRM[df_GRM$start >= region_start & df_GRM$start <= region_end,]
-  df_GRM <- df_GRM[order(df_GRM$start, decreasing=FALSE),]
   df_GRM <- remove_regions(df_results=df_GRM, regions=regions_centro)
+  df_GWAS <- df_GWAS[df_GWAS$BP >= region_start & df_GWAS$BP <= region_end,]
+  df_GWAS <- df_GWAS[df_GWAS$BP >= region_start & df_GWAS$BP <= region_end,]
   
-  gwas_mean_arithmetic <- numeric(length=nrow(df_eGRM))
-  gwas_mean_geometric <- numeric(length=nrow(df_eGRM))
-  gwas_mean_harmonic <- numeric(length=nrow(df_eGRM))
-  gwas_min <- numeric(length=nrow(df_eGRM))
+  df_eGRM <- remove_regions(df_result=df_eGRM, regions=regions)
+  df_eGRM <- remove_regions(df_result=df_eGRM, regions=regions_centro)
+  
+  # df_GRM <- remove_regions(df_result=df_GRM, regions=regions)
+  # df_GRM <- remove_regions(df_result=df_GRM, regions=regions_centro)
+  
+  df_GWAS <- remove_regions_GWAS(df_result=df_GWAS, regions=regions)
+  df_GWAS <- remove_regions_GWAS(df_result=df_GWAS, regions=regions_centro)
+  
+  gwas_mean_arithmetic <- numeric(length=num_windows)
+  gwas_mean_geometric <- numeric(length=num_windows)
+  gwas_mean_harmonic <- numeric(length=num_windows)
+  gwas_min <- numeric(length=num_windows)
 
-  eGRM <- log10(df_eGRM$p_values)
+  eGRM <- (df_eGRM$p_values)[1:num_windows]
   
   # for(w in 1:nrow(df_eGRM)){
-  for(w in 1:1000){
+  for(w in 1:num_windows){
       
     if(w %% 1000 == 0){
       print(paste("at window", w, "of", nrow(df_eGRM)))
@@ -99,7 +86,7 @@ make_plots <- function(df_eGRM, df_GWAS, df_GRM, MAIN){
     gwas_min[w] <- min(p_GWAS_in_window, na.rm=TRUE)
   }
 
-  pdf(paste("p_value_correlations", MAIN, ".pdf", sep=''), width=16, height=16)
+  pdf(paste("p_value_correlations", MAIN, ".pdf", sep=''), width=8, height=8)
   par(mfrow=c(2,2))
   plot_correlation(eGRM, gwas=gwas_mean_arithmetic, GWAS_name="arithmetic mean")
   plot_correlation(eGRM, gwas=gwas_mean_geometric, GWAS_name="geometric mean")
@@ -110,10 +97,31 @@ make_plots <- function(df_eGRM, df_GWAS, df_GRM, MAIN){
 
 
 
-make_plots(df_eGRM=df_egrm_PC100, df_GWAS=df_GWAS_GRM, df_GRM=df_GRM, MAIN="egrmPC100_GRM")
+make_plots(df_eGRM=df_PC100_egrm, df_GWAS=df_GWAS_GRM, df_GRM=df_GRM_PC20, MAIN="egrmPC100_GRM")
+make_plots(df_eGRM=df_BLUP_res, df_GWAS=df_GWAS_GRM, df_GRM=df_GRM_PC20, MAIN="residuals")
+
+df_BLUP_res <- remove_regions(df_result=df_BLUP_res, regions=regions)
+df_BLUP_res <- remove_regions(df_result=df_BLUP_res, regions=regions_centro)
+df_GRM_globalGRM <- remove_regions(df_result=df_GRM_globalGRM, regions=regions)
+df_GRM_globalGRM <- remove_regions(df_result=df_GRM_globalGRM, regions=regions_centro)
+df_GRM_residuals <- remove_regions(df_result=df_GRM_residuals, regions=regions)
+df_GRM_residuals <- remove_regions(df_result=df_GRM_residuals, regions=regions_centro)
+eGRM <- log10(df_BLUP_res$p_values[1:num_windows])
+GRM <- log10(df_GRM_residuals$p_values[1:num_windows])
+c <- cor(eGRM, GRM, method="spearman")
+
+# pdf(paste("p_value_correlations_eGRM_GRM.pdf", sep=''), width=4, height=4)
+# plot(eGRM, GRM, ylab="GRM", xlab="eGRM",yaxt='n', bty='n', main=paste("Spearman correlation", round(c, 3))) #
+# axis(side=2, las=2)
+# dev.off()
+
+
+pdf(paste("p_value_correlations_eGRM_GRMResiduals.pdf", sep=''), width=4, height=4)
+plot(eGRM, GRM, ylab="GRM", xlab="eGRM",yaxt='n', bty='n', main=paste("Spearman correlation", round(c, 3))) #
+axis(side=2, las=2)
+dev.off()
 
 
 
-
-
-
+m <- matrix(1:30, ncol=6, byrow = TRUE)
+l <- layout(m)
