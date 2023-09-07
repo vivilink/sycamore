@@ -36,6 +36,22 @@ df_GRM_PC20 <- df_GRM_PC20[!is.na(df_GRM_PC20$p_values),]
 df_GRM_PC20 <- df_GRM_PC20[order(df_GRM_PC20$start, decreasing=FALSE),]
 
 if(CLUSTER==TRUE){
+  df_GRM_PC100 <- read.table("~/ARGWAS/hawaiian/all_chr_for_review/chr5/only_PC_correction/pca100/chr5_all_chunks_GRM_pca20_results.csv", sep=',', header=TRUE) 
+} else {
+  df_GRM_PC100 <- read.table("~/postdoc_USC/AIM/correlations_p_values/chr5_all_chunks_GRM_pca100_results.csv", sep=',', header=TRUE) 
+}
+df_GRM_PC100 <- df_GRM_PC100[!is.na(df_GRM_PC100$p_values),]
+df_GRM_PC100 <- df_GRM_PC100[order(df_GRM_PC100$start, decreasing=FALSE),]
+
+if(CLUSTER==TRUE){
+  df_GRM_PC100_16 <- read.table("~/ARGWAS/hawaiian/all_chr_for_review/chr16/only_PC_correction/pca100/chr5_all_chunks_GRM_pca100_results.csv", sep=',', header=TRUE) 
+} else {
+  df_GRM_PC100_16 <- read.table("~/postdoc_USC/AIM/correlations_p_values/chr16_all_chunks_GRM_pca100_results.csv", sep=',', header=TRUE) 
+}
+df_GRM_PC100_16 <- df_GRM_PC100_16[!is.na(df_GRM_PC100_16$p_values),]
+df_GRM_PC100_16 <- df_GRM_PC100_16[order(df_GRM_PC100_16$start, decreasing=FALSE),]
+
+if(CLUSTER==TRUE){
   df_GRM_globalGRM <- read.table("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr5/only_grm_correction/GRM/chr5_all_chunks_GRM_globalGRM_results.csv", sep=',', header=TRUE) 
 } else {
   df_GRM_globalGRM <- read.table("~/postdoc_USC/AIM/correlations_p_values/chr5_all_chunks_GRM_globalGRM_results.csv", sep=',', header=TRUE) 
@@ -50,6 +66,15 @@ if(CLUSTER==TRUE){
 }
 df_GRM_residuals <- df_GRM_residuals[!is.na(df_GRM_residuals$p_values),]
 df_GRM_residuals <- df_GRM_residuals[order(df_GRM_residuals$start, decreasing=FALSE),]
+
+if(CLUSTER==TRUE){
+  df_GRM_residuals_16 <- read.table("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr16/", sep=',', header=TRUE) 
+} else {
+  df_GRM_residuals_16 <- read.table("~/postdoc_USC/AIM/correlations_p_values/chr16_all_chunks_GRM_BLUP_residuals_correction_results.csv", sep=',', header=TRUE) 
+}
+df_GRM_residuals_16 <- df_GRM_residuals_16[!is.na(df_GRM_residuals_16$p_values),]
+df_GRM_residuals_16 <- df_GRM_residuals_16[order(df_GRM_residuals_16$start, decreasing=FALSE),]
+
 
 # read local eGRM
 if(CLUSTER==TRUE){
