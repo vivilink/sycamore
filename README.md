@@ -1,6 +1,16 @@
 sycamore
 =======
 
+Setting up sycamore
+-------------------------
+clone repository
+
+clone egrm repository into sycamore repository
+
+install egrm with pip in the correct conda environment using the instructions in the egrm readme
+
+download gcta into sycamore repository https://yanglab.westlake.edu.cn/software/gcta/#Download
+
 Creating conda environment
 -------------------------
 
