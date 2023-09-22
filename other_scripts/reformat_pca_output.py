@@ -1,14 +1,14 @@
 import os
 
-#os.chdir("/data/ARGWAS/hawaiians/CREBRF/plink_GWAS")
+os.chdir("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr5/")
 
-#pca = open("All_MEGA_GWAS.and.CIDR_GDA_GWAS.nh.intersect1M.drop5k.chr1-22.asVCF.rmvoutoforder.geno05.hwe1e-6.ld50-5-.8.prune.in.maf01.smartpca.evec", "r")
-#pca_new = open("All_MEGA_GWAS.and.CIDR_GDA_GWAS.nh.intersect1M.drop5k.chr1-22.asVCF.rmvoutoforder.geno05.hwe1e-6.ld50-5-.8.prune.in.maf01.smartpca_reformatted.evec", "w")
+pca = open("/home1/linkv/ARGWAS/hawaiian/plink_files_wholeGenome_original/PC100/nh.megaandgda.geno05.hwe1e-6.ld50-5-.8.maf01.rmvChr5.100pcs.smartpca.evec", "r")
+pca_new = open("nh.megaandgda.geno05.hwe1e-6.ld50-5-.8.maf01.rmvChr5.100pcs.smartpca_reformatted.evec", "w")
 
-os.chdir("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr16/")
+#os.chdir("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr16/")
 
-pca = open("nh.megaandgda.geno05.hwe1e-6.ld50-5-.8.maf01.rmvChr16.smartpca.evec", "r")
-pca_new = open("nh.megaandgda.geno05.hwe1e-6.ld50-5-.8.maf01.rmvChr16.smartpca_reformatted.evec", "w")
+#pca = open("nh.megaandgda.geno05.hwe1e-6.ld50-5-.8.maf01.rmvChr16.smartpca.evec", "r")
+#pca_new = open("nh.megaandgda.geno05.hwe1e-6.ld50-5-.8.maf01.rmvChr16.smartpca_reformatted.evec", "w")
 
 eigvals = pca.readline()
 
@@ -19,7 +19,7 @@ for line in pca:
 	line = ' '.join(line.split())
 	ind = line.split(" ")[0].split(":")[0]
 	newline = ind + " " + ind 
-	for i in line.split(" ")[1:11]:
+	for i in line.split(" ")[1:101]:
 		newline += " " + i 
 	newline += "\n"
 	pca_new.write(newline)
