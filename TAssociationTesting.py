@@ -293,6 +293,7 @@ class TAssociationTestingRegions(TAssociationTesting):
     def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
         raise ValueError("Function not defined for base class")
 
+
 class TAssociationTestingRegionsMtg2(TAssociationTestingRegions):
     """
     tree-based association testing using GCTA2 (https://datadryad.org/stash/dataset/doi:10.5061/dryad.bk3j9kd8c)
@@ -308,7 +309,52 @@ class TAssociationTestingRegionsMtg2(TAssociationTestingRegions):
 
     def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
         phenotypes_object.write_to_file_fam(inds=inds, out=out)
-        
+
+        if covariance_object.write(out=out, inds=inds, covariances_picklefile=covariances_picklefile):
+            self.run_association_one_window(index=index, out=out)
+        else:
+            print("did not run association because covariance object was not written at index", index)
+
+    def run_association_one_window(self, index, out):
+        # create gcta input files, run gcta and parse output
+
+        exit_code = subprocess.call([out + "_run_GCTA_HE.sh"])
+
+        # read results
+        HE_CP = pd.read_table(out + "_HE-CP_result.txt")
+        HE_SD = pd.read_table(out + "_HE-SD_result.txt")
+
+        # p-values
+        self.p_values_HECP_OLS[index] = HE_CP["P_OLS"][1]
+        if HE_CP["P_OLS"][1] < 0:
+            raise ValueError("window index", index, "produced negative p-value for CP OLS")
+
+        self.p_values_HECP_Jackknife[index] = HE_CP["P_Jackknife"][1]
+        if HE_CP["P_Jackknife"][1] < 0:
+            raise ValueError("window index", index, "produced negative p-value for CP Jackknife")
+
+        self.p_values_HESD_OLS[index] = HE_SD["P_OLS"][1]
+        if HE_SD["P_OLS"][1] < 0:
+            raise ValueError("window index", index, "produced negative p-value for SD OLS")
+
+        self.p_values_HESD_Jackknife[index] = HE_SD["P_Jackknife"][1]
+        if HE_SD["P_Jackknife"][1] < 0:
+            raise ValueError("window index", index, "produced negative p-value for SD Jackknife")
+
+        # other statistics
+        self.V_G_over_Vp_HECP[index] = HE_CP["Estimate"][1]
+        self.V_G_over_Vp_HESD[index] = HE_SD["Estimate"][1]
+
+        self.V_G_over_Vp_SE_OLS_HECP[index] = HE_CP["SE_OLS"][1]
+        self.V_G_over_Vp_SE_OLS_HESD[index] = HE_SD["SE_OLS"][1]
+        self.V_G_over_Vp_SE_Jackknife_HECP[index] = HE_CP["SE_Jackknife"][1]
+        self.V_G_over_Vp_SE_Jackknife_HESD[index] = HE_SD["SE_Jackknife"][1]
+
+        # delete GCTA results file to make sure it's not used again
+        af.remove_files_with_pattern(out + '*.HEreg')
+
+    def write_association_results_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
+        pass
 
 
 class TAssociationTestingRegionsGlimix(TAssociationTestingRegions):

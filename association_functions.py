@@ -228,6 +228,21 @@ def run_association_GWAS(trees, inds, variants, pheno, args, logfile):
         # GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
 
 
+def write_mtg2_command_script(pheno_file, outname, logfile, args):
+    with open(outname + "_run_mtg2.sh", 'w') as f:
+        f.write("#!/bin/bash\n")
+
+        if args.population_structure and args.population_structure_pca_num_eigenvectors is None:
+            logfile.info("- Writing gcta command file to test a model containing the local GRM and a global GRM as "
+                         "random effects")
+            write_mtg2_command_file_mgrm(outname=outname,
+                                         pheno_file=pheno_file,
+                                         outfile=f,
+                                         GCTA=args.GCTA,
+                                         num_GCTA_threads=args.num_gcta_threads,
+                                         additional_gcta_params=args.additional_mtg2_params)
+
+
 def write_GCTA_command_script(test_name, pheno_file, outname, logfile, args):
     with open(outname + "_run_" + test_name + ".sh", 'w') as f:
         f.write("#!/bin/bash\n")
@@ -293,10 +308,12 @@ def get_AIM_test_object(test_name, phenotypes, pheno_file, num_associations, out
 
     # create object
     if test_name == "GCTA_HE":
-        write_GCTA_command_script(test_name=test_name, pheno_file=pheno_file, outname=outname, args=args, logfile=logfile)
+        write_GCTA_command_script(test_name=test_name, pheno_file=pheno_file, outname=outname, args=args,
+                                  logfile=logfile)
         test_obj = at.TAssociationTestingRegionsGCTA_HE(phenotypes, num_associations)
     elif test_name == "GCTA_REML":
-        write_GCTA_command_script(test_name=test_name, pheno_file=pheno_file, outname=outname, args=args, logfile=logfile)
+        write_GCTA_command_script(test_name=test_name, pheno_file=pheno_file, outname=outname, args=args,
+                                  logfile=logfile)
         test_obj = at.TAssociationTestingRegionsGCTA_REML(phenotypes, num_associations)
     elif test_name == "glimix_REML":
         test_obj = at.TAssociationTestingRegionsGlimix(phenotypes, num_associations)
@@ -304,6 +321,13 @@ def get_AIM_test_object(test_name, phenotypes, pheno_file, num_associations, out
         test_obj = at.TAssociationTestingRegionsMtg2(phenotypes, num_associations)
     else:
         raise ValueError("Did not recognize " + str(test_name) + " as a association test type")
+
+    # write necessary auxiliary files
+    if args.population_structure and test_name == "GCTA_REML":
+        logfile.info("- Writing multi grm file to '" + outname + "_multi_grm.txt'")
+        with open(outname + '_multi_grm.txt', 'w') as f:
+            f.write(outname + '\n')
+            f.write(args.population_structure + '\n')
 
     return test_obj
 
@@ -372,7 +396,6 @@ def get_proportion_of_tree_within_window(window_start, window_end, tree_start, t
 def test_window_for_association(covariance_obj, inds, AIM_methods, outname, window_index, phenotypes_obj,
                                 covariances_picklefile):
     covariance_obj.finalize(inds=inds)
-
 
     for m in AIM_methods:
         if m.name == "regions_glimix":
@@ -593,7 +616,34 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                                             logfile=logfile)
 
 
-def write_GCTA_command_file_mgrm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads, additional_gcta_params):
+def write_mtg2_command_file_mgrm(outname, pheno_file, outfile, mtg2, num_GCTA_threads, additional_mtg2_params):
+    """
+    Write executable bash script for running association test with multiple random effects using GCTA
+
+    @param testing_method:
+    @param outname:
+    @param pheno_file:
+    @param outfile:
+    @param mtg2:
+    @param num_GCTA_threads:
+    @return:
+    """
+    gcta_string = mtg2 + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
+                  + outname + "_HE --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+    if additional_mtg2_params is not None:
+        for p in additional_mtg2_params:
+            gcta_string += " -" + p
+    outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
+
+    # grep results
+    outfile.write("sed -n '2,6p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                  + outname + "_HE-CP_result.txt\n")
+    outfile.write("sed -n '9,13p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                  + outname + "_HE-SD_result.txt\n")
+
+
+def write_GCTA_command_file_mgrm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads,
+                                 additional_gcta_params):
     """
     Write executable bash script for running association test with multiple random effects using GCTA
 
@@ -614,7 +664,7 @@ def write_GCTA_command_file_mgrm(testing_method, outname, pheno_file, outfile, G
                 gcta_string += " --" + p
         outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
     elif testing_method == "GCTA_HE":
-        gcta_string = GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "\
+        gcta_string = GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
                       + outname + "_HE --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
         if additional_gcta_params is not None:
             for p in additional_gcta_params:
@@ -661,7 +711,8 @@ def write_GCTA_command_file_mgrm_pca(testing_method, outname, pheno_file, outfil
                       + outname + "_HE-SD_result.txt\n")
 
 
-def write_GCTA_command_file_grm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads, additional_gcta_params):
+def write_GCTA_command_file_grm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads,
+                                additional_gcta_params):
     """
     Write executable bash script for running association test with only the local eGRM as random effects using GCTA
 
@@ -674,7 +725,7 @@ def write_GCTA_command_file_grm(testing_method, outname, pheno_file, outfile, GC
     @return:
     """
     if testing_method == "GCTA_REML":
-        gcta_string = GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname\
+        gcta_string = GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname \
                       + "_REML --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
         if additional_gcta_params is not None:
             for p in additional_gcta_params:
@@ -772,12 +823,6 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     if args.simulate_phenotypes is True:
         pheno.find_causal_trees(trees)
         pheno.find_causal_windows(window_ends=window_ends, window_starts=window_starts)
-
-    # write GCTA files and scripts
-    if args.population_structure and args.AIM_method == "REML_GCTA":
-        with open(outname + '_multi_grm.txt', 'w') as f:
-            f.write(outname + '\n')
-            f.write(args.population_structure + '\n')
 
     pheno_file = args.out + "_phenotypes.phen"
     # if args.simulate_phenotypes:

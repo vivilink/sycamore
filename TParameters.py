@@ -215,6 +215,8 @@ class TParameters:
                            help="number of threads on which to run GCTA. Going from 2 to 8 roughly doubles the speed")
         assoc.add_argument("--additional_gcta_params", type=str, nargs='+',
                            help="additional arguments to be passed to GCTA")
+        assoc.add_argument("--additional_mtg2_params", type=str, nargs='+',
+                           help="additional arguments to be passed to mtg2")
         assoc.add_argument("--limit_association_tests", type=int, default=1000000000,
                            help="Limit number of association tests to be run. Applies to trees and windows (tree-based tests)")
 
