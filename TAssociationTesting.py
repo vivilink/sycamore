@@ -294,69 +294,6 @@ class TAssociationTestingRegions(TAssociationTesting):
         raise ValueError("Function not defined for base class")
 
 
-class TAssociationTestingRegionsMtg2(TAssociationTestingRegions):
-    """
-    tree-based association testing using GCTA2 (https://datadryad.org/stash/dataset/doi:10.5061/dryad.bk3j9kd8c)
-    """
-
-    def __init__(self, phenotypes, num_associations):
-        super().__init__(phenotypes, num_associations)
-        self.name = "regions_mtg2"
-
-        # p-value container
-        self.p_values = np.empty(self.num_associations)
-        self.p_values.fill(np.nan)
-
-    def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
-        phenotypes_object.write_to_file_fam(inds=inds, out=out)
-
-        if covariance_object.write(out=out, inds=inds, covariances_picklefile=covariances_picklefile):
-            self.run_association_one_window(index=index, out=out)
-        else:
-            print("did not run association because covariance object was not written at index", index)
-
-    def run_association_one_window(self, index, out):
-        # create gcta input files, run gcta and parse output
-
-        exit_code = subprocess.call([out + "_run_GCTA_HE.sh"])
-
-        # read results
-        HE_CP = pd.read_table(out + "_HE-CP_result.txt")
-        HE_SD = pd.read_table(out + "_HE-SD_result.txt")
-
-        # p-values
-        self.p_values_HECP_OLS[index] = HE_CP["P_OLS"][1]
-        if HE_CP["P_OLS"][1] < 0:
-            raise ValueError("window index", index, "produced negative p-value for CP OLS")
-
-        self.p_values_HECP_Jackknife[index] = HE_CP["P_Jackknife"][1]
-        if HE_CP["P_Jackknife"][1] < 0:
-            raise ValueError("window index", index, "produced negative p-value for CP Jackknife")
-
-        self.p_values_HESD_OLS[index] = HE_SD["P_OLS"][1]
-        if HE_SD["P_OLS"][1] < 0:
-            raise ValueError("window index", index, "produced negative p-value for SD OLS")
-
-        self.p_values_HESD_Jackknife[index] = HE_SD["P_Jackknife"][1]
-        if HE_SD["P_Jackknife"][1] < 0:
-            raise ValueError("window index", index, "produced negative p-value for SD Jackknife")
-
-        # other statistics
-        self.V_G_over_Vp_HECP[index] = HE_CP["Estimate"][1]
-        self.V_G_over_Vp_HESD[index] = HE_SD["Estimate"][1]
-
-        self.V_G_over_Vp_SE_OLS_HECP[index] = HE_CP["SE_OLS"][1]
-        self.V_G_over_Vp_SE_OLS_HESD[index] = HE_SD["SE_OLS"][1]
-        self.V_G_over_Vp_SE_Jackknife_HECP[index] = HE_CP["SE_Jackknife"][1]
-        self.V_G_over_Vp_SE_Jackknife_HESD[index] = HE_SD["SE_Jackknife"][1]
-
-        # delete GCTA results file to make sure it's not used again
-        af.remove_files_with_pattern(out + '*.HEreg')
-
-    def write_association_results_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
-        pass
-
-
 class TAssociationTestingRegionsGlimix(TAssociationTestingRegions):
     """
     tree-based association testing using glimix lmm (https://glimix-core.readthedocs.io/en/latest/lmm.html)
@@ -508,10 +445,6 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         self.V_G_over_Vp_SE_Jackknife_HESD = np.empty(self.num_associations)
         self.V_G_over_Vp_SE_Jackknife_HESD.fill(np.nan)
 
-    # def run_association(self, covariance_object, covariances_picklefile, inds, y=None, covar=None, n=None, index=None, out=None):
-    #     covariance_object.write(out=out, inds=inds, covariances_picklefile=covariances_picklefile)
-    #     self.run_association_one_window_gcta(index=index, out=out)
-
     def run_association_one_window_gcta(self, index, out):
         # create gcta input files, run gcta and parse output
 
@@ -627,9 +560,6 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         self.V_G_over_Vp_SE = np.empty(self.num_associations)
         self.V_G_over_Vp_SE.fill(np.nan)
 
-    # def run_association(self, GRM=None, y=None, covar=None, n=None, index=None, out=None):
-    #     self.run_association_one_window_gcta(index=index, out=out)
-
     def run_association_one_window_gcta(self, index, out):
         """
         create multi_grm.txt according to https://yanglab.westlake.edu.cn/software/gcta/#GREMLinWGSorimputeddata
@@ -732,63 +662,65 @@ class TTreeAssociationMantel(TAssociationTestingRegions):
                 print(tmrca)
                 raise ValueError("p-value is negative")
 
-# def runLimix(self, ts_object, N, y, F, random):
-# self.lrt = np.empty(self.num_associations)
 
-#     raise ValueError("Limix not currently implemented")
+class TAssociationTestingRegionsMtg2(TAssociationTestingRegions):
+    """
+    tree-based association testing using GCTA2 (https://datadryad.org/stash/dataset/doi:10.5061/dryad.bk3j9kd8c)
+    """
 
-#     G = np.zeros(N).reshape(N,1)
-#     # G = np.random.binomial(1, 0.5, N).reshape(N,1)
-#     # Inter = np.zeros(N).reshape(N,1)
-#     Inter = None
+    def __init__(self, phenotypes, num_associations):
+        super().__init__(phenotypes, num_associations)
+        self.name = "regions_mtg2"
 
-#     for tree in ts_object.trees():
-#         # if tree.index == ts_object.num_trees-1:
-#         #     continue
-#         # if tree.index % 1000 == 0:
-#         print("tree index: ",tree.index)
-#         tree_obj = tt.TTree(tree, N)
-#         lmm = LMMCore(y, F, tree_obj.solving_function)
-#         lmm.process(G, Inter) #this needs step param to produce only one p-value per tree. for this i need the number of sites per tree, or just use 1?
-#         self.p_values[tree.index] = lmm.getPv()
-#         print("p-value", self.p_values[tree.index])
-#         # raise ValueError("printing covariance")
-#         # beta = lmm.getBetaSNP()
-#         # beta_ste = lmm.getBetaSNPste()
-#         # self.lrt[tree.index] = lmm.getLRT() #likelihood ratio
+        # p-value container
+        self.p_values = np.empty(self.num_associations)
+        self.p_values.fill(np.nan)
 
+    def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
+        phenotypes_object.write_to_file_fam(inds=inds, out=out)
 
-# -----------------
-# example_tree = trees.aslist()[10995]
-# tree_obj = tt.TTree(example_tree, N)
+        if covariance_object.write(out=out, inds=inds, covariances_picklefile=covariances_picklefile):
+            self.run_association_one_window(index=index, out=out)
+        else:
+            print("did not run association because covariance object was not written at index", index)
 
-# tmrca = np.zeros([N, N])
-# height = 0
-# for c in example_tree.nodes():
-#     print("c",c)
-#     descendants = list(example_tree.samples(c))
-#     n = len(descendants)
-#     if(n == 0 or n == N or example_tree.time(c) == 0): #The branch length for a node that has no parent (e.g., a root) is defined as zero.
-#         continue
-#     t = example_tree.time(example_tree.parent(c)) - example_tree.time(c)
-#     tmrca[np.ix_(descendants, descendants)] -= t
-#     height = max(height, example_tree.time(example_tree.parent(c))) #time returns the time of a node
-# tmrca += height
-# # covariance = (tmrca+tmrca.T)/2 #why does caoqi do this??
-# np.fill_diagonal(covariance, 0)
+    def run_association_one_window(self, index, out):
+        # create gcta input files, run gcta and parse output
 
-# #test if matrix is positive semidefinite
-# np.linalg.cholesky(covariance)
-# np.exp(-covariance)
-# inv = np.linalg.inv(covariance)
-# tmp = np.dot(inv, array)
-# # print("shape of my dot product",np.shape(tmp))
-# tree_obj = tt.TTree(example_tree, N)
-# F = sp.zeros(N)
-# F.reshape(N,1)
-# y = pheno_random.y.reshape(N,1)
-# lmm = LMMCore(y, F.reshape(N,1), tree_obj.solving_function)
-# Inter = sp.zeros(N).reshape(N,1)
-# G = sp.zeros(N).reshape(N,1)
-# lmm.process(G, Inter)
-# lmm.getPv()
+        exit_code = subprocess.call([out + "_run_GCTA_HE.sh"])
+
+        # read results
+        HE_CP = pd.read_table(out + "_HE-CP_result.txt")
+        HE_SD = pd.read_table(out + "_HE-SD_result.txt")
+
+        # p-values
+        self.p_values_HECP_OLS[index] = HE_CP["P_OLS"][1]
+        if HE_CP["P_OLS"][1] < 0:
+            raise ValueError("window index", index, "produced negative p-value for CP OLS")
+
+        self.p_values_HECP_Jackknife[index] = HE_CP["P_Jackknife"][1]
+        if HE_CP["P_Jackknife"][1] < 0:
+            raise ValueError("window index", index, "produced negative p-value for CP Jackknife")
+
+        self.p_values_HESD_OLS[index] = HE_SD["P_OLS"][1]
+        if HE_SD["P_OLS"][1] < 0:
+            raise ValueError("window index", index, "produced negative p-value for SD OLS")
+
+        self.p_values_HESD_Jackknife[index] = HE_SD["P_Jackknife"][1]
+        if HE_SD["P_Jackknife"][1] < 0:
+            raise ValueError("window index", index, "produced negative p-value for SD Jackknife")
+
+        # other statistics
+        self.V_G_over_Vp_HECP[index] = HE_CP["Estimate"][1]
+        self.V_G_over_Vp_HESD[index] = HE_SD["Estimate"][1]
+
+        self.V_G_over_Vp_SE_OLS_HECP[index] = HE_CP["SE_OLS"][1]
+        self.V_G_over_Vp_SE_OLS_HESD[index] = HE_SD["SE_OLS"][1]
+        self.V_G_over_Vp_SE_Jackknife_HECP[index] = HE_CP["SE_Jackknife"][1]
+        self.V_G_over_Vp_SE_Jackknife_HESD[index] = HE_SD["SE_Jackknife"][1]
+
+        # delete GCTA results file to make sure it's not used again
+        af.remove_files_with_pattern(out + '*.HEreg')
+
+    def write_association_results_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
+        pass

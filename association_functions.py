@@ -124,15 +124,15 @@ def run_association_testing(args, random, logfile):
                                  logfile=logfile)
 
         elif method == "AIM":
-            run_association_AIM(trees=trees,
-                                inds=inds,
-                                variants=variants,
-                                pheno=pheno,
-                                args=args,
-                                ass_method=m,
-                                window_size=args.ass_window_size,
-                                trees_interval=trees_object.actual_trees_interval,
-                                logfile=logfile)
+            run_association_sycamore(trees=trees,
+                                     inds=inds,
+                                     variants=variants,
+                                     pheno=pheno,
+                                     args=args,
+                                     ass_method=m,
+                                     window_size=args.ass_window_size,
+                                     trees_interval=trees_object.actual_trees_interval,
+                                     logfile=logfile)
 
         else:
             raise ValueError("Unknown association method '" + m + "'. Must be 'AIM' or 'GWAS'.")
@@ -238,15 +238,26 @@ def write_mtg2_command_script(pheno_file, outname, logfile, args):
             write_mtg2_command_file_mgrm(outname=outname,
                                          pheno_file=pheno_file,
                                          outfile=f,
-                                         GCTA=args.GCTA,
-                                         num_GCTA_threads=args.num_gcta_threads,
-                                         additional_gcta_params=args.additional_mtg2_params)
+                                         num_GCTA_threads=args.num_gcta_threads)
 
 
 def write_GCTA_command_script(test_name, pheno_file, outname, logfile, args):
     with open(outname + "_run_" + test_name + ".sh", 'w') as f:
         f.write("#!/bin/bash\n")
-        if args.population_structure and args.population_structure_pca_num_eigenvectors is None:
+        if test_name == "GCTA_REML_cor":
+            logfile.info("- Writing gcta command file to test a model containing the local GRM and a global GRM and "
+                         "their correlation as random effects")
+            write_GCTA_command_file_mgrm_cor(testing_method=test_name,
+                                             outname=outname,
+                                             pheno_file=pheno_file,
+                                             outfile=f,
+                                             GCTA=args.GCTA,
+                                             num_GCTA_threads=args.num_gcta_threads,
+                                             population_structure_grm_prefix=args.population_structure,
+                                             logfile=logfile,
+                                             additional_gcta_params=args.additional_gcta_params)
+
+        elif args.population_structure and args.population_structure_pca_num_eigenvectors is None:
             logfile.info("- Writing gcta command file to test a model containing the local GRM and a global GRM as "
                          "random effects")
             write_GCTA_command_file_mgrm(testing_method=test_name,
@@ -255,6 +266,8 @@ def write_GCTA_command_script(test_name, pheno_file, outname, logfile, args):
                                          outfile=f,
                                          GCTA=args.GCTA,
                                          num_GCTA_threads=args.num_gcta_threads,
+                                         population_structure_grm_prefix=args.population_structure,
+                                         logfile=logfile,
                                          additional_gcta_params=args.additional_gcta_params)
 
         elif args.population_structure and args.population_structure_pca_num_eigenvectors \
@@ -297,7 +310,7 @@ def write_GCTA_command_script(test_name, pheno_file, outname, logfile, args):
     os.chmod(outname + "_run_" + test_name + ".sh", st.st_mode | stat.S_IEXEC)
 
 
-def get_AIM_test_object(test_name, phenotypes, pheno_file, num_associations, outname, logfile, args):
+def get_sycamore_test_object(test_name, phenotypes, pheno_file, num_associations, outname, logfile, args):
     # rename deprecated test names
     if test_name == "HE":
         logfile.info("WARNING: AIM method 'HE' is deprecated. Use 'GCTA_HE'")
@@ -315,19 +328,17 @@ def get_AIM_test_object(test_name, phenotypes, pheno_file, num_associations, out
         write_GCTA_command_script(test_name=test_name, pheno_file=pheno_file, outname=outname, args=args,
                                   logfile=logfile)
         test_obj = at.TAssociationTestingRegionsGCTA_REML(phenotypes, num_associations)
+    elif test_name == "GCTA_REML_cor":
+        write_GCTA_command_script(test_name=test_name, pheno_file=pheno_file, outname=outname, args=args,
+                                  logfile=logfile)
+        test_obj = at.TAssociationTestingRegionsGCTA_REML(phenotypes, num_associations)
     elif test_name == "glimix_REML":
         test_obj = at.TAssociationTestingRegionsGlimix(phenotypes, num_associations)
     elif test_name == "mtg2":
-        test_obj = at.TAssociationTestingRegionsMtg2(phenotypes, num_associations)
+        raise ValueError("mtg2 is not implemented yet!")
+        # test_obj = at.TAssociationTestingRegionsMtg2(phenotypes, num_associations)
     else:
         raise ValueError("Did not recognize " + str(test_name) + " as a association test type")
-
-    # write necessary auxiliary files
-    if args.population_structure and test_name == "GCTA_REML":
-        logfile.info("- Writing multi grm file to '" + outname + "_multi_grm.txt'")
-        with open(outname + '_multi_grm.txt', 'w') as f:
-            f.write(outname + '\n')
-            f.write(args.population_structure + '\n')
 
     return test_obj
 
@@ -487,7 +498,6 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                                       window_size, skip_first_tree, inds, pheno, covariances_picklefile,
                                       logfile, outname, limit_association_tests):
     """
-
     @param population_structure: str prefix of covariance matrix files used for correcting for population structure (can be None)
     @param covariances_picklefile:
     @param trees:
@@ -616,7 +626,7 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                                             logfile=logfile)
 
 
-def write_mtg2_command_file_mgrm(outname, pheno_file, outfile, mtg2, num_GCTA_threads, additional_mtg2_params):
+def write_mtg2_command_file_mgrm(testing_method, outname, pheno_file, outfile, mtg2, num_GCTA_threads, additional_mtg2_params):
     """
     Write executable bash script for running association test with multiple random effects using GCTA
 
@@ -643,18 +653,73 @@ def write_mtg2_command_file_mgrm(outname, pheno_file, outfile, mtg2, num_GCTA_th
 
 
 def write_GCTA_command_file_mgrm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads,
-                                 additional_gcta_params):
+                                 additional_gcta_params, population_structure_grm_prefix, logfile):
+
     """
     Write executable bash script for running association test with multiple random effects using GCTA
 
-    @param testing_method:
-    @param outname:
-    @param pheno_file:
-    @param outfile:
-    @param GCTA:
-    @param num_GCTA_threads:
-    @return:
+    :param testing_method:
+    :param outname:
+    :param pheno_file:
+    :param outfile:
+    :param GCTA:
+    :param num_GCTA_threads:
+    :param additional_gcta_params:
+    :param population_structure_grm_prefix:
+    :param logfile:
+    :return: None
     """
+
+    # write multi grm text file
+    logfile.info("- Writing multi grm file to '" + outname + "_multi_grm.txt'")
+    with open(outname + '_multi_grm.txt', 'w') as f:
+        f.write(outname + '\n')
+        f.write(population_structure_grm_prefix + '\n')
+
+    if testing_method == "GCTA_REML":
+        gcta_string = GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
+                      + outname + "_REML --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+        if additional_gcta_params is not None:
+            for p in additional_gcta_params:
+                gcta_string += " --" + p
+        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
+    elif testing_method == "GCTA_HE":
+        gcta_string = GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
+                      + outname + "_HE --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+        if additional_gcta_params is not None:
+            for p in additional_gcta_params:
+                gcta_string += " --" + p
+        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
+
+        # grep results
+        outfile.write("sed -n '2,6p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                      + outname + "_HE-CP_result.txt\n")
+        outfile.write("sed -n '9,13p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                      + outname + "_HE-SD_result.txt\n")
+
+
+def write_GCTA_command_file_mgrm_cor(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads,
+                                     additional_gcta_params, population_structure_grm_prefix, logfile):
+    """
+    Write executable bash script for running association test with multiple random effects and their correlation using GCTA
+
+    :param testing_method:
+    :param outname:
+    :param pheno_file:
+    :param outfile:
+    :param GCTA:
+    :param num_GCTA_threads:
+    :param additional_gcta_params:
+    :param population_structure_grm_prefix:
+    :param logfile:
+    :return: None
+    """
+    # write multi grm text file
+    logfile.info("- Writing multi grm file to '" + outname + "_multi_grm.txt'")
+    with open(outname + '_multi_grm.txt', 'w') as f:
+        f.write(outname + '\n')
+        f.write(population_structure_grm_prefix + '\n')
+        f.write(outname + "_cor" + '\n')
 
     if testing_method == "GCTA_REML":
         gcta_string = GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
@@ -785,8 +850,8 @@ def write_GCTA_command_file_grm_pca(testing_method, outname, pheno_file, outfile
         raise ValueError("Unknown testing method '" + str(testing_method) + "'")
 
 
-def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_size, trees_interval,
-                        logfile):
+def run_association_sycamore(trees, inds, variants, pheno, args, ass_method, window_size, trees_interval,
+                             logfile):
     # ----------------
     # initialize
     # ----------------
@@ -832,13 +897,13 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     logfile.info("- Using association test methods " + str(args.AIM_method) + " for a sequence of trees")
     AIM_methods = []
     for m in args.AIM_method:
-        test_obj = get_AIM_test_object(test_name=m,
-                                       phenotypes=pheno,
-                                       pheno_file=pheno_file,
-                                       num_associations=num_tests,
-                                       outname=outname,
-                                       logfile=logfile,
-                                       args=args)
+        test_obj = get_sycamore_test_object(test_name=m,
+                                            phenotypes=pheno,
+                                            pheno_file=pheno_file,
+                                            num_associations=num_tests,
+                                            outname=outname,
+                                            logfile=logfile,
+                                            args=args)
         AIM_methods.append(test_obj)
 
     # create covariance type object
