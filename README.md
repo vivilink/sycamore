@@ -147,7 +147,21 @@ Analysis descriptions
 
 *simulated ARGs for power analysis*
 
-I simulated 300 random ARG. On the cluster they are located here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees. I downsampled the variants with an allele frequency of at least 10% to 20% typed variants and estimated Relate trees from these variants here: /home1/linkv/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees/minFreq0.01. I also estimated Relate trees from all variants here: ~/ARGWAS/power_sims/tree_files/stdpopsim/normal_trees/allVariants_relate
+I simulated 300 random ARG. 
+
+I downsampled the variants with an allele frequency of at least 10% to 20% typed variants and estimated Relate trees from these variants here: 
+
+    python sycamore.py --task downsampleVariants --out propTyped0.2_minAF0.0025 --tree_file $treefile --tree_file_simulated $treefile --min_allele_freq $min_af --ploidy 2 --prop_typed_variants ${proptyped} --seed ${SLURM_ARRAY_TASK
+_ID}
+
+I also estimated Relate trees from all variants here: 
+
+    ./Relate --haps propTyped${proptyped}_minAF${min_af}_variants.haps --sample propTyped${pro
+ptyped}_minAF${min_af}_inds.sample --mode All --output propTyped${proptyped}_minAF${min_af}_relate --mutation_rate 1.25e-8 --effecti
+veN 2000 --map ${dir}/genetic_map_GRCh37_chr1.map
+
+    ./RelateFileFormats --input propTyped${proptyped}_minAF${min_af}_relate --output propTyped$
+{proptyped}_minAF${min_af}_relate  --mode ConvertToTreeSequence
 
 *random phenotypes and assoiation tests for cutoff*
 
@@ -169,21 +183,7 @@ The ARGs of two populations that I used in the end is simulated here: ~/ARGWAS/s
 
 The R script to plot the results is R_scripts/population_structure.R.
 
-*population stratification correction with hawaiian ARG*
-
-I simulated phenotypes with script other_scripts/simulate_phenotypes.py. This script samples 100 random variants from the whole genome except chromosome 5, assigns them with an effect size, and with heritability = 1 simulates phenotypes. 
-
-*CREBRF with REML*
-
-I first estimated piecewise eGRMs for every Relate tree of the genome using script ~/ARGWAS/hawaiian/global_eGRM/run_egrm.sh. The global eGRMs are located in the same folder. I then combined the piecewise eGRMs, except for those of chromosome 5, to a global eGRM using script R_scripts/combine_egrms.R. 
-
-I ran association tests around the CREBRF gene on chromosome 5 with different number of PCs. The script and results for 20 PCs are in ~/ARGWAS/hawaiian/CREBRF_pca20. The script and results for 10 PCs are in  ~/ARGWAS/hawaiian/CREBRF_pca10. The association results are not all in one file because a) the region of CREBRF overlaps with one of the ARG separations (Caoqi ran Relate on chunks of the genome, so chromosome 5 is split across 5 chunks which each produced an ARG, our region of interest is on  chunks 4 and 5), and b) because I extended the region of interest 3 times. 
-
 ~/ARGWAS/hawaiian/CREBRF_pca50 contains only files needed to check correlations between PC loadings and BMI.
-
-*CREBRF with GWAS*
-
-The original plink files with genotypes around the CREBRF gene and 10 principle components calculated based on the whole genome, which were shared with me, are here:/home1/linkv/ARGWAS/hawaiian/plink_files_original/ (this is a copy for safety). The analysis for the paper are here: ~/ARGWAS/hawaiian/plink_files_analysis_CREBRF/PC20. I first added the standardized phenotypes that I calculated in the REML analysis to the .fam file with other_scripts/add_phenotype_to_fam.py. I then ran ~/ARGWAS/hawaiian/plink_files_analysis_CREBRF/PC20/run_plink.sh to transform the .fam and .bed files into .ped and .map files, and to perform the GWAS association tests.
 
 
 Other
