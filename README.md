@@ -147,25 +147,19 @@ Analysis descriptions
 
 *simulated ARGs for power analysis*
 
-I simulated 300 random ARGs:
+We simulated 300 random ARGs:
 
-    python $aim --task simulate --N 2000 --out $dir/rep${SLURM_ARRAY_TASK_ID}/cutoff_sims_${SLURM_ARRAY_TASK_ID} --ploidy 1 --seed ${SLU
-RM_ARRAY_TASK_ID}
+    python ./ARGWAS --task simulate --N 2000 --out sim_rep1 --ploidy 1 --seed 1
 
 We downsampled the variants with an allele frequency of at least 1% to 20% of "typed" variants: 
 
-    python $aim --task downsampleVariantsWriteShapeit --out $outdir/rep${SLURM_ARRAY_TASK_ID}/propTyped${proptyped}_minAF${min_af} --tre
-e_file $treefile --tree_file_simulated $treefile --min_allele_freq $min_af --ploidy 2 --prop_typed_variants ${proptyped} --seed ${SL
-URM_ARRAY_TASK_ID}
+    python ./ARGWAS --task downsampleVariantsWriteShapeit --out sim_rep1_propTyped0.2_minAF0.01 --tree_file $treefile --tree_file_simulated $treefile --min_allele_freq 0.01 --ploidy 2 --prop_typed_variants 0.2 --seed 1
 
 We then estimated Relate trees from all typed variants: 
 
-    ./Relate --haps propTyped${proptyped}_minAF${min_af}_variants.haps --sample propTyped${pro
-ptyped}_minAF${min_af}_inds.sample --mode All --output propTyped${proptyped}_minAF${min_af}_relate --mutation_rate 1.25e-8 --effecti
-veN 2000 --map ${dir}/genetic_map_GRCh37_chr1.map
+    ./Relate --haps sim_rep1_propTyped0.2_minAF0.01_variants.haps --sample sim_rep1_propTyped0.2_minAF0.01_inds.sample --mode All --output sim_rep1_propTyped0.2_minAF0.01_relate --mutation_rate 1.25e-8 --effectiveN 2000 --map genetic_map_GRCh37_chr1.map
 
-    ./RelateFileFormats --input propTyped${proptyped}_minAF${min_af}_relate --output propTyped$
-{proptyped}_minAF${min_af}_relate  --mode ConvertToTreeSequence
+    ./RelateFileFormats --input propTyped${proptyped}_minAF${min_af}_relate --output sim_rep1_propTyped0.2_minAF0.01_relate  --mode ConvertToTreeSequence
 
 *random phenotypes and assoiation tests for cutoff*
 
