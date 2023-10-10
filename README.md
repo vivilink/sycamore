@@ -142,18 +142,18 @@ This task takes an ARG and extracts the marginal tree overlapping a genomic posi
 This task takes pickle files containing covariance matrices that can be calculated and written to pickle with task 'associate'. It calculates the correlation between these covariance matrices.
 
 
-Power Analysis descriptions
+Power Analysis commands
 -------------------------
 
 This section contains more details about how to use the software to replicate the power simulations in our paper.
 
 *simulated ARGs for power analysis*
 
-We simulated 300 random ARGs. This produces a tskit object with suffix ".trees" and a variants file with information about all variants contained within the ARG with suffix "_sample_variants.csv"
+We simulated 300 random ARGs. This produces a tskit object with suffix ".trees" and a file with information about all variants contained within the ARG with suffix "_sample_variants.csv".
 
     python ./ARGWAS.py --task simulate --N 2000 --out sim_rep1 --ploidy 1 --seed 1
 
-We downsampled the variants with an allele frequency of at least 1% to 20% of "typed" variants: 
+We downsampled the variants with an allele frequency of at least 1% to 20% of "typed" variants. This produces a file with information about all variants contained within the ARG with suffix "_sample_variants.csv", similarly to task simulate, but it will contain updated information, e.g. whether a variant is typed or not.
 
     python ./ARGWAS.py --task downsampleVariantsWriteShapeit --out sim_rep1_propTyped0.2_minAF0.01 --tree_file sim_rep1.trees --tree_file_simulated sim_rep1.trees --min_allele_freq 0.01 --ploidy 2 --prop_typed_variants 0.2 --seed 1
 
@@ -187,8 +187,13 @@ The R script used to calculate the association power is 2a_calculate_power.R, wh
 Other
 -----------
 
-- In order to run several of the tasks, you need to provide two ARG files, one with parameter "tree_file" and the other with "tree_file_simulated". in addition to variant files (which are produced when you simulate phenotypes). The tree_file is the main ARG that will be tested for association testing. In the case where you have a RELATE tree, the tree_file is the RELATE tree. The "tree_file_simulated" becomes necessary in the case where you simulate phenotypes based on non-typed variants. Since the RELATE trees only contain typed variants, there needs to be a way to access the origial, non-typed variants. Tree_file_simulated should always be accompanied by the "variant_file" that is produced by task"downsampleVariantsWriteShapeit". If you are working with the true trees and all variants, you can provide the same simulated tree file with both ARG paramters, and the variant file that is produced by task "simulate".
-- For the paper, I only use covariance types "eGRM" and "GRM". The "scaled" covariance was the first one implemented and might not have all functionalities. It is calculated based on the TMRCA and the assumption of brownian motion.
-- For the paper, I only use the mixed model association results produced with REML. However, the program can also run the Haseman-Elston algorithm of GCTA. HE is faster but has lower power than REML at small sample sizes, e.g. 1000 diploids.
+- In order to run several of the tasks, you need to provide two ARG files, one with parameter "tree_file" and the other with "tree_file_simulated". The tree_file is the main ARG that will be tested for association testing. In the case where you have a Relate tree, the tree_file is the Relate tree. The "tree_file_simulated" becomes necessary in the case where you simulate phenotypes based on non-typed variants. Since the Relate trees only contain typed variants, there needs to be a way to access the origial, non-typed variants. Tree_file_simulated should always be accompanied by the "variant_file" that is produced by task "downsampleVariantsWriteShapeit". If you are working with the true trees and all variants, you can provide the same simulated tree file with both ARG paramters, and the variant file that is produced by task "simulate".
+- For the paper, we only use covariance types "eGRM" and "GRM". The "scaled" covariance was the first one implemented and might not have all functionalities. It is calculated based on the TMRCA and the assumption of brownian motion.
+- For the paper, we only use the mixed model association results produced with REML. However, the program can also run the Haseman-Elston algorithm of GCTA. HE is faster but has lower power than REML at small sample sizes, e.g. 1000 diploids.
 - In the code, the names "argwas" and "AIM" are used interchangeably for our new method that uses local eGRMs to test for associations
-- Currently, you need to provide the absolute path for all files (or the relative path from the software folder), please feel free to change that
+- Currently, you need to provide the absolute path for all files (or the relative path from the software folder)
+
+Questions
+-----------
+
+Please contact linkv@usc.edu with any questions.
