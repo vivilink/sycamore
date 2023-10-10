@@ -142,8 +142,10 @@ This task takes an ARG and extracts the marginal tree overlapping a genomic posi
 This task takes pickle files containing covariance matrices that can be calculated and written to pickle with task 'associate'. It calculates the correlation between these covariance matrices.
 
 
-Analysis descriptions
+Power Analysis descriptions
 -------------------------
+
+This section contains more details about how to use the software to replicate the power simulations in our paper.
 
 *simulated ARGs for power analysis*
 
