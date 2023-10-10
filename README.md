@@ -149,27 +149,32 @@ Analysis descriptions
 
 We simulated 300 random ARGs:
 
-    python ./ARGWAS --task simulate --N 2000 --out sim_rep1 --ploidy 1 --seed 1
+    python ./ARGWAS.py --task simulate --N 2000 --out sim_rep1 --ploidy 1 --seed 1
 
 We downsampled the variants with an allele frequency of at least 1% to 20% of "typed" variants: 
 
-    python ./ARGWAS --task downsampleVariantsWriteShapeit --out sim_rep1_propTyped0.2_minAF0.01 --tree_file $treefile --tree_file_simulated $treefile --min_allele_freq 0.01 --ploidy 2 --prop_typed_variants 0.2 --seed 1
+    python ./ARGWAS.py --task downsampleVariantsWriteShapeit --out sim_rep1_propTyped0.2_minAF0.01 --tree_file sim_rep1.trees --tree_file_simulated sim_rep1.trees --min_allele_freq 0.01 --ploidy 2 --prop_typed_variants 0.2 --seed 1
 
 We then estimated Relate trees from all typed variants: 
 
     ./Relate --haps sim_rep1_propTyped0.2_minAF0.01_variants.haps --sample sim_rep1_propTyped0.2_minAF0.01_inds.sample --mode All --output sim_rep1_propTyped0.2_minAF0.01_relate --mutation_rate 1.25e-8 --effectiveN 2000 --map genetic_map_GRCh37_chr1.map
 
-    ./RelateFileFormats --input propTyped${proptyped}_minAF${min_af}_relate --output sim_rep1_propTyped0.2_minAF0.01_relate  --mode ConvertToTreeSequence
+    ./RelateFileFormats --input sim_rep1_propTyped0.2_minAF0.01_relate --output sim_rep1_propTyped0.2_minAF0.01_relate  --mode ConvertToTreeSequence
 
 *random phenotypes and assoiation tests for cutoff*
 
-The null simulations consisting of random phenotypes and association tests for the true trees and all variants are located here: ~/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/true_trees/window_based. For the Relate trees and downsampled variants they are located here: /home1/linkv/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/relate_trees/window_based. For the Relate trees estimated from all variants they are located here: ~/ARGWAS/simulations_cutoff/stdpopsim/N2K/diploid/eGRM_GRM/relate_trees_allVariants/window_based/. The directories are further divided into directories 5k and 10k, which contain the association test results with corresponding window sizes.
+We tested the simulated ARGs and all variants for association with random phenotypes in windows of 5k and 10k. We did this for the true simulated trees and the downsampled trees reestimated with Relate. This is the command for window size 5k and the Relate trees:
 
-    python $aim --task associate --out $dir/rep${SLURM_ARRAY_TASK_ID}/cutoff_sims_${SLURM_ARRAY_TASK_ID} --tree_file $treefile --tree_file_simulated $treefile  --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method null --pty_sd_envNoise 1 --ploidy 2 --seed ${SLURM_ARRAY_TASK_ID} --skip_first_tree --min_allele_freq 0 --ass_window_size 5000
+    python ./ARGWAS.py --task associate --out sim_rep1_propTyped0.2_minAF0.01 --tree_file sim_rep1_propTyped0.2_minAF0.01_relate.trees --tree_file_simulated sim_rep1.trees  --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method null --pty_sd_envNoise 1 --ploidy 2 --seed 1 --skip_first_tree --min_allele_freq 0 --ass_window_size 5000 --simulate_phenotypes --trees_interval_start 49000000
 
 The R script used to calculate the cutoff values is: R_scripts/1_calculate_significance_cutoffs.R
 
 *association tests for power analysis*
+
+We simulated phenotypes for the individuals of 200 simulated ARGs. This is the command we used for alleleic heterogeneity with causal variants in one 5kb window and a local heritability of 0.2: 
+
+    python ./ARGWAS.py --task simulatePhenotypes --out power_sims_rep1 --tree_file $treefile --tree_file_simulated $treefile_simulated --variants_file $variantsfile  --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method oneRegion --pty_prop_causal_mutations 0.2 --causal_region_coordinates 49500000 49505000 --pty_h_squared 0.2 --pty_sd_beta_causal_mutations standardized --ploidy 2 --skip_first_tree --min_allele_freq 0.01  --trees_interval_start 49000000 --simulate_phenotypes --seed 1
+
 
 The main directory is /home1/linkv/ARGWAS/power_sims/stdpopsim/. It is further separated by true trees, relate trees (these are estimated from 20% of the true trees' variants) and relate_trees_allVariants (these are estimated from all variants of the true trees), and phenotypes with a single causal variant (oneVariant) and phenotypes with allelic heterogeneity (oneRegion). For the paper, I'm using the results in the eGRM_GRM and window_based folders. For allelic heterogeneity, the next distinction is the causal window size (10k or 5k) and the testing window size (tested10k or tested5k). For the single variant case, there are tests for testing window size (tested10k or tested5k) and causal variant allele frequency = 0.02 (rareVariant) and frequency = 0.2 (commonVariant). 
 
@@ -184,11 +189,7 @@ dir="/panfs/qcb-panasas/linkv/ARGWAS/power_sims/stdpopsim/relate_trees/oneRegion
 
 mkdir $dir/rep${SLURM_ARRAY_TASK_ID}
 
-python $aim --task simulatePhenotypes --out $dir/rep${SLURM_ARRAY_TASK_ID}/power_sims_${SLURM_ARRAY_TASK_ID} --tree_file $treefile -
--tree_file_simulated $treefile_simulated --variants_file $variantsfile  --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pt
-y_sim_method oneRegion --pty_prop_causal_mutations $propCausal --causal_region_coordinates 49500000 49505000 --pty_h_squared $hsquar
-ed --pty_sd_beta_causal_mutations standardized --ploidy 2 --skip_first_tree --min_allele_freq 0.01 --seed ${SLURM_ARRAY_TASK_ID} --a
-ss_window_size 5000 --trees_interval_start 49000000 --simulate_phenotypes
+
 
 
 python $aim --task associate --out $dir/rep${SLURM_ARRAY_TASK_ID}/power_sims_${SLURM_ARRAY_TASK_ID} --tree_file $treefile --tree_fil
