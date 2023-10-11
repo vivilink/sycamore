@@ -56,9 +56,9 @@ def run_association_testing(args, random, logfile):
     # trees_tmp = trees.keep_intervals([interval], simplify=True)
     # trees_tmp.dump("/data/ARGWAS/hawaiians/chr5.part-05_1mb.trees")
 
-    plots_dir = args.out + "_plots/"
-    if not os.path.exists(plots_dir):
-        os.mkdir(plots_dir)
+    # plots_dir = args.out + "_plots/"
+    # if not os.path.exists(plots_dir):
+    #     os.mkdir(plots_dir)
 
     sample_ids = trees.samples()
     N = len(sample_ids)
@@ -100,7 +100,7 @@ def run_association_testing(args, random, logfile):
                                trees=trees,
                                sample_ids=sample_ids,
                                inds=inds,
-                               plots_dir=plots_dir,
+                               plots_dir="",
                                random=random,
                                logfile=logfile)
 
