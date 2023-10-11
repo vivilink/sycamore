@@ -15,7 +15,7 @@ class TParameters:
 
     @staticmethod
     def initialize():
-        parser = argparse.ArgumentParser(description='Running association tests on variants and trees.')
+        parser = argparse.ArgumentParser(description='')
 
         # general arguments
         parser.add_argument('--task', required=True,
@@ -173,8 +173,8 @@ class TParameters:
                            help="Provide association method [AIM, GWAS] and for AIM covariance type [eGRM, GRM, "
                                 "scaled] with the following format: 'method:covariance'")
         assoc.add_argument("--AIM_method", type=str, nargs='+',
-                           help="Use GCTA Haseman-Elston, GCTA REML, glimix REML, or any combination of these to test "
-                                "GRM for association")
+                           help="Provide association algorithm to be used by AIM [GCTA_HE, GCTA_REML, glimix_REML] "
+                                "or any combination of these to test the local GRM for association")
         assoc.add_argument('--no_clean_up', action='store_true',
                            help="don't clean up temporary files created during association testing")
         assoc.add_argument('--test_only_tree_at', type=float,

@@ -57,7 +57,7 @@ logger.info("---------------------")
 # print arguments to logfile
 logger.info("- The following parameters were passed: " + str(args))
 logger.info("- Writing output files with prefix '" + str(args.out) + "'")
-logger.info("- Adding plots to the following directory '" + str(args.out) + "_plots'")
+# logger.info("- Adding plots to the following directory '" + str(args.out) + "_plots'")
 
 # -----------------------------
 # initialize random generator
