@@ -18,6 +18,8 @@ from numpy_sugar.linalg import economic_qs
 from scipy import stats
 import association_functions as af
 import TTree as tt
+import stat
+import os
 
 
 class TAssociationTesting:
@@ -397,9 +399,10 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
     Run LMM to test for association between a GRM and phenotypes using GCTA
     """
 
-    def __init__(self, phenotypes, num_associations):
+    def __init__(self, phenotypes, num_associations, test_name, pheno_file, outname, logfile, args):
         super().__init__(phenotypes, num_associations)
         self.name = "regions_GCTA"
+        self.write_GCTA_command_script(test_name, pheno_file, outname, logfile, args)
 
     def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
         if covariance_object.write(out=out, inds=inds, covariances_picklefile=covariances_picklefile):
@@ -409,6 +412,90 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
 
     def run_association_one_window_gcta(self, index, out):
         raise ValueError("function run_association_one_window_gcta not implemented in base class")
+
+    def write_GCTA_command_script(self, test_name, pheno_file, outname, logfile, args):
+        with open(outname + "_run_" + test_name + ".sh", 'w') as f:
+            f.write("#!/bin/bash\n")
+            if args.add_local_LOCO_correlation:
+                logfile.info(
+                    "- Writing gcta command file to test a model containing the local GRM and a global GRM and "
+                    "their correlation as random effects")
+                self.write_GCTA_command_file_mgrm_cor(testing_method=test_name,
+                                                      outname=outname,
+                                                      pheno_file=pheno_file,
+                                                      outfile=f,
+                                                      GCTA=args.GCTA,
+                                                      num_GCTA_threads=args.num_gcta_threads,
+                                                      population_structure_grm_prefix=args.population_structure,
+                                                      logfile=logfile,
+                                                      additional_gcta_params=args.additional_gcta_params)
+
+            elif args.population_structure and args.population_structure_pca_num_eigenvectors is None:
+                logfile.info("- Writing gcta command file to test a model containing the local GRM and a global GRM as "
+                             "random effects")
+                self.write_GCTA_command_file_mgrm(testing_method=test_name,
+                                                  outname=outname,
+                                                  pheno_file=pheno_file,
+                                                  outfile=f,
+                                                  GCTA=args.GCTA,
+                                                  num_GCTA_threads=args.num_gcta_threads,
+                                                  population_structure_grm_prefix=args.population_structure,
+                                                  logfile=logfile,
+                                                  additional_gcta_params=args.additional_gcta_params)
+
+            elif args.population_structure and args.population_structure_pca_num_eigenvectors \
+                    and args.do_all_stratification_correction:
+                logfile.info(
+                    "- Writing gcta command file to run a PCA on the population structure GRM, and then test a "
+                    "model containing the local GRM and a global GRM as a random effects, and the PCs as "
+                    "fixed effects")
+                self.write_GCTA_command_file_mgrm_pca(testing_method=test_name,
+                                                      outname=outname,
+                                                      pheno_file=pheno_file,
+                                                      num_eigenvectors=args.population_structure_pca_num_eigenvectors,
+                                                      population_structure_matrix=args.population_structure,
+                                                      outfile=f,
+                                                      GCTA=args.GCTA,
+                                                      num_GCTA_threads=args.num_gcta_threads)
+
+            elif args.population_structure and args.population_structure_pca_num_eigenvectors \
+                    and not args.do_all_stratification_correction:
+                logfile.info(
+                    "- Writing gcta command file to run a PCA on the population structure GRM, and then test a "
+                    "model containing the local GRM as a random effect, and the PCs as fixed effects")
+                self.write_GCTA_command_file_grm_pca(testing_method=test_name,
+                                                     outname=outname,
+                                                     pheno_file=pheno_file,
+                                                     num_eigenvectors=args.population_structure_pca_num_eigenvectors,
+                                                     population_structure_matrix=args.population_structure,
+                                                     outfile=f,
+                                                     GCTA=args.GCTA,
+                                                     num_GCTA_threads=args.num_gcta_threads)
+            else:
+                logfile.info("- Writing gcta command file to test a model containing the local GRM as a random effect")
+                self.write_GCTA_command_file_grm(testing_method=test_name,
+                                                 outname=outname,
+                                                 pheno_file=pheno_file,
+                                                 outfile=f,
+                                                 GCTA=args.GCTA,
+                                                 additional_gcta_params=args.additional_gcta_params,
+                                                 num_GCTA_threads=args.num_gcta_threads)
+
+        st = os.stat(outname + "_run_" + test_name + ".sh")
+        os.chmod(outname + "_run_" + test_name + ".sh", st.st_mode | stat.S_IEXEC)
+
+    def write_multi_grm_file(self, outname, logfile, population_structure_grm_prefix):
+        """
+        Write file with prefixes of local GRM and global GRM (population structure) so that GCTA includes both in the model
+        :param outname: str
+        :param logfile: TLog
+        :param population_structure_grm_prefix: prefix of global GRM in binary format
+        :return:
+        """
+        logfile.info("- Writing multi grm file to '" + outname + "_multi_grm.txt'")
+        with open(outname + '_multi_grm.txt', 'w') as f:
+            f.write(outname + '\n')
+            f.write(population_structure_grm_prefix + '\n')
 
     def write_GCTA_command_file_mgrm(self, testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads,
                                      additional_gcta_params, population_structure_grm_prefix, logfile):
@@ -428,11 +515,8 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
         :return: None
         """
 
-        # write multi grm text file
-        logfile.info("- Writing multi grm file to '" + outname + "_multi_grm.txt'")
-        with open(outname + '_multi_grm.txt', 'w') as f:
-            f.write(outname + '\n')
-            f.write(population_structure_grm_prefix + '\n')
+        self.write_multi_grm_file(outname=outname, logfile=logfile,
+                                  population_structure_grm_prefix=population_structure_grm_prefix)
 
         if testing_method == "GCTA_REML":
             gcta_string = GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
@@ -609,9 +693,9 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
     tree-based association testing using GCTA Haseman-Elston algorithm
     """
 
-    def __init__(self, phenotypes, num_associations):
+    def __init__(self, phenotypes, num_associations, test_name, pheno_file, outname, logfile, args):
 
-        super().__init__(phenotypes, num_associations)
+        super().__init__(phenotypes, num_associations, test_name, pheno_file, outname, logfile, args)
         self.name = "regions_GCTA_HE"
 
         # p-value containers
@@ -715,15 +799,163 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         stats.to_csv(out + "_trees_GCTA_HE_stats.csv", index=False, header=True)
         logfile.info("- Wrote stats from HE to '" + out + "_trees_GCTA_HE_stats.csv'")
 
+    def write_GCTA_command_file_mgrm(self, testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads,
+                                     additional_gcta_params, population_structure_grm_prefix, logfile):
+
+        """
+        Write executable bash script for running association test with multiple random effects using GCTA
+
+        :param testing_method:
+        :param outname:
+        :param pheno_file:
+        :param outfile:
+        :param GCTA:
+        :param num_GCTA_threads:
+        :param additional_gcta_params:
+        :param population_structure_grm_prefix:
+        :param logfile:
+        :return: None
+        """
+
+        self.write_multi_grm_file(outname=outname, logfile=logfile,
+                                  population_structure_grm_prefix=population_structure_grm_prefix)
+
+        gcta_string = GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
+                      + outname + "_HE --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+        if additional_gcta_params is not None:
+            for p in additional_gcta_params:
+                gcta_string += " --" + p
+        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
+
+        # grep results
+        outfile.write("sed -n '2,6p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                      + outname + "_HE-CP_result.txt\n")
+        outfile.write("sed -n '9,13p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                      + outname + "_HE-SD_result.txt\n")
+
+    def write_GCTA_command_file_mgrm_cor(self, testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads,
+                                         additional_gcta_params, population_structure_grm_prefix, logfile):
+        """
+        Write executable bash script for running association test with multiple random effects and their correlation using GCTA
+
+        :param testing_method:
+        :param outname:
+        :param pheno_file:
+        :param outfile:
+        :param GCTA:
+        :param num_GCTA_threads:
+        :param additional_gcta_params:
+        :param population_structure_grm_prefix:
+        :param logfile:
+        :return: None
+        """
+        self.write_multi_grm_file(outname=outname, logfile=logfile,
+                                  population_structure_grm_prefix=population_structure_grm_prefix)
+
+        gcta_string = GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
+                      + outname + "_HE --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+        if additional_gcta_params is not None:
+            for p in additional_gcta_params:
+                gcta_string += " --" + p
+        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
+
+        # grep results
+        outfile.write("sed -n '2,6p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                      + outname + "_HE-CP_result.txt\n")
+        outfile.write("sed -n '9,13p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                      + outname + "_HE-SD_result.txt\n")
+
+    def write_GCTA_command_file_mgrm_pca(self, testing_method, outname, pheno_file, outfile, num_eigenvectors,
+                                         population_structure_matrix, GCTA, num_GCTA_threads):
+        """
+        Write executable bash script for running association test with multiple random effects and fixed effects using GCTA
+
+        @param testing_method:
+        @param outname:
+        @param pheno_file:
+        @param outfile:
+        @param GCTA:
+        @param num_GCTA_threads:
+        @return:
+        """
+
+        outfile.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
+                      + outname + "> " + outname + "_tmp2.out\n\n")
+
+        outfile.write(
+            GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
+            + outname + "_HE --reml-lrt 1 " + " --qcovar " + outname + ".eigenvec --threads " + str(
+                num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+        # grep results
+        outfile.write("sed -n '2,6p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                      + outname + "_HE-CP_result.txt\n")
+        outfile.write("sed -n '9,13p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
+                      + outname + "_HE-SD_result.txt\n")
+
+    def write_GCTA_command_file_grm(self, testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads,
+                                    additional_gcta_params):
+        """
+        Write executable bash script for running association test with only the local eGRM as random effects using GCTA
+
+        @param testing_method:
+        @param outname:
+        @param pheno_file:
+        @param outfile:
+        @param GCTA:
+        @param num_GCTA_threads:
+        @return:
+        """
+
+        gcta_string = GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname \
+                      + "_HE --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+        if additional_gcta_params is not None:
+            for p in additional_gcta_params:
+                gcta_string += " --" + p
+        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
+
+        # grep results
+        outfile.write("sed -n '2,4p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
+                      + outname + "_HE-CP_result.txt\n")
+        outfile.write("sed -n '7,9p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
+                      + outname + "_HE-SD_result.txt\n")
+
+    def write_GCTA_command_file_grm_pca(self, testing_method, outname, pheno_file, outfile, num_eigenvectors,
+                                        population_structure_matrix, GCTA, num_GCTA_threads):
+        """
+        Write executable bash script for running association test with local eGRM as random effects and PCA of global
+        population structure matrix using GCTA
+
+        @param num_eigenvectors:
+        @param population_structure_matrix:
+        @param testing_method:
+        @param outname:
+        @param pheno_file:
+        @param outfile:
+        @param GCTA:
+        @param num_GCTA_threads:
+        @return:
+        """
+        outfile.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
+                      + outname + "> " + outname + "_tmp2.out\n\n")
+
+        outfile.write(
+            GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_HE --qcovar " + outname + ".eigenvec "
+            + " --threads " + str(num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+        # grep results
+        outfile.write("sed -n '2,4p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
+                      + outname + "_HE-CP_result.txt\n")
+        outfile.write("sed -n '7,9p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
+                      + outname + "_HE-SD_result.txt\n")
+
 
 class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
     """
     tree-based association testing using CGTA REML algorithm
     """
 
-    def __init__(self, ts_object, phenotypes):
+    def __init__(self, ts_object, phenotypes, test_name, pheno_file, outname, logfile, args):
 
-        super().__init__(ts_object, phenotypes)
+        super().__init__(ts_object, phenotypes, test_name, pheno_file, outname, logfile, args)
         self.name = "regions_GCTA_REML"
 
         # results containers
@@ -826,6 +1058,125 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         stats.to_csv(out + "_trees_GCTA_REML_stats.csv", index=False, header=True)
         logfile.info("- Wrote stats from tree association tests to '" + out + "_trees_GCTA_REML_stats.csv'")
 
+    def write_GCTA_command_file_mgrm(self, testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads,
+                                     additional_gcta_params, population_structure_grm_prefix, logfile):
+
+        """
+        Write executable bash script for running association test with multiple random effects using GCTA
+
+        :param testing_method:
+        :param outname:
+        :param pheno_file:
+        :param outfile:
+        :param GCTA:
+        :param num_GCTA_threads:
+        :param additional_gcta_params:
+        :param population_structure_grm_prefix:
+        :param logfile:
+        :return: None
+        """
+
+        self.write_multi_grm_file(outname=outname, logfile=logfile,
+                                  population_structure_grm_prefix=population_structure_grm_prefix)
+
+        gcta_string = GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
+                      + outname + "_REML --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+        if additional_gcta_params is not None:
+            for p in additional_gcta_params:
+                gcta_string += " --" + p
+        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
+
+    def write_GCTA_command_file_mgrm_cor(self, testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads,
+                                         additional_gcta_params, population_structure_grm_prefix, logfile):
+        """
+        Write executable bash script for running association test with multiple random effects and their correlation using GCTA
+
+        :param testing_method:
+        :param outname:
+        :param pheno_file:
+        :param outfile:
+        :param GCTA:
+        :param num_GCTA_threads:
+        :param additional_gcta_params:
+        :param population_structure_grm_prefix:
+        :param logfile:
+        :return: None
+        """
+        # write multi grm text file
+        self.write_multi_grm_file(outname=outname, logfile=logfile,
+                                  population_structure_grm_prefix=population_structure_grm_prefix)
+
+        gcta_string = GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
+                      + outname + "_REML --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+        if additional_gcta_params is not None:
+            for p in additional_gcta_params:
+                gcta_string += " --" + p
+        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
+
+    def write_GCTA_command_file_mgrm_pca(self, testing_method, outname, pheno_file, outfile, num_eigenvectors,
+                                         population_structure_matrix, GCTA, num_GCTA_threads):
+        """
+        Write executable bash script for running association test with multiple random effects and fixed effects using GCTA
+
+        @param testing_method:
+        @param outname:
+        @param pheno_file:
+        @param outfile:
+        @param GCTA:
+        @param num_GCTA_threads:
+        @return:
+        """
+
+        outfile.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
+                      + outname + "> " + outname + "_tmp2.out\n\n")
+
+        outfile.write(GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
+                      + outname + "_REML --reml-lrt 1 " + " --qcovar " + outname + ".eigenvec --threads " + str(
+            num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
+
+    def write_GCTA_command_file_grm(self, testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads,
+                                    additional_gcta_params):
+        """
+        Write executable bash script for running association test with only the local eGRM as random effects using GCTA
+
+        @param testing_method:
+        @param outname:
+        @param pheno_file:
+        @param outfile:
+        @param GCTA:
+        @param num_GCTA_threads:
+        @return:
+        """
+        gcta_string = GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname \
+                      + "_REML --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
+        if additional_gcta_params is not None:
+            for p in additional_gcta_params:
+                gcta_string += " --" + p
+        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
+
+    def write_GCTA_command_file_grm_pca(self, testing_method, outname, pheno_file, outfile, num_eigenvectors,
+                                        population_structure_matrix, GCTA, num_GCTA_threads):
+        """
+        Write executable bash script for running association test with local eGRM as random effects and PCA of global
+        population structure matrix using GCTA
+
+        @param num_eigenvectors:
+        @param population_structure_matrix:
+        @param testing_method:
+        @param outname:
+        @param pheno_file:
+        @param outfile:
+        @param GCTA:
+        @param num_GCTA_threads:
+        @return:
+        """
+        outfile.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
+                      + outname + "> " + outname + "_tmp2.out\n\n")
+
+        outfile.write(
+            GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_REML" + " --qcovar " + outname + ".eigenvec --threads "
+            + str(num_GCTA_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
+
 
 class TTreeAssociationMantel(TAssociationTestingRegions):
 
@@ -868,6 +1219,22 @@ class TAssociationTestingRegionsMtg2(TAssociationTestingRegions):
         # p-value container
         self.p_values = np.empty(self.num_associations)
         self.p_values.fill(np.nan)
+
+    def write_mtg2_command_script(self, pheno_file, outname, mtg2, additional_mtg2_params, logfile, args):
+        with open(outname + "_run_mtg2.sh", 'w') as f:
+            f.write("#!/bin/bash\n")
+
+            logfile.info("- Writing mtg2 command file")
+            self.write_mtg2_command_file_mgrm(outname=outname,
+                                              pheno_file=pheno_file,
+                                              outfile=f,
+                                              mtg2=mtg2,
+                                              additional_mtg2_params=additional_mtg2_params)
+
+    def write_mtg2_command_file_mgrm(self, outname, pheno_file, outfile, mtg2,
+                                     additional_mtg2_params):
+
+        raise ValueError("Usage of mtg2 has not been implemented yet")
 
     def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
         phenotypes_object.write_to_file_fam(inds=inds, out=out)
