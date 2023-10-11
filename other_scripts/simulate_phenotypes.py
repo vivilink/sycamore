@@ -3,7 +3,7 @@ from pandas_plink import read_plink1_bin
 import random
 
 # read genotypes
-G = read_plink1_bin("/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr5/All_MEGA_GWAS.and.CIDR_GDA_GWAS.nh.intersect1M.drop5k.chr1-22.asVCF.rmvoutoforder.geno05.hwe1e-6.ld50-5-.8.prune.in.maf01.bed", "/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr5/All_MEGA_GWAS.and.CIDR_GDA_GWAS.nh.intersect1M.drop5k.chr1-22.asVCF.rmvoutoforder.geno05.hwe1e-6.ld50-5-.8.prune.in.maf01.bim", "/home1/linkv/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr5/All_MEGA_GWAS.and.CIDR_GDA_GWAS.nh.intersect1M.drop5k.chr1-22.asVCF.rmvoutoforder.geno05.hwe1e-6.ld50-5-.8.prune.in.maf01.fam", verbose=False)
+G = read_plink1_bin("~/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr5/All_MEGA_GWAS.and.CIDR_GDA_GWAS.nh.intersect1M.drop5k.chr1-22.asVCF.rmvoutoforder.geno05.hwe1e-6.ld50-5-.8.prune.in.maf01.bed", "~/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr5/All_MEGA_GWAS.and.CIDR_GDA_GWAS.nh.intersect1M.drop5k.chr1-22.asVCF.rmvoutoforder.geno05.hwe1e-6.ld50-5-.8.prune.in.maf01.bim", "~/ARGWAS/hawaiian/plink_files_analysis_chromosomes/chr5/All_MEGA_GWAS.and.CIDR_GDA_GWAS.nh.intersect1M.drop5k.chr1-22.asVCF.rmvoutoforder.geno05.hwe1e-6.ld50-5-.8.prune.in.maf01.fam", verbose=False)
 
 num_variants = len(G.variant)
 print("there are",num_variants, "variants")
