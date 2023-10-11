@@ -172,7 +172,7 @@ class TParameters:
         assoc.add_argument('--ass_method', nargs='+', type=str,
                            help="Provide association method [AIM, GWAS] and for AIM covariance type [eGRM, GRM, "
                                 "scaled] with the following format: 'method:covariance'")
-        assoc.add_argument('--AIM_method', type=str, nargs='+',
+        assoc.add_argument("--AIM_method", type=str, nargs='+',
                            help="Use GCTA Haseman-Elston, GCTA REML, glimix REML, or any combination of these to test "
                                 "GRM for association")
         assoc.add_argument('--no_clean_up', action='store_true',

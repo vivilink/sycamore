@@ -21,7 +21,6 @@ import TImputation as impute
 import glob
 
 
-
 def run_association_testing(args, random, logfile):
     """
     Simulate phenotypes and perform association
