@@ -68,8 +68,11 @@ Install tsdate
 Install plinkFile library in R if you want to write covariance matrices in .grm.bin format for GCTA
 
     install.packages("plinkFile")
-    
-    
+
+Parameters
+-----------------
+
+Run python ./ARGWAS.py --help to see a list of all parameters with descriptions
 
 Tasks
 -------------------------
