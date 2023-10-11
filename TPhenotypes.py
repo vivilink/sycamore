@@ -800,7 +800,7 @@ class PhenotypesSimulated(Phenotypes):
         @param right_bound: Right bound of causal region (included)
         @param causal_mutations_effect_size_def: str, Std. dev. for betas of causal mutations . If it can be converted to a
                                         float, betas will sampled from N(0, pty_sd_beta_causal_mutations). If set to
-                                        'standardized', betas will be sampled from
+                                        'freq_dependant', betas will be sampled from
                                         N(0, [2 * f * (1 - f)]^{-0.5} * h2g / p),
                                         where h2g is the heritability of the trait and p is the number of causal SNPs.
         @param random: TRandom
@@ -851,9 +851,9 @@ class PhenotypesSimulated(Phenotypes):
                     sd = float(causal_mutations_effect_size_def)
                 except ValueError:
                     causal_mutations_effect_size_def = causal_mutations_effect_size_def
-                    if causal_mutations_effect_size_def != "standardized":
+                    if causal_mutations_effect_size_def != "freq_dependant":
                         raise ValueError("'sd_beta_causal_mutations' is set to unknown option. Must be a float or "
-                                         "'standardized'")
+                                         "'freq_dependant'")
                     f = variants.info['allele_freq'][v]
                     sd = (local_heritability / num_causal_vars) / np.sqrt(2 * f * (1 - f))
 
