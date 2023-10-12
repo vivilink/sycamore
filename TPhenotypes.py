@@ -15,6 +15,11 @@ from statsmodels.distributions.empirical_distribution import ECDF
 from scipy.stats import norm
 import TVariants as tvar
 import tskit
+import TRandomGenerator as rg
+import TParameters as TParams
+import TIndividuals as tind
+from python_log_indenter import IndentedLoggerAdapter
+
 
 
 # TODO: being typed or not should be an option for all causal variants
@@ -34,7 +39,8 @@ def make_phenotypes(args, trees, sample_ids, inds, plots_dir, random, logfile):
         # variants_orig are used to simulate phenotypes. They need to be consistent with original tree and the typed
         # status that might have been defined earlier with a variants file. The causal mutation should not be affected
         # by a freq filter
-        variants_orig = tvar.TVariantsFiltered(ts_object=trees_orig,
+
+        variants_orig = tvar.TVariantsFiltered(tskit_object=trees_orig,
                                                samp_ids=sample_ids,
                                                min_allele_freq=0,
                                                max_allele_freq=1,
@@ -442,17 +448,10 @@ class PhenotypesSimulated(Phenotypes):
 
         self.filled = True
 
-    def simulate_trait_architecture(self, args, r, logfile, variants_orig, inds, trees, plots_dir):
+    def simulate_trait_architecture(self, args: TParams, r: rg, logfile: IndentedLoggerAdapter, variants_orig: tvar, inds: tind,
+                                    trees: tskit.trees, plots_dir:str):
         """
         Simulate phenotype's genetic architecture
-        :param args: TArgs
-        :param r: TRandomGenerator
-        :param logfile: IndentedLoggerAdapter
-        :param variants_orig: TVariants
-        :param inds: TInds
-        :param trees: tskit.TreeSequence
-        :param plots_dir: str
-        :return:
         """
 
         if args.pty_sim_method is None:

@@ -92,6 +92,13 @@ if args.task == "simulate":
     else:
         trees = simulator.run_simulation(arguments=args, randomGenerator=r, logfile=logger)
 
+    trees_object = tt.TTrees(tree_file=trees,
+                             trees_interval=args.trees_interval,
+                             trees_interval_start=args.trees_interval_start,
+                             trees_interval_end=args.trees_interval_end,
+                             skip_first_tree=args.skip_first_tree,
+                             logfile=logger)
+
     sample_ids = trees.samples()
     N = len(sample_ids)
     if args.N != N:
@@ -101,8 +108,8 @@ if args.task == "simulate":
                             num_haplotypes=N,
                             relate_sample_names_file=args.relate_sample_names,
                             logfile=logger)
-    variants = tvar.TVariants(trees_object=trees, samp_ids=sample_ids)
-    variants.fill_info(ts_object=trees, samp_ids=sample_ids, pos_float=args.pos_float, logfile=logger)
+    variants = tvar.TVariants(tskit_object=trees, samp_ids=sample_ids)
+    variants.fill_info(tskit_object=trees, samp_ids=sample_ids, pos_float=args.pos_float, logfile=logger)
     variants.write_variant_info(out=args.out, logfile=logger)
 
     tt.TTrees.writeStats(ts_object=trees, out=args.out, logfile=logger)
@@ -194,7 +201,7 @@ if args.task == "downsampleVariantsWriteShapeit":
                             relate_sample_names_file=args.relate_sample_names,
                             logfile=logger)
     inds.write_shapeit2(args.out, logger)
-    variants = tvar.TVariantsFiltered(trees_object, sample_ids, args.min_allele_freq, args.max_allele_freq,
+    variants = tvar.TVariantsFiltered(trees_object.trees, sample_ids, args.min_allele_freq, args.max_allele_freq,
                                       args.prop_typed_variants, args.pos_float, r, logger)
     # variants = tvar.TVariantsFiltered(trees, samp_ids, 0.01, 1, 0.5, r)
     variants.write_variant_info(args.out, logger)

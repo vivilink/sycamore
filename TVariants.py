@@ -11,6 +11,7 @@ import time
 import TRandomGenerator as rg
 import TTree as tt
 from python_log_indenter import IndentedLoggerAdapter
+import tskit
 
 
 class TVariants:
@@ -18,8 +19,8 @@ class TVariants:
     A class containing all variants of a tree, all variants are typed
     """
 
-    def __init__(self, trees_object: tt, samp_ids: np.ndarray):
-        self._variants = list(trees_object.trees.variants(samples=samp_ids))
+    def __init__(self, tskit_object: tskit, samp_ids: np.ndarray):
+        self._variants = list(tskit_object.variants(samples=samp_ids))
         self._number = len(self._variants)
         self._number_typed = self._number
         self._positions = np.empty(self._number)
@@ -27,7 +28,7 @@ class TVariants:
         self._info_columns = ['var_index', 'position', 'allele_freq', 'num_alleles', 'typed', 'tree_index']
         self._info = pd.DataFrame(index=range(self._number), columns=self._info_columns)
 
-    def fill_info(self, trees_object: tt, samp_ids: np.ndarray, pos_float: bool, logfile: IndentedLoggerAdapter):
+    def fill_info(self, tskit_object: tskit, samp_ids: np.ndarray, pos_float: bool, logfile: IndentedLoggerAdapter):
         """
         Create table with information about variants
 
@@ -37,9 +38,9 @@ class TVariants:
         :param logfile:
         :return:
         """
-        if len(list(trees_object.trees.variants(samples=samp_ids))) < 1:
+        if len(list(tskit_object.variants(samples=samp_ids))) < 1:
             logfile.info("WARNING: Found no variants")
-        for v, var in enumerate(list(trees_object.trees.variants(samples=samp_ids))):
+        for v, var in enumerate(list(tskit_object.variants(samples=samp_ids))):
             tmp = sum(var.genotypes) / len(var.genotypes)
 
             if len(np.bincount(var.genotypes)) > 2:
@@ -71,7 +72,7 @@ class TVariants:
         self._info['typed'] = "True"
 
         # set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
-        self._info['tree_index'] = np.digitize(self._info['position'], trees_object.trees.breakpoints(as_array=True)) - 1
+        self._info['tree_index'] = np.digitize(self._info['position'], tskit_object.breakpoints(as_array=True)) - 1
         self._info['causal_region'] = "FALSE"
 
     @property
@@ -277,7 +278,7 @@ class TVariantsFiltered(TVariants):
     filtered_variants_file, or if none given it depends on the allele frequency filteres and prop_typed_variants filters
     """
 
-    def __init__(self, trees_object: tt, samp_ids: np.ndarray, min_allele_freq: float, max_allele_freq: float,
+    def __init__(self, tskit_object: tskit, samp_ids: np.ndarray, min_allele_freq: float, max_allele_freq: float,
                  prop_typed_variants: float, pos_float: bool, random: rg, logfile, filtered_variants_file=None):
         """
         Parameters
@@ -306,11 +307,11 @@ class TVariantsFiltered(TVariants):
         #  enumerate in TPhenotypes does not work
         # TODO: develop an iterator for variants that only goes over the typed ones
 
-        super().__init__(trees_object=trees_object, samp_ids=samp_ids)
+        super().__init__(tskit_object=tskit_object, samp_ids=samp_ids)
 
         # build variant object from tree file -> filter!
         if filtered_variants_file is None:
-            self.fill_info(trees_object, samp_ids, pos_float, logfile=logfile)
+            self.fill_info(tskit_object, samp_ids, pos_float, logfile=logfile)
             self._number_typed = -1
 
             logfile.info("- Building variant information from scratch based on simulated trees")
@@ -321,7 +322,7 @@ class TVariantsFiltered(TVariants):
                 raise ValueError("allele frequency filters are nonsensical")
 
             # determine typed status for each variant
-            for v, var in enumerate(trees_object.trees.variants(samples=samp_ids)):
+            for v, var in enumerate(tskit_object.variants(samples=samp_ids)):
                 # is variant typed? Depends on freq filter and proportion typed
                 af = self._info['allele_freq'].iloc[v]
                 if min_allele_freq <= af <= max_allele_freq:
@@ -359,7 +360,7 @@ class TVariantsFiltered(TVariants):
                     len(self._info['var_index'])) + " variants, expected " + str(self._number))
             if 'tree_index' not in self._info.columns:
                 # set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
-                self._info['tree_index'] = np.digitize(self._info['position'], trees_object.breakpoints(as_array=True)) - 1
+                self._info['tree_index'] = np.digitize(self._info['position'], tskit_object.breakpoints(as_array=True)) - 1
 
             # remove variants that now do not pass the frequency filter
             self._info['typed'].iloc[self._info['allele_freq'] < min_allele_freq] = False
