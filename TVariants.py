@@ -44,11 +44,9 @@ class TVariants:
             if not pos_float:
                 pos = round(var.site.position)
                 if v > 0 and pos <= self._positions[v - 1]:
-                    logfile.info("WARNING: Pos (" + str(pos) + ") is smaller than previous one ("
-                                 + str(self._positions[v - 1]) + "). Setting to " + str(self._positions[v - 1] + 1))
+                    # logfile.info("WARNING: Pos (" + str(pos) + ") is smaller than previous one ("
+                    #              + str(self._positions[v - 1]) + "). Setting to " + str(self._positions[v - 1] + 1))
                     pos = self._positions[v - 1] + 1
-                    # if pos > 49499400:
-                    #     raise ValueError("stop")
             else:
                 pos = var.site.position
 
