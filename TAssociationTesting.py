@@ -292,7 +292,7 @@ class TAssociationTestingRegions(TAssociationTesting):
 
         subplot.axhline(y=8, color="red", lw=0.5)
 
-    def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
+    def test(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
         raise ValueError("Function not defined for base class")
 
 
@@ -315,7 +315,7 @@ class TAssociationTestingRegionsGlimix(TAssociationTestingRegions):
         self.V_G_over_Vp = np.empty(self.num_associations)
         self.V_G_over_Vp.fill(np.nan)
 
-    def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
+    def test(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
         """
         Run LMM to test for association between a GRM and phenotypes using limix, copied from
         https://github.com/mancusolab/sushie/blob/main/sushie/utils.py
@@ -404,7 +404,7 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
         self.name = "regions_GCTA"
         self.write_GCTA_command_script(test_name, pheno_file, outname, logfile)
 
-    def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
+    def test(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
         if covariance_object.write(out=out, inds=inds, covariances_picklefile=covariances_picklefile):
             self.run_association_one_window_gcta(index=index, out=out)
         else:
@@ -425,11 +425,11 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
                                                       outfile=f,
                                                       GCTA=args.GCTA,
                                                       num_GCTA_threads=args.num_gcta_threads,
-                                                      population_structure_grm_prefix=args.population_structure,
+                                                      population_structure_grm_prefix=args.population_structure_matrix,
                                                       logfile=logfile,
                                                       additional_gcta_params=args.additional_gcta_params)
 
-            elif args.population_structure and args.population_structure_pca_num_eigenvectors is None:
+            elif args.population_structure_matrix and args.population_structure_pca_num_eigenvectors is None:
                 logfile.info("- Writing gcta command file to test a model containing the local GRM and a global GRM as "
                              "random effects")
                 self.write_GCTA_command_file_mgrm(outname=outname,
@@ -441,8 +441,8 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
                                                   logfile=logfile,
                                                   additional_gcta_params=args.additional_gcta_params)
 
-            elif args.population_structure and args.population_structure_pca_num_eigenvectors \
-                    and args.do_all_stratification_correction:
+            elif args.population_structure_matrix and args.population_structure_pca_num_eigenvectors \
+                    and args.global_GRM_and_PCs_model:
                 logfile.info(
                     "- Writing gcta command file to run a PCA on the population structure GRM, and then test a "
                     "model containing the local GRM and a global GRM as a random effects, and the PCs as "
@@ -450,20 +450,20 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
                 self.write_GCTA_command_file_mgrm_pca(outname=outname,
                                                       pheno_file=pheno_file,
                                                       num_eigenvectors=args.population_structure_pca_num_eigenvectors,
-                                                      population_structure_matrix=args.population_structure,
+                                                      population_structure_matrix=args.population_structure_matrix,
                                                       outfile=f,
                                                       GCTA=args.GCTA,
                                                       num_GCTA_threads=args.num_gcta_threads)
 
-            elif args.population_structure and args.population_structure_pca_num_eigenvectors \
-                    and not args.do_all_stratification_correction:
+            elif args.population_structure_matrix and args.population_structure_pca_num_eigenvectors \
+                    and not args.global_GRM_and_PCs_model:
                 logfile.info(
                     "- Writing gcta command file to run a PCA on the population structure GRM, and then test a "
                     "model containing the local GRM as a random effect, and the PCs as fixed effects")
                 self.write_GCTA_command_file_grm_pca(outname=outname,
                                                      pheno_file=pheno_file,
                                                      num_eigenvectors=args.population_structure_pca_num_eigenvectors,
-                                                     population_structure_matrix=args.population_structure,
+                                                     population_structure_matrix=args.population_structure_matrix,
                                                      outfile=f,
                                                      GCTA=args.GCTA,
                                                      num_GCTA_threads=args.num_gcta_threads)
@@ -520,7 +520,6 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
                                         num_GCTA_threads):
         raise ValueError("write_GCTA_command_file_grm_pca() not defined for GCTA base class!")
 
-
     def write_GCTA_command_file_grm(self,
                                     outname,
                                     pheno_file,
@@ -530,18 +529,19 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
                                     num_GCTA_threads):
         raise ValueError("write_GCTA_command_file_grm() not defined for GCTA base class!")
 
-    def write_multi_grm_file(self, outname, logfile, population_structure_grm_prefix):
+    def write_multi_grm_file(self, outname, logfile, global_grms: list):
         """
         Write file with prefixes of local GRM and global GRM (population structure) so that GCTA includes both in the model
         :param outname: str
         :param logfile: TLog
-        :param population_structure_grm_prefix: prefix of global GRM in binary format
+        :param global_grms: list of str, prefix of global GRM in binary format
         :return: None
         """
         logfile.info("- Writing multi grm file to '" + outname + "_multi_grm.txt'")
         with open(outname + '_multi_grm.txt', 'w') as f:
             f.write(outname + '\n')
-            f.write(population_structure_grm_prefix + '\n')
+            for g in global_grms:
+                f.write(g + '\n')
 
 
 class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
@@ -674,7 +674,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         """
 
         self.write_multi_grm_file(outname=outname, logfile=logfile,
-                                  population_structure_grm_prefix=population_structure_grm_prefix)
+                                  global_grms=[population_structure_grm_prefix])
 
         gcta_string = GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
                       + outname + "_HE --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
@@ -706,7 +706,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         :return: None
         """
         self.write_multi_grm_file(outname=outname, logfile=logfile,
-                                  population_structure_grm_prefix=population_structure_grm_prefix)
+                                  global_grms=[population_structure_grm_prefix])
 
         gcta_string = GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
                       + outname + "_HE --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
@@ -933,7 +933,7 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         """
 
         self.write_multi_grm_file(outname=outname, logfile=logfile,
-                                  population_structure_grm_prefix=population_structure_grm_prefix)
+                                  global_grms=[population_structure_grm_prefix])
 
         gcta_string = GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
                       + outname + "_REML --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
@@ -960,7 +960,7 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         """
         # write multi grm text file
         self.write_multi_grm_file(outname=outname, logfile=logfile,
-                                  population_structure_grm_prefix=population_structure_grm_prefix)
+                                  global_grms=[population_structure_grm_prefix])
 
         gcta_string = GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
                       + outname + "_REML --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
@@ -1092,7 +1092,7 @@ class TAssociationTestingRegionsMtg2(TAssociationTestingRegions):
 
         raise ValueError("Usage of mtg2 has not been implemented yet")
 
-    def run_association(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
+    def test(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
         phenotypes_object.write_to_file_fam(inds=inds, out=out)
 
         if covariance_object.write(out=out, inds=inds, covariances_picklefile=covariances_picklefile):
