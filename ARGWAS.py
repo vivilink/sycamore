@@ -101,7 +101,7 @@ if args.task == "simulate":
                             num_haplotypes=N,
                             relate_sample_names_file=args.relate_sample_names,
                             logfile=logger)
-    variants = tvar.TVariants(ts_object=trees, samp_ids=sample_ids)
+    variants = tvar.TVariants(trees_object=trees, samp_ids=sample_ids)
     variants.fill_info(ts_object=trees, samp_ids=sample_ids, pos_float=args.pos_float, logfile=logger)
     variants.write_variant_info(out=args.out, logfile=logger)
 
@@ -194,7 +194,7 @@ if args.task == "downsampleVariantsWriteShapeit":
                             relate_sample_names_file=args.relate_sample_names,
                             logfile=logger)
     inds.write_shapeit2(args.out, logger)
-    variants = tvar.TVariantsFiltered(trees, sample_ids, args.min_allele_freq, args.max_allele_freq,
+    variants = tvar.TVariantsFiltered(trees_object, sample_ids, args.min_allele_freq, args.max_allele_freq,
                                       args.prop_typed_variants, args.pos_float, r, logger)
     # variants = tvar.TVariantsFiltered(trees, samp_ids, 0.01, 1, 0.5, r)
     variants.write_variant_info(args.out, logger)
@@ -221,13 +221,13 @@ if args.task == "impute":
                              skip_first_tree=args.skip_first_tree,
                              logfile=logger)
 
-    sample_ids = trees.samples()
+    sample_ids = trees_object.trees.samples()
     N = len(sample_ids)
     inds = tind.Individuals(ploidy=args.ploidy,
                             num_haplotypes=N,
                             relate_sample_names_file=args.relate_sample_names,
                             logfile=logger)
-    variants = tvar.TVariantsFiltered(ts_object=trees_object.trees, samp_ids=sample_ids, min_allele_freq=args.min_allele_freq,
+    variants = tvar.TVariantsFiltered(trees_object=trees_object, samp_ids=sample_ids, min_allele_freq=args.min_allele_freq,
                                       max_allele_freq=args.max_allele_freq,
                                       prop_typed_variants=args.prop_typed_variants, pos_float=args.pos_float, random=r,
                                       logfile=logger, filtered_variants_file=None)

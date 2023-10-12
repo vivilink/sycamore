@@ -80,7 +80,7 @@ def run_association_testing(args, random, logfile):
     #  won't match (tree only contains typed variants). The variant file is only useful for simulating phenotypes to
     #  be able to keep track of untyped variants (i.e. for variants_orig)
     logfile.info("- Compiling variant info from trees file")
-    variants = tvar.TVariantsFiltered(ts_object=trees,
+    variants = tvar.TVariantsFiltered(trees_object=trees_object,
                                       samp_ids=sample_ids,
                                       min_allele_freq=args.min_allele_freq,
                                       max_allele_freq=args.max_allele_freq,
