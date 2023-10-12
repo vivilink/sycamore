@@ -96,7 +96,7 @@ Run association with simulated phenotypes and two populations, correcting for st
 
 *simulate*
 
-This task simulates ARGs using either msprime or stdpopsim. Always simulate haploids, the haplotypes are assigned to individuals in the association task.
+This task simulates ARGs using either msprime or stdpopsim. Always simulate haploids, the haplotypes are assigned to individuals in the association task. If the positions are integers it can happen that more than one variants fall on the same position. In that case, the position of the second variant is set to position + 1.
 
 Simulate one population with stdpopsim:
 
