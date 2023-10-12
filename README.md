@@ -64,6 +64,10 @@ Install tsdate
 
     python3 -m pip install tsdate --user
 
+Install pandas_plink
+
+    conda install -c conda-forge pandas-plink
+
 
 Install plinkFile library in R if you want to write covariance matrices in .grm.bin format for GCTA
 
