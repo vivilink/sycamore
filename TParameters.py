@@ -194,8 +194,8 @@ class TParameters:
                            help="genetic map with columns for Position [bp], Rate [cM/Mb] and Map [cM]")
         assoc.add_argument('--ass_window_size', type=int,
                            help="window size for region-based association tests")
-        assoc.add_argument('--write_covariance_picklefiles', action='store_true',
-                           help="write covariances from association tests to picklefile")
+        # assoc.add_argument('--write_covariance_picklefiles', action='store_true',
+        #                    help="write covariances from association tests to picklefile")
         assoc.add_argument('--covariance_picklefiles', type=str, nargs='+',
                            help="calculate correlation between covariances along the genome (user must verify that "
                                 "windows have same coordinates)")

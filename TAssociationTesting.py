@@ -402,7 +402,6 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
     def __init__(self, phenotypes, num_associations, test_name, pheno_file, outname, logfile, args):
         super().__init__(phenotypes, num_associations)
         self.name = "regions_GCTA"
-        self.write_GCTA_command_script(pheno_file=pheno_file, outname=outname, logfile=logfile, args=args)
 
     def test(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
         if covariance_object.write(out=out, inds=inds, covariances_picklefile=covariances_picklefile):
@@ -542,6 +541,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         super().__init__(phenotypes, num_associations, test_name, pheno_file, outname, logfile, args)
         self.name = "regions_GCTA_HE"
         self.GCTA_script_name = outname + "_run_" + self.name + ".sh"
+        self.write_GCTA_command_script(pheno_file=pheno_file, outname=outname, logfile=logfile, args=args)
 
         # p-value containers
         self.p_values_HECP_OLS = np.empty(self.num_associations)
@@ -751,13 +751,12 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         """
         Write executable bash script for running association test with only the local eGRM as random effects using GCTA
 
-        @param testing_method:
-        @param outname:
-        @param pheno_file:
-        @param outfile:
-        @param GCTA:
-        @param num_GCTA_threads:
-        @return:
+        :param outname:
+        :param pheno_file:
+        :param GCTA:
+        :param num_GCTA_threads:
+        :param additional_gcta_params:
+        :return:
         """
 
         with open(self.GCTA_script_name, 'w') as f:
@@ -818,6 +817,7 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         super().__init__(ts_object, phenotypes, test_name, pheno_file, outname, logfile, args)
         self.name = "regions_GCTA_REML"
         self.GCTA_script_name = outname + "_run_" + self.name + ".sh"
+        self.write_GCTA_command_script(pheno_file=pheno_file, outname=outname, logfile=logfile, args=args)
 
         # results containers
         self.p_values = np.empty(self.num_associations)

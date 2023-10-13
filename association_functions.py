@@ -20,7 +20,7 @@ import TAssociationTesting as at
 import TImputation as impute
 import glob
 import TParameters
-
+from typing import IO
 
 def run_association_testing(args, random, logfile):
     """
@@ -266,7 +266,7 @@ def get_AIM_test_object(test_name:str, phenotypes, pheno_file, num_associations,
     return test_obj
 
 
-def get_window_starts_and_ends(window_size:int, trees_interval:list):
+def get_window_starts_and_ends(window_size: int, trees_interval: list[float]):
     """
     Get coordinates of windows of non-overlapping windows of size window_size
     """
@@ -290,7 +290,7 @@ def get_window_starts_and_ends(window_size:int, trees_interval:list):
     return window_starts, window_ends
 
 
-def get_proportion_of_tree_within_window(window_start:int, window_end:int, tree_start:int, tree_end:int):
+def get_proportion_of_tree_within_window(window_start: int, window_end: int, tree_start: float, tree_end: float):
     """
     Return proportion of tree that is within a genomic window. I guess the window_end and tree_end are not included.
     @param window_start:
@@ -321,8 +321,8 @@ def get_proportion_of_tree_within_window(window_start:int, window_end:int, tree_
         return 0.0
 
 
-def test_window_for_association(covariance_obj:cov, inds:tind, AIM_methods:list[at], outname:str, window_index:int,
-                                phenotypes_obj:pt, cholesky_global_GRM_for_cor:cov, covariances_picklefile:bool):
+def test_window_for_association(covariance_obj: cov, inds:tind, AIM_methods: list[at], outname: str, window_index: int,
+                                phenotypes_obj: pt, cholesky_global_GRM_for_cor: cov, covariances_picklefile: IO):
     """
     Finalize covariance object and run association test. If global GRM is given and the testing method is GCTA,
     first also calculate the correlation between the local and global matrix
@@ -380,9 +380,10 @@ def test_window_for_association(covariance_obj:cov, inds:tind, AIM_methods:list[
     covariance_obj.clear()
 
 
-def loop_windows_variant_based_covariance_testing(covariance_obj:cov, AIM_methods:list[at], variants:tvar, window_ends:list,
-                                                  window_starts:list, num_tests:int, inds:tind, covariances_picklefile:bool,
-                                                  pheno:pt, cholesky_global_GRM_for_cor:cov, logfile, outname:str):
+def loop_windows_variant_based_covariance_testing(covariance_obj:cov, AIM_methods: list[at], variants: tvar,
+                                                  window_ends: list, window_starts: list, num_tests: int, inds: tind,
+                                                  covariances_picklefile: IO, pheno: pt,
+                                                  cholesky_global_GRM_for_cor: cov, logfile, outname:str):
     """
     Write covariance calculated based on variants within a window (can be one tree) to file and test it for association with
     phenotypes. Currently, the only covariance type based on variants is GRM.
@@ -438,10 +439,11 @@ def loop_windows_variant_based_covariance_testing(covariance_obj:cov, AIM_method
                                             out=outname)
 
 
-def loop_windows_tree_based_covariance_testing(trees, covariance_obj:cov, AIM_methods:list[at], window_ends:list[int],
-                                               window_starts:list[int], window_size:int, skip_first_tree:bool,
-                                               inds:tind, pheno:pt, covariances_picklefile:bool,
-                                               cholesky_global_GRM_for_cor:cov, logfile, outname:str, limit_association_tests:int):
+def loop_windows_tree_based_covariance_testing(trees, covariance_obj: cov, AIM_methods: list[at], window_ends: list[int],
+                                               window_starts: list[int], window_size: int, skip_first_tree: bool,
+                                               inds: tind, pheno: pt, covariances_picklefile: IO,
+                                               cholesky_global_GRM_for_cor: cov, logfile, outname: str,
+                                               limit_association_tests: int):
     """
     Loop over windows, write necessary files and run association tests
     :param trees:
@@ -641,9 +643,9 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     logfile.info("- Running association tests")
 
     # write covariances to picklefile for later comparison?
-    covariances_picklefile = None
-    if args.write_covariance_picklefiles:
-        covariances_picklefile = open(outname + "_matrices_" + covariance_obj.covariance_type + ".pickle", "wb")
+    covariance_picklefiles = None
+    if args.covariance_picklefiles:
+        covariances_picklefiles = open(outname + "_matrices_" + covariance_obj.covariance_type + ".pickle", "wb")
 
     cholesky_global_GRM_for_cor = None
     if args.coreGREML_model:
@@ -662,12 +664,11 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                                       window_starts=window_starts,
                                                       num_tests=num_tests,
                                                       inds=inds,
-                                                      covariances_picklefile=covariances_picklefile,
+                                                      covariances_picklefile=covariance_picklefiles,
                                                       cholesky_global_GRM_for_cor=cholesky_global_GRM_for_cor,
                                                       pheno=pheno,
                                                       logfile=logfile,
-                                                      outname=outname,
-                                                      population_structure=args.population_structure_matrix)
+                                                      outname=outname)
 
     # window based covariance (need to loop over trees)
     else:
@@ -679,7 +680,7 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                                    window_size=window_size,
                                                    inds=inds,
                                                    skip_first_tree=args.skip_first_tree,
-                                                   covariances_picklefile=covariances_picklefile,
+                                                   covariances_picklefile=covariance_picklefiles,
                                                    cholesky_global_GRM_for_cor=cholesky_global_GRM_for_cor,
                                                    pheno=pheno,
                                                    logfile=logfile,
@@ -687,8 +688,8 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                                    limit_association_tests=args.limit_association_tests)
 
     # close covariance picklefiles
-    if args.write_covariance_picklefiles:
-        covariances_picklefile.close()
+    if args.covariance_picklefiles:
+        covariance_picklefiles.close()
 
     logfile.sub()
 
