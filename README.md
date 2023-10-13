@@ -190,6 +190,15 @@ We then used these phenotypes to test the variants and trees for association. Th
 
 The R script used to calculate the association power is 2a_calculate_power.R, which calls 2b_calculate_power_one_experiment.R. It uses the output of R_scripts/1_calculate_significance_cutoffs.R. The results can be plotted with R_scripts/3_plot_with_error_bars_aH.R and R_scripts/3_plot_with_error_bars_oneVariant.R.
 
+Analysing real data
+--------------------
+
+To test for association using the ARG inferred from real sequencing data and true phenotypes, you can use the same command as for simulated data. You need to provide the sample names of the tree leaves, and these will be matched to the sample names in the phenotype file. Individuals with missing phenotypes, or individuals who are missing from the tree, are removed. There are different ways to correct for population structure:
+
+- --population_structure_matrix: provide prefix for global (e.g. LOCO) genetic relatedness matrix in GCTA's binary format
+- --population_structure_pca_num_eigenvectors: if population structure matrix is provided, this parameter will not include the matrix directly, but instead use GCTA to calculate the specified number of PCs and include those
+- --do_all_stratification_correction: if the population structure matrix is provided and you also provided population_structure_pca_num_eigenvectors, then you can choose to include both the matrix and the PCs in the model with this parameter
+
 
 Other
 -----------
