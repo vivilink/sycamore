@@ -1,4 +1,4 @@
-setwd("/home1/linkv/ARGWAS/hawaiian/stratification_control/variants1k_heritability0.45/")
+setwd("~/ARGWAS/hawaiian/stratification_control/variants1k_heritability0.45/")
 source("~/ARGWAS/argwas/R_scripts/functions.R")
 
 nreps <- 50
@@ -124,7 +124,7 @@ plot.new()
 
 plot_ps_eGRM("~/ARGWAS/hawaiian/stratification_control/variants1k_heritability0.45/association_with_GRM_correction/CREBRF_test_region_withCorrection_", "GRM loco GRM", ending="_GRM_trees_GCTA_REML_results.csv")
 title(ylab="local GRM", line=2)
-plot_ps_eGRM("/home1/linkv/ARGWAS/hawaiian/stratification_control/variants1k_heritability0.45/BLUP_residuals/global_GRM/associations_residuals/CREBRF_test_region_withCorrection_", "loco GRM residuals", ending="_GRM_trees_GCTA_REML_results.csv")
+plot_ps_eGRM("~/ARGWAS/hawaiian/stratification_control/variants1k_heritability0.45/BLUP_residuals/global_GRM/associations_residuals/CREBRF_test_region_withCorrection_", "loco GRM residuals", ending="_GRM_trees_GCTA_REML_results.csv")
 plot.new()
 plot.new()
 plot.new()
