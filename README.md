@@ -158,7 +158,7 @@ This section contains more details about how to use the software to replicate th
 
 We simulated 300 random ARGs. This produces a tskit object with suffix ".trees" and a file with information about all variants contained within the ARG with suffix "_sample_variants.csv".
 
-    python ./ARGWAS.py --task simulate --N 2000 --out sim_rep1 --ploidy 1 --seed 1
+    python ./ARGWAS.py --task simulate --N 2000 --out sim_rep1 --trees_interval 49000000 50000000 --ploidy 1 --seed 1 
 
 We downsampled the variants with an allele frequency of at least 1% to 20% of "typed" variants. This produces a file with information about all variants contained within the ARG with suffix "_sample_variants.csv", similarly to task simulate, but it will contain updated information, e.g. whether a variant is typed or not.
 
