@@ -18,7 +18,7 @@ Creating conda environment
 
 The list of packages installed in my conda environment used to produce all results can be found here in this file: sycamore-package-list.txt. It should thus be possible to recreate my environment with the following command:
 
-    conda create -n myenv --file ARGWAS-package-list.txt
+    conda create -n myenv --file sycamore-package-list.txt
     
 *Build environment from scratch*
 
@@ -64,12 +64,19 @@ Install tsdate
 
     python3 -m pip install tsdate --user
 
+Install pandas_plink
+
+    conda install -c conda-forge pandas-plink
+
 
 Install plinkFile library in R if you want to write covariance matrices in .grm.bin format for GCTA
 
     install.packages("plinkFile")
-    
-    
+
+Parameters
+-----------------
+
+Run python ./ARGWAS.py --help to see a list of all parameters with descriptions
 
 Tasks
 -------------------------
@@ -80,7 +87,7 @@ This task runs all association tests, including GWAS, local REML with eGRM and l
 
 Typical command to run associations with simulated phenotypes and allelic heterogeneity:
 
-    python ARGWAS.py --task simulatePhenotypes --out power_simulation --tree_file relate_ARG.trees --tree_file_simulated simulated_ARG.trees --variants_file simulated_ARG_variants.csv --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method oneRegion --pty_prop_causal_mutations 0.1 --causal_region_coordinates 49500000 49505000 --pty_h_squared 0.02 --pty_sd_beta_causal_mutations standardized --ploidy 2 --skip_first_tree --min_allele_freq 0.01 --seed 1 --ass_window_size 5000 --trees_interval_start 49000000 --simulate_phenotypes
+    python ARGWAS.py --task simulatePhenotypes --out power_simulation --tree_file relate_ARG.trees --tree_file_simulated simulated_ARG.trees --variants_file simulated_ARG_variants.csv --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method oneRegion --pty_prop_causal_mutations 0.1 --causal_region_coordinates 49500000 49505000 --pty_h_squared 0.02 --pty_sd_beta_causal_mutations freq_dependant --ploidy 2 --skip_first_tree --min_allele_freq 0.01 --seed 1 --ass_window_size 5000 --trees_interval_start 49000000 --simulate_phenotypes
     
 Run association with simulated phenotypes and two populations, correcting for stratification with PCA:
 
@@ -89,7 +96,7 @@ Run association with simulated phenotypes and two populations, correcting for st
 
 *simulate*
 
-This task simulates ARGs using either msprime or stdpopsim. Always simulate haploids, the haplotypes are assigned to individuals in the association task.
+This task simulates ARGs using either msprime or stdpopsim. Always simulate haploids, the haplotypes are assigned to individuals in the association task. If the positions are integers it can happen that more than one variants fall on the same position. In that case, the position of the second variant is set to position + 1.
 
 Simulate one population with stdpopsim:
 
@@ -127,7 +134,7 @@ This task takes an ARG and outputs a file with information about the ARG, such a
 
 This task takes an ARG and simulates phenotypes without running any association test. If the same seed is used, the phenotypes simulated under task 'associate' and 'simulatePhenotypes' should be identical.
 
-    python ARGWAS.py --task simulatePhenotypes --out example --tree_file relate_tree.trees --tree_file_simulated simulated_tree.trees --variants_file simulated_tree_variants.csv --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method oneRegion --pty_prop_causal_mutations 0.02 --causal_region_coordinates 49500000 49505000 --pty_h_squared 0.1 --pty_sd_beta_causal_mutations standardized --ploidy 2 --skip_first_tree --min_allele_freq 0.01 --seed 1 --ass_window_size 5000 --trees_interval_start 49000000 --simulate_phenotypes
+    python ARGWAS.py --task simulatePhenotypes --out example --tree_file relate_tree.trees --tree_file_simulated simulated_tree.trees --variants_file simulated_tree_variants.csv --ass_method GWAS AIM:eGRM AIM:GRM --AIM_method HE REML --pty_sim_method oneRegion --pty_prop_causal_mutations 0.02 --causal_region_coordinates 49500000 49505000 --pty_h_squared 0.1 --pty_sd_beta_causal_mutations freq_dependant --ploidy 2 --skip_first_tree --min_allele_freq 0.01 --seed 1 --ass_window_size 5000 --trees_interval_start 49000000 --simulate_phenotypes
 
 *impute*
 
@@ -175,7 +182,7 @@ The R script used to calculate the cutoff values is: R_scripts/1_calculate_signi
 
 We simulated phenotypes for the individuals of 200 simulated ARGs. We did this for the true trees and the relate trees. In order to still have access to the This is the command we used for alleleic heterogeneity with causal variants in one 5kb window and a local heritability of 0.2: 
 
-    python ./ARGWAS.py --task simulatePhenotypes --out power_sims_rep1 --tree_file sim_rep1_propTyped0.2_minAF0.01_relate.trees --tree_file_simulated sim_rep1.trees --variants_file sim_rep1_propTyped0.2_minAF0.01_sample_variants.csv  --pty_sim_method oneRegion --pty_prop_causal_mutations 0.2 --causal_region_coordinates 49500000 49505000 --pty_h_squared 0.2 --pty_sd_beta_causal_mutations standardized --ploidy 2 --skip_first_tree --min_allele_freq 0.01  --trees_interval_start 49000000 --simulate_phenotypes --seed 1
+    python ./ARGWAS.py --task simulatePhenotypes --out power_sims_rep1 --tree_file sim_rep1_propTyped0.2_minAF0.01_relate.trees --tree_file_simulated sim_rep1.trees --variants_file sim_rep1_propTyped0.2_minAF0.01_sample_variants.csv  --pty_sim_method oneRegion --pty_prop_causal_mutations 0.2 --causal_region_coordinates 49500000 49505000 --pty_h_squared 0.2 --pty_sd_beta_causal_mutations freq_dependant --ploidy 2 --skip_first_tree --min_allele_freq 0.01  --trees_interval_start 49000000 --simulate_phenotypes --seed 1
 
 We then used these phenotypes to test the variants and trees for association. The trees were tested in windows of 5kb or 10kb. Here is the command for 5kb:
 
