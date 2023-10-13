@@ -16,14 +16,13 @@ from scipy.stats import norm
 import TVariants as tvar
 import tskit
 import TRandomGenerator as rg
-import TParameters as TParams
+import TParameters as tparams
 import TIndividuals as tind
 from python_log_indenter import IndentedLoggerAdapter
 
 
-
 # TODO: being typed or not should be an option for all causal variants
-def make_phenotypes(args, trees, sample_ids, inds, plots_dir, random, logfile):
+def make_phenotypes(args: tparams, trees: tskit.trees, sample_ids, inds: tind, plots_dir: str, random: rg, logfile: IndentedLoggerAdapter):
     if args.simulate_phenotypes:
         if args.tree_file_simulated is None:
             raise ValueError("To simulate phenotypes based on untyped variants the simulated trees need to be "
@@ -448,8 +447,9 @@ class PhenotypesSimulated(Phenotypes):
 
         self.filled = True
 
-    def simulate_trait_architecture(self, args: TParams, r: rg, logfile: IndentedLoggerAdapter, variants_orig: tvar, inds: tind,
-                                    trees: tskit.trees, plots_dir:str):
+    def simulate_trait_architecture(self, args: tparams, r: rg, logfile: IndentedLoggerAdapter, variants_orig: tvar,
+                                    inds: tind,
+                                    trees: tskit.trees, plots_dir: str):
         """
         Simulate phenotype's genetic architecture
         """

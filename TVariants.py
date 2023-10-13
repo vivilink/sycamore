@@ -7,12 +7,12 @@ Created on Mon Aug 30 17:44:45 2021
 """
 import numpy as np
 import pandas as pd
+pd.options.mode.chained_assignment = None # do not print SettingWithCopyWarning
 import time
 import TRandomGenerator as rg
 import TTree as tt
 from python_log_indenter import IndentedLoggerAdapter
 import tskit
-
 
 class TVariants:
     """

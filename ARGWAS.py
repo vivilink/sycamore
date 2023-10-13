@@ -92,13 +92,6 @@ if args.task == "simulate":
     else:
         trees = simulator.run_simulation(arguments=args, randomGenerator=r, logfile=logger)
 
-    trees_object = tt.TTrees(tree_file=trees,
-                             trees_interval=args.trees_interval,
-                             trees_interval_start=args.trees_interval_start,
-                             trees_interval_end=args.trees_interval_end,
-                             skip_first_tree=args.skip_first_tree,
-                             logfile=logger)
-
     sample_ids = trees.samples()
     N = len(sample_ids)
     if args.N != N:
@@ -280,7 +273,7 @@ if args.task == "simulatePhenotypes":
                             logfile=logger)
 
     pheno = pt.make_phenotypes(args=args,
-                               trees=trees,
+                               trees=trees_object.trees,
                                sample_ids=sample_ids,
                                inds=inds,
                                plots_dir=plots_dir,
