@@ -217,3 +217,7 @@ Questions
 -----------
 
 Please contact linkv@usc.edu with any questions.
+
+Cite us
+-----------
+Use DOI:10.5281/zenodo.10011427 to cite this software
