@@ -1,9 +1,9 @@
 sycamore
 =======
 
-This repository contains the code used for the paper entitled [Tree-based QTL mapping with expected local genetic relatedness matrices (Link et al. 2023)](https://www.biorxiv.org/content/10.1101/2023.04.07.536093v1). It identifies quantitative trait loci by testing the eGRM, a measure of local relatedness based on the ancestral recombination graph, for association with the phenotypes using a variance-components framework. This is beneficial for phenotypes with allelic heterogeneity and allows us to capture untyped variation without imputation in understudied populations. 
+This repository contains the code used for the paper entitled [Tree-based QTL mapping with expected local genetic relatedness matrices (Link et al. 2023)](https://www.biorxiv.org/content/10.1101/2023.04.07.536093v1). It identifies quantitative trait loci by testing the eGRM, a measure of local relatedness based on the ancestral recombination graph, for association with the phenotypes using a variance-components framework. 
 
-The python code simulates or reads in an ancestral recombination graph and phenotype data (using [stdpopsim](https://github.com/popsim-consortium/stdpopsim) and [tskit](https://tskit.dev/)), calculates local eGRMs (using [egrm](https://github.com/vivilink/egrm) based on [Fan et al. 2022](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9118131/)), and tests the local eGRMs for association with the phenotypes (using [GCTA](https://yanglab.westlake.edu.cn/software/gcta/#Overview)). The R scripts plot the results.
+The python code simulates or reads in an ancestral recombination graph and phenotype data (using [stdpopsim](https://github.com/popsim-consortium/stdpopsim), [msprime](https://tskit.dev/msprime/docs/stable/intro.html) and [tskit](https://tskit.dev/)), calculates local eGRMs (using [egrm](https://github.com/vivilink/egrm) based on [Fan et al. 2022](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9118131/)), and tests the local eGRMs for association with the phenotypes (using [GCTA](https://yanglab.westlake.edu.cn/software/gcta/#Overview)). The R scripts plot the results.
 
 Setting up sycamore
 -------------------------
