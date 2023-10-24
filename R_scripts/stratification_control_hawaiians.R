@@ -1,4 +1,4 @@
-setwd("/home1/linkv/ARGWAS/hawaiian/stratification_control/variants1k_heritability0.45/")
+setwd("~/ARGWAS/hawaiian/stratification_control/variants1k_heritability0.45/")
 source("~/ARGWAS/argwas/R_scripts/functions.R")
 
 nreps <- 50
@@ -115,6 +115,7 @@ plot.new()
 plot.new()
 plot.new()
 
+
 plot_ps_GWAS_GRM("GWAS_eGRM/crebrf_", "LOCO eGRM", ending=".mlma")
 #title(ylab="GWAS", line=4)
 plot_ps_GWAS_GRM("GWAS_GRM/crebrf_","LOCO GRM", ending=".loco.mlma")
@@ -122,7 +123,6 @@ plot_ps_GWAS("GWAS_100PC/crebrf_region_", "100 PCs", ending=".PHENO1.glm.linear"
 plot_ps_GWAS("GWAS_20PC/crebrf_region_", "20 PCs", ending=".PHENO1.glm.linear")
 plot.new()
 plot.new()
-
 plot.new()
 plot_ps_eGRM("~/ARGWAS/hawaiian/stratification_control/variants1k_heritability0.45/association_with_GRM_correction/CREBRF_test_region_withCorrection_", "LOCO GRM", ending="_GRM_trees_GCTA_REML_results.csv")
 plot_ps_eGRM("~/ARGWAS/hawaiian/stratification_control/variants1k_heritability0.45/association_with_100PC/GRM/CREBRF_test_region_withCorrection_", "100 PCs", ending="_GRM_trees_GCTA_REML_results.csv")

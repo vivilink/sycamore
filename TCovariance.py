@@ -13,11 +13,14 @@ import os
 import struct
 import math
 import pickle
+from pandas_plink import read_grm
 
 
 def get_covariance_object(covariance_name):
     covariance_obj = None
-    if covariance_name == "eGRM":
+    if covariance_name == "base":
+        covariance_obj = TCovariance()
+    elif covariance_name == "eGRM":
         covariance_obj = TCovarianceeGRM()
     elif covariance_name == "GRM":
         covariance_obj = TCovarianceGRM()
@@ -36,6 +39,7 @@ class TCovariance:
         self._covariance_matrix_diploid = None
         self._covariance_matrix = None  # this is either the diploid or haploid matrix, depending on the inds
         self._mu = None
+        self._cholesky_decomposition = None
 
     @property
     def covariance_matrix(self):
@@ -58,14 +62,41 @@ class TCovariance:
 
     @staticmethod
     def remove_inds_with_missing_phenotypes(covariance_matrix, inds):
-        print("indeces_to_remove", inds.get_indeces_inds_no_phenotype())
+        # print("indeces_to_remove", inds.get_indeces_inds_no_phenotype())
         indeces_to_remove = inds.get_indeces_inds_no_phenotype()
         cleaned_covariance_matrix = (
             np.delete(np.delete(covariance_matrix, indeces_to_remove, 0), indeces_to_remove, 1))
 
         return cleaned_covariance_matrix
 
-    def write_for_gcta(self, covariance_matrix, mu, inds, out):
+    def read_gcta_format(self, prefix, ploidy):
+        (K, n_snps) = read_grm(prefix)
+        if ploidy == 2:
+            self._covariance_matrix_diploid = K
+            self._covariance_matrix_haploid = None
+        else:
+            self._covariance_matrix_diploid = None
+            self._covariance_matrix_haploid = K
+        self._mu = n_snps
+
+    def calculate_cholesky_decomposition(self):
+        """
+        if diploid exists, the saved cholesky decomposition is diploid, otherwise haploid
+        :return:
+        """
+        if self._covariance_matrix_diploid:
+            self._cholesky_decomposition = np.linalg.cholesky(self._covariance_matrix_diploid)
+        elif self._covariance_matrix_haploid:
+            self._cholesky_decomposition = np.linalg.cholesky(self._covariance_matrix_haploid)
+        else:
+            raise ValueError("Can't do cholesky decomposition. There is no matrix saved in TCovariance object")
+
+    def forget_original_matrix(self):
+        self._covariance_matrix_haploid = None
+        self._covariance_matrix_haploid = None
+
+    @staticmethod
+    def write_gcta_format(covariance_matrix, mu, inds, out):
         """
         Write out eGRM in GCTA binary format.
         :param: covariance numpy.ndarray of expected relatedness
@@ -140,11 +171,11 @@ class TCovarianceeGRM(TCovariance):
         if self._covariance_matrix_haploid is None:
             return False
         if inds.ploidy == 2:
-            self.write_for_gcta(covariance_matrix=self._covariance_matrix_diploid, mu=self._mu, inds=inds, out=out)
+            self.write_gcta_format(covariance_matrix=self._covariance_matrix_diploid, mu=self._mu, inds=inds, out=out)
             if covariances_picklefile is not None:
                 pickle.dump(self._covariance_matrix_diploid, covariances_picklefile)
         else:
-            self.write_for_gcta(covariance_matrix=self._covariance_matrix_haploid, mu=self._mu, inds=inds, out=out)
+            self.write_gcta_format(covariance_matrix=self._covariance_matrix_haploid, mu=self._mu, inds=inds, out=out)
             if covariances_picklefile is not None:
                 pickle.dump(self._covariance_matrix_haploid, covariances_picklefile)
 
@@ -205,14 +236,14 @@ class TCovarianceGRM(TCovariance):
             return False
         if np.trace(self._covariance_matrix) < 0:
             raise ValueError("Trace of matrix cannot be negative")
-       # if inds.ploidy == 1 and not math.isclose(np.trace(self._covariance_matrix), inds.num_inds):
-            # trace for haploids is expected to be equal to number of individuals (not true for diploids if they
-            # are not in perfect HWE)
-            # logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
-            #    inds.num_inds) + " but obtained " + str(np.trace(self._covariance_matrix)))
+        # if inds.ploidy == 1 and not math.isclose(np.trace(self._covariance_matrix), inds.num_inds):
+        # trace for haploids is expected to be equal to number of individuals (not true for diploids if they
+        # are not in perfect HWE)
+        # logfile.info("Trace of matrix is not equal to the number of individuals. Was expecting " + str(
+        #    inds.num_inds) + " but obtained " + str(np.trace(self._covariance_matrix)))
 
         # write matrix
-        self.write_for_gcta(covariance_matrix=self._covariance_matrix, mu=self._mu, inds=inds, out=out)
+        self.write_gcta_format(covariance_matrix=self._covariance_matrix, mu=self._mu, inds=inds, out=out)
 
         # write matrix to picklefile if debugging
         if covariances_picklefile is not None:

@@ -7,16 +7,20 @@ Created on Mon Aug 30 17:44:45 2021
 """
 import numpy as np
 import pandas as pd
+pd.options.mode.chained_assignment = None # do not print SettingWithCopyWarning
 import time
-
+import TRandomGenerator as rg
+import TTree as tt
+from python_log_indenter import IndentedLoggerAdapter
+import tskit
 
 class TVariants:
     """
     A class containing all variants of a tree, all variants are typed
     """
 
-    def __init__(self, ts_object, samp_ids):
-        self._variants = list(ts_object.variants(samples=samp_ids))
+    def __init__(self, tskit_object: tskit, samp_ids: np.ndarray):
+        self._variants = list(tskit_object.variants(samples=samp_ids))
         self._number = len(self._variants)
         self._number_typed = self._number
         self._positions = np.empty(self._number)
@@ -24,10 +28,19 @@ class TVariants:
         self._info_columns = ['var_index', 'position', 'allele_freq', 'num_alleles', 'typed', 'tree_index']
         self._info = pd.DataFrame(index=range(self._number), columns=self._info_columns)
 
-    def fill_info(self, ts_object, samp_ids, pos_float, logfile):
-        if len(list(ts_object.variants(samples=samp_ids))) < 1:
+    def fill_info(self, tskit_object: tskit, samp_ids: np.ndarray, pos_float: bool, logfile: IndentedLoggerAdapter):
+        """
+        Create table with information about variants
+
+        :param trees_object:
+        :param samp_ids:
+        :param pos_float: false if positions are not continuous but instead integers (default)
+        :param logfile:
+        :return:
+        """
+        if len(list(tskit_object.variants(samples=samp_ids))) < 1:
             logfile.info("WARNING: Found no variants")
-        for v, var in enumerate(list(ts_object.variants(samples=samp_ids))):
+        for v, var in enumerate(list(tskit_object.variants(samples=samp_ids))):
             tmp = sum(var.genotypes) / len(var.genotypes)
 
             if len(np.bincount(var.genotypes)) > 2:
@@ -44,11 +57,9 @@ class TVariants:
             if not pos_float:
                 pos = round(var.site.position)
                 if v > 0 and pos <= self._positions[v - 1]:
-                    logfile.info("WARNING: Pos (" + str(pos) + ") is smaller than previous one ("
-                                 + str(self._positions[v - 1]) + "). Setting to " + str(self._positions[v - 1] + 1))
+                    # logfile.info("WARNING: Pos (" + str(pos) + ") is smaller than previous one ("
+                    #              + str(self._positions[v - 1]) + "). Setting to " + str(self._positions[v - 1] + 1))
                     pos = self._positions[v - 1] + 1
-                    # if pos > 49499400:
-                    #     raise ValueError("stop")
             else:
                 pos = var.site.position
 
@@ -61,7 +72,7 @@ class TVariants:
         self._info['typed'] = "True"
 
         # set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
-        self._info['tree_index'] = np.digitize(self._info['position'], ts_object.breakpoints(as_array=True)) - 1
+        self._info['tree_index'] = np.digitize(self._info['position'], tskit_object.breakpoints(as_array=True)) - 1
         self._info['causal_region'] = "FALSE"
 
     @property
@@ -267,12 +278,12 @@ class TVariantsFiltered(TVariants):
     filtered_variants_file, or if none given it depends on the allele frequency filteres and prop_typed_variants filters
     """
 
-    def __init__(self, ts_object, samp_ids, min_allele_freq, max_allele_freq, prop_typed_variants, pos_float, random,
-                 logfile, filtered_variants_file=None):
+    def __init__(self, tskit_object: tskit, samp_ids: np.ndarray, min_allele_freq: float, max_allele_freq: float,
+                 prop_typed_variants: float, pos_float: bool, random: rg, logfile, filtered_variants_file=None):
         """
         Parameters
         ----------
-        ts_object : TreeSequence
+        trees_object : TreeSequence
             This tree sequence must match the file provided with filtered_variants_file, if provided.
         samp_ids : numpy.ndarray (dtype=np.int32)
             Samples given by ts_object.samples()
@@ -280,7 +291,8 @@ class TVariantsFiltered(TVariants):
         max_allele_freq : float
         prop_typed_variants : float
         pos_float : bool
-            Defines if positions of variants are to be saved as integers (default) or as float.
+            Defines if positions of variants are to be saved as integers (defau
+            lt) or as float.
         random : TRandomGenerator
         logfile : logger
         filtered_variants_file : str, optional
@@ -295,20 +307,22 @@ class TVariantsFiltered(TVariants):
         #  enumerate in TPhenotypes does not work
         # TODO: develop an iterator for variants that only goes over the typed ones
 
-        super().__init__(ts_object=ts_object, samp_ids=samp_ids)
+        super().__init__(tskit_object=tskit_object, samp_ids=samp_ids)
 
         # build variant object from tree file -> filter!
         if filtered_variants_file is None:
-            self.fill_info(ts_object, samp_ids, pos_float, logfile=logfile)
+            self.fill_info(tskit_object, samp_ids, pos_float, logfile=logfile)
             self._number_typed = -1
 
             logfile.info("- Building variant information from scratch based on simulated trees")
 
-            if min_allele_freq < 0 or max_allele_freq < 0 or min_allele_freq > 1 or max_allele_freq > 1 or min_allele_freq > max_allele_freq:
+            if (min_allele_freq < 0 or max_allele_freq < 0
+                    or min_allele_freq > 1 or max_allele_freq > 1
+                    or min_allele_freq > max_allele_freq):
                 raise ValueError("allele frequency filters are nonsensical")
 
             # determine typed status for each variant
-            for v, var in enumerate(ts_object.variants(samples=samp_ids)):
+            for v, var in enumerate(tskit_object.variants(samples=samp_ids)):
                 # is variant typed? Depends on freq filter and proportion typed
                 af = self._info['allele_freq'].iloc[v]
                 if min_allele_freq <= af <= max_allele_freq:
@@ -346,7 +360,7 @@ class TVariantsFiltered(TVariants):
                     len(self._info['var_index'])) + " variants, expected " + str(self._number))
             if 'tree_index' not in self._info.columns:
                 # set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
-                self._info['tree_index'] = np.digitize(self._info['position'], ts_object.breakpoints(as_array=True)) - 1
+                self._info['tree_index'] = np.digitize(self._info['position'], tskit_object.breakpoints(as_array=True)) - 1
 
             # remove variants that now do not pass the frequency filter
             self._info['typed'].iloc[self._info['allele_freq'] < min_allele_freq] = False
@@ -373,30 +387,17 @@ class TVariantsFiltered(TVariants):
         logfile.info("- Writing variant info to file '" + out + "_filtered_sample_variants.csv'")
         self._info.to_csv(out + "_filtered_sample_variants.csv", header=True, index=False)
 
-    def find_variant(self, typed, freq, interval, subplot, random, logfile):
+    def find_variant(self, typed:bool, freq: float, interval: list[float], subplot, random: rg, logfile):
         """
-        Find a variant that fits criteria to simulate fixed genotype depending on only one variant
 
-        Parameters
-        ----------
-        typed : bool
-            Should the variant returned be typed or not.
-        freq : float
-            Requested allele frequency of the variant. If there is no variant with this exact frequency within the
+        :param typed: Should the variant returned be typed or not.
+        :param freq: Requested allele frequency of the variant. If there is no variant with this exact frequency within the
             requested interval, 0.001 will be deducted from the freq repeatedly until a variant is found.
-        interval : list of floats
-            Requested genomic interval within which the variant should be.
-
-        Raises
-        ------
-        ValueError
-            If the search for a variant within the requested genomic interval ends up with the allele freq being
-            negative, the search is stopped an an error is thrown.
-
-        Returns
-        -------
-        Index of the variant found, can be used to simulate fixed phenotype.
-
+        :param interval: Requested genomic interval within which the variant should be.
+        :param subplot:
+        :param random:
+        :param logfile:
+        :return: Index of the variant found, can be used to simulate fixed phenotype.
         """
 
         # check if interval is valid

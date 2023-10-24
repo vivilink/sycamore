@@ -93,17 +93,21 @@ class TSimulatorStdPopsim(TSimulator):
         samples = model.get_samples(arguments.N, 0, 0)
         engine = stdpopsim.get_engine("msprime")
         trees_full = engine.simulate(model, contig, samples, seed=randomGenerator.seed, discrete_genome=True)
-        trees_full.dump(arguments.out + "_full.trees")
-        logfile.info("- Wrote trees of full chromosome to " + arguments.out + "_full.trees")
 
-        # extract central interval of chr1
-        interval = arguments.trees_interval
-        self.trees = trees_full.keep_intervals([interval], simplify=True)
-        self.trees.dump(arguments.out + ".trees")
-        logfile.info("- Wrote trees with interval " + str(interval) + " to " + arguments.out + ".trees")
+        # extract interval
+        if arguments.trees_interval:
+            self.trees = trees_full.keep_intervals([arguments.trees_interval], simplify=True)
+            self.trees.dump(arguments.out + ".trees")
+            logfile.info("- Wrote trees with interval " + str(arguments.trees_interval) + " to " + arguments.out + ".trees")
+        else:
+            self.trees = trees_full
+            trees_full.dump(arguments.out + ".trees")
+            logfile.info("- Wrote trees of full chromosome to " + arguments.out + ".trees")
 
         logfile.sub()
+
         return self.trees
+
 
 
 def step_mig_mat(m, nrow, ncol):
