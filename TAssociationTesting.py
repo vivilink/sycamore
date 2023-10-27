@@ -422,6 +422,7 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
                                                   GCTA=args.GCTA,
                                                   num_GCTA_threads=args.num_gcta_threads,
                                                   population_structure_grm_prefix=args.population_structure_matrix,
+                                                  covariance_grm_prefix=outname + "_cov",
                                                   logfile=logfile,
                                                   additional_gcta_params=args.additional_gcta_params)
 
@@ -477,6 +478,7 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
                                          GCTA,
                                          num_GCTA_threads,
                                          population_structure_grm_prefix,
+                                         covariance_grm_prefix,
                                          logfile, additional_gcta_params):
         raise ValueError("write_GCTA_command_file_mgrm_cor() not defined for GCTA base class!")
 
@@ -682,7 +684,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
                           + outname + "_HE-SD_result.txt\n")
 
     def write_GCTA_command_file_mgrm_cor(self, outname, pheno_file, GCTA, num_GCTA_threads,
-                                         additional_gcta_params, population_structure_grm_prefix, logfile):
+                                         additional_gcta_params, population_structure_grm_prefix, covariance_grm_prefix, logfile):
         """
         Write executable bash script for running association test with multiple random effects and their correlation using GCTA
 
@@ -698,7 +700,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
         :return: None
         """
         self.write_multi_grm_file(outname=outname, logfile=logfile,
-                                  global_grms=[population_structure_grm_prefix])
+                                  global_grms=[population_structure_grm_prefix, covariance_grm_prefix])
 
         with open(self.GCTA_script_name, 'w') as f:
             f.write("#!/bin/bash\n")
@@ -951,7 +953,8 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
             f.write(gcta_string + " > " + outname + "_tmp.out\n")
 
     def write_GCTA_command_file_mgrm_cor(self, outname, pheno_file, GCTA, num_GCTA_threads,
-                                         additional_gcta_params, population_structure_grm_prefix, logfile):
+                                         additional_gcta_params, population_structure_grm_prefix,
+                                         covariance_grm_prefix, logfile):
         """
         Write executable bash script for running association test with multiple random effects and their correlation using GCTA
 
@@ -968,7 +971,7 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         """
         # write multi grm text file
         self.write_multi_grm_file(outname=outname, logfile=logfile,
-                                  global_grms=[population_structure_grm_prefix])
+                                  global_grms=[population_structure_grm_prefix, covariance_grm_prefix])
 
         with open(self.GCTA_script_name, 'w') as f:
             f.write("#!/bin/bash\n")

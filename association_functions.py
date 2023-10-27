@@ -365,7 +365,9 @@ def test_window_for_association(covariance_obj: cov, inds:tind, AIM_methods: lis
                 # calculate cholesky of local GRM --> get A
                 # add A to global_GRM
                 # write sum to GCTA
-                cholesky_global_GRM_for_cor.write_gcta_format()
+                cholesky_global_GRM_for_cor.write_gcta_format(covariance_matrix=covariance_obj.covariance_matrix,
+                                                              mu=covariance_obj.mu,
+                                                              inds=inds, out=outname + "_cov")
 
             m.test(index=window_index,
                    out=outname,

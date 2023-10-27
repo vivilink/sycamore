@@ -70,7 +70,7 @@ class TCovariance:
         return cleaned_covariance_matrix
 
     def read_gcta_format(self, prefix, ploidy):
-        (K, n_snps) = read_grm(prefix)
+        (K, n_snps) = read_grm(prefix + ".grm.bin")
         if ploidy == 2:
             self._covariance_matrix_diploid = K
             self._covariance_matrix_haploid = None
@@ -84,7 +84,8 @@ class TCovariance:
         if diploid exists, the saved cholesky decomposition is diploid, otherwise haploid
         :return:
         """
-        if self._covariance_matrix_diploid:
+
+        if self._covariance_matrix_diploid is not None:
             self._cholesky_decomposition = np.linalg.cholesky(self._covariance_matrix_diploid)
         elif self._covariance_matrix_haploid:
             self._cholesky_decomposition = np.linalg.cholesky(self._covariance_matrix_haploid)
