@@ -104,7 +104,13 @@ class TCovariance:
         else:
             if self._covariance_matrix_haploid is None:
                 raise ValueError("Can't do cholesky decomposition. There is no haploid matrix saved in TCovariance object")
-            self._cholesky_decomposition_haploid = np.linalg.cholesky(self._covariance_matrix_haploid)
+            try:
+                self._cholesky_decomposition_haploid = np.linalg.cholesky(self._covariance_matrix_haploid)
+            except np.linalg.LinAlgError as e:
+                logfile.info("Warning: Matrix was not positive definite. Adding a very small number to the diagonal")
+                small_number = 1e-10
+                np.fill_diagonal(self._covariance_matrix_haploid, np.diagonal(self._covariance_matrix_haploid) + small_number)
+                self._cholesky_decomposition_haploid = np.linalg.cholesky(self._covariance_matrix_haploid)
 
     def forget_original_matrix(self):
         self._covariance_matrix_diploid = None
