@@ -404,10 +404,7 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
         self.name = "regions_GCTA"
 
     def test(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
-        if covariance_object.write(out=out, inds=inds, covariances_picklefile=covariances_picklefile):
             self.run_association_one_window_gcta(index=index, out=out)
-        else:
-            print("did not run association because covariance object was not written at index", index)
 
     def run_association_one_window_gcta(self, index, out):
         raise ValueError("function run_association_one_window_gcta not implemented in base class")
@@ -433,7 +430,7 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
                                               pheno_file=pheno_file,
                                               GCTA=args.GCTA,
                                               num_GCTA_threads=args.num_gcta_threads,
-                                              population_structure_grm_prefix=args.population_structure,
+                                              population_structure_grm_prefix=args.population_structure_matrix,
                                               logfile=logfile,
                                               additional_gcta_params=args.additional_gcta_params)
 

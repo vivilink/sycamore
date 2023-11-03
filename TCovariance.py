@@ -37,20 +37,25 @@ class TCovariance:
         self.covariance_type = "base"
         self._covariance_matrix_haploid = None
         self._covariance_matrix_diploid = None
-        self._covariance_matrix = None  # this is either the diploid or haploid matrix, depending on the inds
+        # self._covariance_matrix = None  # this is either the diploid or haploid matrix, depending on the inds
         self._mu = None
-        self._cholesky_decomposition = None
+        self._cholesky_decomposition_haploid = None
+        self._cholesky_decomposition_diploid = None
 
-    @property
-    def covariance_matrix(self):
+    def get_covariance_matrix(self, ploidy):
         # do not check for this because in GRM it may be none because there are no variants!
         # if self._covariance_matrix is None:
         #     raise ValueError("Covariance matrix has not been calculated yet!")
-        return self._covariance_matrix
+        if ploidy == 2:
+            return self._covariance_matrix_diploid
+        else:
+            return self._covariance_matrix_haploid
 
-    @covariance_matrix.setter
-    def covariance_matrix(self, covariance_matrix):
-        self.covariance_matrix = covariance_matrix
+    def get_cholesky_decomposition(self, ploidy):
+        if ploidy == 2:
+            return self._cholesky_decomposition_diploid
+        else:
+            return self._covariance_matrix_haploid
 
     @property
     def mu(self):
@@ -79,21 +84,30 @@ class TCovariance:
             self._covariance_matrix_haploid = K
         self._mu = n_snps
 
-    def calculate_cholesky_decomposition(self):
+    def calculate_cholesky_decomposition(self, ploidy, logfile):
         """
         if diploid exists, the saved cholesky decomposition is diploid, otherwise haploid
         :return:
         """
 
-        if self._covariance_matrix_diploid is not None:
-            self._cholesky_decomposition = np.linalg.cholesky(self._covariance_matrix_diploid)
-        elif self._covariance_matrix_haploid:
-            self._cholesky_decomposition = np.linalg.cholesky(self._covariance_matrix_haploid)
+        if ploidy == 2:
+            if self._covariance_matrix_diploid is None:
+                raise ValueError("Can't do cholesky decomposition. There is no diploid matrix saved in TCovariance object")
+            try:
+                self._cholesky_decomposition_diploid = np.linalg.cholesky(self._covariance_matrix_diploid)
+            except np.linalg.LinAlgError as e:
+                logfile.info("Warning: Matrix was not positive definite. Adding a very small number to the diagonal")
+                small_number = 1e-10
+                np.fill_diagonal(self._covariance_matrix_diploid, np.diagonal(self._covariance_matrix_diploid) + small_number)
+                self._cholesky_decomposition_diploid = np.linalg.cholesky(self._covariance_matrix_diploid)
+
         else:
-            raise ValueError("Can't do cholesky decomposition. There is no matrix saved in TCovariance object")
+            if self._covariance_matrix_haploid is None:
+                raise ValueError("Can't do cholesky decomposition. There is no haploid matrix saved in TCovariance object")
+            self._cholesky_decomposition_haploid = np.linalg.cholesky(self._covariance_matrix_haploid)
 
     def forget_original_matrix(self):
-        self._covariance_matrix_haploid = None
+        self._covariance_matrix_diploid = None
         self._covariance_matrix_haploid = None
 
     @staticmethod
@@ -169,6 +183,7 @@ class TCovarianceeGRM(TCovariance):
         @param out: str
         @param inds: TInds
         """
+
         if self._covariance_matrix_haploid is None:
             return False
         if inds.ploidy == 2:
@@ -244,7 +259,12 @@ class TCovarianceGRM(TCovariance):
         #    inds.num_inds) + " but obtained " + str(np.trace(self._covariance_matrix)))
 
         # write matrix
-        self.write_gcta_format(covariance_matrix=self._covariance_matrix, mu=self._mu, inds=inds, out=out)
+        if inds.ploidy == 2:
+            self.write_gcta_format(covariance_matrix=self._covariance_matrix_diploid, mu=self._mu, inds=inds, out=out)
+        elif inds.ploidy == 1:
+            self.write_gcta_format(covariance_matrix=self._covariance_matrix_haploid, mu=self._mu, inds=inds, out=out)
+        else:
+            raise ValueError("Unknown ploidy")
 
         # write matrix to picklefile if debugging
         if covariances_picklefile is not None:
