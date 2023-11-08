@@ -7,12 +7,14 @@ Created on Mon Aug 30 17:44:45 2021
 """
 import numpy as np
 import pandas as pd
-pd.options.mode.chained_assignment = None # do not print SettingWithCopyWarning
+
+pd.options.mode.chained_assignment = None  # do not print SettingWithCopyWarning
 import time
 import TRandomGenerator as rg
 import TTree as tt
 from python_log_indenter import IndentedLoggerAdapter
 import tskit
+
 
 class TVariants:
     """
@@ -360,7 +362,8 @@ class TVariantsFiltered(TVariants):
                     len(self._info['var_index'])) + " variants, expected " + str(self._number))
             if 'tree_index' not in self._info.columns:
                 # set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
-                self._info['tree_index'] = np.digitize(self._info['position'], tskit_object.breakpoints(as_array=True)) - 1
+                self._info['tree_index'] = np.digitize(self._info['position'],
+                                                       tskit_object.breakpoints(as_array=True)) - 1
 
             # remove variants that now do not pass the frequency filter
             self._info['typed'].iloc[self._info['allele_freq'] < min_allele_freq] = False
@@ -387,7 +390,7 @@ class TVariantsFiltered(TVariants):
         logfile.info("- Writing variant info to file '" + out + "_filtered_sample_variants.csv'")
         self._info.to_csv(out + "_filtered_sample_variants.csv", header=True, index=False)
 
-    def find_variant(self, typed:bool, freq: float, interval: list[float], subplot, random: rg, logfile):
+    def find_variant(self, typed: bool, freq: float, interval: list, subplot, random: rg, logfile):
         """
 
         :param typed: Should the variant returned be typed or not.
