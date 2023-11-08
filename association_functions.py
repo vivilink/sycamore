@@ -346,7 +346,7 @@ def write_matrices_for_testing(cholesky_global_GRM_for_cor: cov, covariance_obj:
         print("did not run association because covariance objects could not be written at index", index)
 
 
-def test_window_for_association(covariance_obj: cov, inds: tind, AIM_methods: list[at], outname: str, window_index: int,
+def test_window_for_association(covariance_obj: cov, inds: tind, AIM_methods: list, outname: str, window_index: int,
                                 phenotypes_obj: pt, cholesky_global_GRM_for_cor: cov, covariances_picklefile: IO,
                                 logfile: IndentedLoggerAdapter):
     """
@@ -409,7 +409,7 @@ def test_window_for_association(covariance_obj: cov, inds: tind, AIM_methods: li
     covariance_obj.clear()
 
 
-def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_methods: list[at], variants: tvar,
+def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_methods: list, variants: tvar,
                                                   window_ends: list, window_starts: list, num_tests: int, inds: tind,
                                                   covariances_picklefile: IO, pheno: pt,
                                                   cholesky_global_GRM_for_cor: cov, logfile, outname: str):
@@ -468,9 +468,9 @@ def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_metho
                                             out=outname)
 
 
-def loop_windows_tree_based_covariance_testing(trees, covariance_obj: cov, AIM_methods: list[at],
-                                               window_ends: list[int],
-                                               window_starts: list[int], window_size: int, skip_first_tree: bool,
+def loop_windows_tree_based_covariance_testing(trees, covariance_obj: cov, AIM_methods: list,
+                                               window_ends: list,
+                                               window_starts: list, window_size: int, skip_first_tree: bool,
                                                inds: tind, pheno: pt, covariances_picklefile: IO,
                                                cholesky_global_GRM_for_cor: cov, logfile, outname: str,
                                                limit_association_tests: int):
