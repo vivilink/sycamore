@@ -269,7 +269,7 @@ def get_AIM_test_object(test_name: str, phenotypes, pheno_file, num_associations
     return test_obj
 
 
-def get_window_starts_and_ends(window_size: int, trees_interval: list[float]):
+def get_window_starts_and_ends(window_size: int, trees_interval: list):
     """
     Get coordinates of windows of non-overlapping windows of size window_size
     """
