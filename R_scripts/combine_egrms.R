@@ -7,10 +7,12 @@ setwd("/home1/linkv/ARGWAS/hawaiian/global_grm")
 args = commandArgs(trailingOnly=TRUE)
 files <- read.table(args[1])
 out_prefix <- args[2]
+grm_loccation <- args[3]
 
 # read first egrm to get dimensions
 prefix <- strsplit(files$V1[1], split=".trees")[[1]]
 prefix <- strsplit(prefix, split="/")[[1]][7]
+prefix <- paste(grm_loccation, prefix, sep='/')
 grm_obj <- ReadGRMBin(prefix)
 
 
