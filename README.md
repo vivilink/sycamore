@@ -9,7 +9,7 @@ Setting up sycamore
 -------------------------
 * Clone repository
 
-* Clone and install [egrm repository](https://github.com/vivilink/egrm) with pip in the correct conda environment using the instructions in the egrm readme
+* Clone and install [egrm](https://github.com/vivilink/egrm) with pip in the correct conda environment using the instructions in the egrm readme
 
 * Download [GCTA](https://yanglab.westlake.edu.cn/software/gcta/#Overview) into sycamore repository https://yanglab.westlake.edu.cn/software/gcta/#Download
 
