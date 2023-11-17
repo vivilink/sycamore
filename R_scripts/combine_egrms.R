@@ -28,6 +28,7 @@ colnames(m) <- sample_names$ID_1
 for(f in files$V1){
 	prefix <- strsplit(f, split=".trees")[[1]]
 	prefix <- strsplit(prefix, split="/")[[1]][7]
+	prefix <- paste(grm_loccation, prefix, sep='/')
 	print(paste("adding grm",prefix))
 	grm_obj <- ReadGRMBin(prefix)
 	m <- m + grm_obj$total_grm * grm_obj$N
