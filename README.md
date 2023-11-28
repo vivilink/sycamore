@@ -106,7 +106,7 @@ Simulate one population with stdpopsim:
 
 Simulate two populations with msprime:
 
-    python ARGWAS.py --task simulate --mu 1e-08 --out $dir/example --ploidy 1 --recomb_rate 1e-08 --sequence_length 100000.0 --sim_tree_simulator msprime --sim_two_populations --N 2000 --seed 1 --split_time 10000 
+    python ARGWAS.py --task simulate --mu 1e-08 --out $dir/example --ploidy 1 --recomb_rate 1e-08 --sim_tree_simulator msprime --sim_two_populations --N 2000 --seed 1 --split_time 10000 
 
 
 *simulateMoreMutations*
