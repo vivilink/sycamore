@@ -166,6 +166,10 @@ class TParameters:
         pty.add_argument('--add_1_to_half_of_inds', action='store_true',
                          help="Add 1 to half of all individuals (only makes sense when simulating with "
                               "sim_two_populations")
+        pty.add_argument('--population_disease_prevalence', type=float,
+                         help="The disease prevalence in the population. Specifying this parameter turns the "
+                              "quantitative phenotype into a liability score and considers the top x percent of "
+                              "individuals to have the disease")
 
         # run associations
         assoc = parser.add_argument_group('running association tests')

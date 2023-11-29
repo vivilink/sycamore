@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+from scipy.stats import norm
 from statsmodels.distributions.empirical_distribution import ECDF
 from scipy.stats import norm
 import TVariants as tvar
@@ -22,8 +23,9 @@ from python_log_indenter import IndentedLoggerAdapter
 
 
 # TODO: being typed or not should be an option for all causal variants
-def make_phenotypes(args: tparams, trees: tskit.trees, sample_ids, inds: tind, plots_dir: str, random: rg, logfile: IndentedLoggerAdapter):
-    if args.simulate_phenotypes:
+def make_phenotypes(args: tparams, trees: tskit.trees, sample_ids, inds: tind, plots_dir: str, random: rg,
+                    logfile: IndentedLoggerAdapter):
+    if args.simulate_phenotypes or args.task == "simulatePhenotypes":
         if args.tree_file_simulated is None:
             raise ValueError("To simulate phenotypes based on untyped variants the simulated trees need to be "
                              "provided with 'tree_file_simulated'.")
@@ -100,6 +102,7 @@ class Phenotypes:
     def __init__(self):
         self._sample_IDs = None
         self._y = np.ndarray
+        self._disease_status = np.ndarray
         self._num_inds = -1
         self._genetic_variance = -1.0
         self.causal_variants = []
@@ -212,6 +215,35 @@ class Phenotypes:
 
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 
+    def write_to_file_gcta_eGRM_disease_status(self, inds, out, logfile):
+        """
+        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
+        will match the binary output created with plinkFile R package.
+
+        Returns
+        -------
+        None.
+
+        """
+        logfile.info("- Writing disease status data in gcta format to '" + out + "_disease_status.phen'")
+
+        tmp_pheno = pd.DataFrame()
+        tmp_pheno['1'] = np.repeat(0, inds.num_inds)
+        tmp_pheno['2'] = inds.names
+        tmp_pheno['3'] = self._disease_status
+
+        self.set_missing_phenotype_status(inds=inds)
+        indeces_to_remove = inds.get_indeces_inds_no_phenotype()
+
+        if np.count_nonzero(np.isnan(self._disease_status)) > 0 and len(indeces_to_remove) == 0:
+            raise ValueError("There are phenotypes that are nan")
+
+        # remove missing data
+        if len(indeces_to_remove) > 0:
+            tmp_pheno.drop(axis=0, index=indeces_to_remove, inplace=True)
+
+        tmp_pheno.to_csv(out + "_disease_status.phen", sep=' ', index=False, header=False)
+
     def write_to_file_gcta_scaled(self, out, inds, logfile):
         """
         Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
@@ -261,6 +293,21 @@ class Phenotypes:
         self._num_inds = len(pheno_df['ID'])
         self._sample_IDs = np.array(pheno_df['ID'])
         self._y = np.array(pheno_df['phenotype'])
+
+    def scale(self):
+        self._y = (self._y - np.mean(self._y)) / np.std(self._y)
+
+    def add_disease_status(self, prevalence):
+        """
+        Define binary phenotype based on liability score. Individuals with a liability score above threshold given by
+        prevalence will have disease
+        :param prevalence:
+        :return:
+        """
+        self.scale()
+        liability_cutoff = norm.ppf(1 - prevalence)
+        self._disease_status = np.zeros(self._num_inds)
+        self._disease_status[self._y > liability_cutoff] = 1
 
 
 class PhenotypesBMI(Phenotypes):
@@ -384,6 +431,7 @@ class PhenotypesSimulated(Phenotypes):
         self.betas = [0] * variants.number
         self._y = np.zeros(
             num_inds)  # must be zero and not np.empty because we add noise afterwards! np-empty leads to nan
+        self._num_inds = num_inds
 
     @property
     def genetic_variance(self):
@@ -837,8 +885,6 @@ class PhenotypesSimulated(Phenotypes):
             c = random.random.choice(indeces)
             causal[c] = 1
             num_causal_vars = 1
-
-            print("info_window", info_window, "causal variants", causal)
 
         # add phenotypic effect to mutations that are uniformly distributed
         for v_i, v in enumerate(info_window['var_index']):
