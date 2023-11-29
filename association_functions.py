@@ -221,7 +221,7 @@ def run_association_GWAS(trees, inds, variants: tvar, pheno: pt, args: TParamete
         GWAS.write_to_file_with_X_matrix(positions=pos, name=outname, logfile=logfile)
 
     else:
-        logfile.info("- Using genotypes from tree file for GWAS:")
+        logfile.info("- Using genotypes from tree file for GWAS")
         # run association tests
         GWAS = at.TAssociationTestingGWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
         GWAS.test_with_variants_object(variants=variants, phenotypes=pheno, inds=inds, logfile=logfile)
