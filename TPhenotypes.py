@@ -297,15 +297,17 @@ class Phenotypes:
     def scale(self):
         self._y = (self._y - np.mean(self._y)) / np.std(self._y)
 
-    def add_disease_status(self, prevalence):
+    def add_disease_status(self, prevalence, logfile):
         """
         Define binary phenotype based on liability score. Individuals with a liability score above threshold given by
         prevalence will have disease
         :param prevalence:
         :return:
         """
+        logfile.info("- Scaling phenotypes to add disease status")
         self.scale()
         liability_cutoff = norm.ppf(1 - prevalence)
+        logfile.info("- The liability cutoff is set to " + str(liability_cutoff))
         self._disease_status = np.zeros(self._num_inds)
         self._disease_status[self._y > liability_cutoff] = 1
 
