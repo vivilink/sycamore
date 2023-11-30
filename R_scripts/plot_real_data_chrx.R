@@ -54,7 +54,6 @@ par(mfrow=c(22,1))
 
 for(CHROM in seq(1,22,1)){
   
-  df_GWAS_chr <- df_GWAS[df_GWAS$Chr == CHROM,]
 
   if(CLUSTER==TRUE){
     df_BLUP_res <- read.table("", sep=',', header=TRUE) 
@@ -86,6 +85,12 @@ for(CHROM in seq(1,22,1)){
   # remove centromere regions
   regions_centro_chr <- regions_centro[regions_centro$chr == paste("chr", CHROM, sep=''),]
   df_BLUP_res <- remove_regions(df_results=df_BLUP_res, regions=regions_centro_chr)
+  
+  # extract GWAS
+  df_GWAS_chr <- df_GWAS[df_GWAS$Chr == CHROM,]
+  df_GWAS_chr <- remove_regions_GWAS(df_results=df_GWAS_chr, regions=regions_chr)
+  df_GWAS_chr <- remove_regions_GWAS(df_results=df_GWAS_chr, regions=regions_centro_chr)
+  
 
   # t <- table(as.factor(df$start))
   # print(paste("this position is present more than once", names(t)[as.integer(t) > 1]))

@@ -17,7 +17,7 @@ remove_regions <- function(df_results, regions){
 }
 
 remove_regions_GWAS <- function(df_results, regions){
-  df_results$BP <- as.numeric(df_results$BP)
+  df_results$bp <- as.numeric(df_results$bp)
   for(r in 1:nrow(regions)){
     region_start <- regions$start[r]
     region_end <- regions$end[r]
