@@ -280,6 +280,10 @@ if args.task == "simulatePhenotypes":
                                random=r,
                                logfile=logger)
 
+    if args.population_disease_prevalence:
+        pheno.add_disease_status(prevalence=args.population_disease_prevalence)
+        pheno.write_to_file_gcta_eGRM_disease_status(inds=inds, out=args.out, logfile=logger)
+
     pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)
 
 # ----------------------------------------------------------------
