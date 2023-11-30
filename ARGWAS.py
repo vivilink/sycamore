@@ -281,7 +281,8 @@ if args.task == "simulatePhenotypes":
                                logfile=logger)
 
     if args.population_disease_prevalence:
-        pheno.add_disease_status(prevalence=args.population_disease_prevalence)
+        logger.info("- Adding binary disease status with a population prevalence of " + str(args.population_disease_prevalence))
+        pheno.add_disease_status(prevalence=args.population_disease_prevalence, logfile=logger)
         pheno.write_to_file_gcta_eGRM_disease_status(inds=inds, out=args.out, logfile=logger)
 
     pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)
