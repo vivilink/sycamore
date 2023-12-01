@@ -50,12 +50,12 @@ logger.setLevel(logging.INFO)
 # Header
 # -----------------------------
 
-logger.info("---------------------")
-logger.info("AIM 0.1")
-logger.info("---------------------")
+logger.info("--------------------->")
+logger.info("AIM 1.0")
+logger.info("--------------------->")
 
 # print arguments to logfile
-logger.info("- The following parameters were passed: " + str(args))
+# logger.info("- The following parameters were passed: " + str(args))
 logger.info("- Writing output files with prefix '" + str(args.out) + "'")
 # logger.info("- Adding plots to the following directory '" + str(args.out) + "_plots'")
 
@@ -229,7 +229,7 @@ if args.task == "impute":
                             num_haplotypes=N,
                             relate_sample_names_file=args.relate_sample_names,
                             logfile=logger)
-    variants = tvar.TVariantsFiltered(trees_object=trees_object, samp_ids=sample_ids, min_allele_freq=args.min_allele_freq,
+    variants = tvar.TVariantsFiltered(tskit_object=trees_object, samp_ids=sample_ids, min_allele_freq=args.min_allele_freq,
                                       max_allele_freq=args.max_allele_freq,
                                       prop_typed_variants=args.prop_typed_variants, pos_float=args.pos_float, random=r,
                                       logfile=logger, filtered_variants_file=None)
@@ -283,11 +283,13 @@ if args.task == "simulatePhenotypes":
                                logfile=logger)
 
     if args.population_disease_prevalence:
+        logger.add()
         logger.info("- Adding binary disease status with a population prevalence of " + str(args.population_disease_prevalence))
         pheno.add_disease_status(prevalence=args.population_disease_prevalence, logfile=logger)
         pheno.write_to_file_gcta_eGRM_disease_status(inds=inds, out=args.out, logfile=logger)
 
     pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)
+    logger.sub()
 
 # ----------------------------------------------------------------
 # Read simulation to simulate phenotypes and perform association
@@ -302,6 +304,14 @@ if args.task == "associate":
 
 if args.task == "writeToPlink":
     raise ValueError("task 'writeToPlink' is planned but not yet implemented")
+
+# ----------------------------------------------------------------
+# Write variants plink files
+# ----------------------------------------------------------------
+logger.info("<---------------------")
+logger.info("AIM done")
+logger.info("<---------------------")
+
 
 # if __name__ == "__main__":
 #     sys.exit(main(sys.argv[1:]))
