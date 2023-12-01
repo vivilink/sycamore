@@ -102,7 +102,7 @@ This task simulates ARGs using either msprime or stdpopsim. Always simulate hapl
 
 Simulate one population with stdpopsim:
 
-    python ARGWAS.py --task simulate --out $dir/example --ploidy 1 --sequence_length 30000000.0 --sim_tree_simulator stdPopsim --N 1000 --trees_interval 49000000 50000000 --seed 1
+    python ARGWAS.py --task simulate --out $dir/example --ploidy 1 --sim_tree_simulator stdPopsim --N 1000 --trees_interval 49000000 50000000 --seed 1
 
 Simulate two populations with msprime:
 
