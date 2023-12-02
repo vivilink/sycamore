@@ -19,6 +19,7 @@ from python_log_indenter import IndentedLoggerAdapter
 import logging
 import os
 import sys
+import pandas as pd
 
 os.chdir(os.path.dirname(sys.argv[0]))
 
@@ -106,7 +107,6 @@ if args.task == "simulate":
     variants.write_variant_info(out=args.out, logfile=logger)
     variants.write_genetic_map(out=args.out, logfile=logger)
 
-
     tt.TTrees.writeStats(ts_object=trees, out=args.out, logfile=logger)
 
 if args.task == "simulateMoreMutations":
@@ -160,7 +160,8 @@ if args.task == "makeTreeChunks":
 
     if args.chunk_size is None:
         raise ValueError("Must provide window size")
-    chunk_starts, chunk_ends = af.get_window_starts_and_ends(window_size=args.chunk_size, trees_interval=trees_object.actual_trees_interval)
+    chunk_starts, chunk_ends = af.get_window_starts_and_ends(window_size=args.chunk_size,
+                                                             trees_interval=trees_object.actual_trees_interval)
     num_windows = len(chunk_ends)
 
     for w in range(num_windows):
@@ -229,7 +230,8 @@ if args.task == "impute":
                             num_haplotypes=N,
                             relate_sample_names_file=args.relate_sample_names,
                             logfile=logger)
-    variants = tvar.TVariantsFiltered(tskit_object=trees_object, samp_ids=sample_ids, min_allele_freq=args.min_allele_freq,
+    variants = tvar.TVariantsFiltered(tskit_object=trees_object, samp_ids=sample_ids,
+                                      min_allele_freq=args.min_allele_freq,
                                       max_allele_freq=args.max_allele_freq,
                                       prop_typed_variants=args.prop_typed_variants, pos_float=args.pos_float, random=r,
                                       logfile=logger, filtered_variants_file=None)
@@ -284,7 +286,8 @@ if args.task == "simulatePhenotypes":
 
     if args.population_disease_prevalence:
         logger.add()
-        logger.info("- Adding binary disease status with a population prevalence of " + str(args.population_disease_prevalence))
+        logger.info(
+            "- Adding binary disease status with a population prevalence of " + str(args.population_disease_prevalence))
         pheno.add_disease_status(prevalence=args.population_disease_prevalence, logfile=logger)
         pheno.write_to_file_gcta_eGRM_disease_status(inds=inds, out=args.out, logfile=logger)
 
@@ -299,6 +302,42 @@ if args.task == "associate":
     af.run_association_testing(args=args, random=r, logfile=logger)
 
 # ----------------------------------------------------------------
+# Create case control sample
+# ----------------------------------------------------------------
+
+if args.task == "ascertainCaseControlSample":
+    if args.disease_status_file is None:
+        raise ValueError("Provide disease status file with 'disease_status_file'")
+    if args.sample_size is None:
+        raise ValueError("Provide expected sample size with 'sample_size'")
+
+    # read file and find population size
+    pheno_file = pd.read_csv(args.disease_status_file, delim_whitespace=True, header=None)
+    pheno_file.columns = ['1', '2', '3']
+    population_size = pheno_file.shape[0]
+    if population_size < args.sample_size:
+        raise ValueError("Sample size cannot be larger than number of phenotypes in phen file (" + str(population_size) + ")")
+
+    # find cases
+    cases = pheno_file.loc[pheno_file['3'] == 1.0, :]
+    num_cases = cases.shape[0]
+
+    # find controls
+    num_controls = args.sample_size - num_cases
+    if num_controls <= 0:
+        raise ValueError("Sample size needs to be larger than number of cases")
+    logger.info("- Keeping " + str(num_cases) + " cases and " + str(num_controls) + " controls from a total of " +
+                str(population_size) + " individuals")
+    controls = pheno_file.loc[pheno_file['3'] == 0.0, :].sample(n=num_controls)
+
+    # concatenate and write
+    pheno_file_new = pd.concat([cases, controls])
+    logger.info("- Writing ascertained sample's disease status to '" + args.out + "_disease_status_ascertained.phen'")
+    pheno_file_new.to_csv(args.out + "_disease_status_ascertained.phen", sep=' ', index=False, header=False)
+
+    # print(pheno_file['3'].iloc[pheno_file['3'] == 0.0])
+
+# ----------------------------------------------------------------
 # Write variants plink files
 # ----------------------------------------------------------------
 
@@ -311,7 +350,6 @@ if args.task == "writeToPlink":
 logger.info("<---------------------")
 logger.info("AIM done")
 logger.info("<---------------------")
-
 
 # if __name__ == "__main__":
 #     sys.exit(main(sys.argv[1:]))
