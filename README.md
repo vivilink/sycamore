@@ -192,10 +192,33 @@ We then used these phenotypes to test the variants and trees for association. Th
 
 The R script used to calculate the association power is 2a_calculate_power.R, which calls 2b_calculate_power_one_experiment.R. It uses the output of R_scripts/1_calculate_significance_cutoffs.R. The results can be plotted with R_scripts/3_plot_with_error_bars_aH.R and R_scripts/3_plot_with_error_bars_oneVariant.R.
 
-Analyzing real data
+Analyzing BMI data
 --------------------
 
-To test for association using the ARG inferred from real sequencing data and true phenotypes, you can use the same command as for simulated data. You need to provide the sample names of the tree leaves, and these will be matched to the sample names in the phenotype file. Individuals with missing phenotypes, or individuals who are missing from the tree, are removed. There are different ways to correct for population structure:
+We first create a LOCO (leave-one-chromosome-out) eGRM for each chromosome $chr with output directory $dir:
+   
+    Rscript sycamore/R_scripts/combine_egrms.R list_trees_LOCO_chr${chr}.txt global_egrm_LOCO_chr${chr} $dir
+    awk '{print 0 "\t" $2}' global_egrm_LOCO_chr${chr}.grm.id > global_egrm_LOCO_chr${chr}.grm.id_tmp # replace family ID column with '0' for all (I have had issues with GCTA convergence when all individuals were in separate families)
+    mv global_egrm_LOCO_chr${chr}.grm.id_tmp global_egrm_LOCO_chr${chr}.grm.id
+
+We then standardize the BMI data according to McCaw et al. (2019). This entails regressing BMI on sex and age (BMI ~ sex + age + age^2) and removing individuals who's residual is more than 6 standard deviations away from the mean. Outliers are defined separately for each sex with a separate regression. 
+
+We regress out the LOCO eGRM with GCTA for each chromosome $chr:
+
+    gcta-1.94.1-linux-kernel-3-x86_64/gcta-1.94.1 --reml --reml-pred-rand --out BLUP_chr${chr} --pheno standardized_phenotypes.phen --grm global_egrm_LOCO_chr${chr} --thread-num 10
+
+We extract the residuals from the GCTA output:
+
+    awk '{print $1,$2,$6}' BLUP_chr${chr}.indi.blp > residuals_chr${chr}.txt
+
+We test the residuals for association with the ARG $treedir/$tree:
+
+    python ./ARGWAS.py --task associate --tree_file $treedir/$tree --out $dir/example --ass_method AIM:eGRM --AIM_method REML --ploidy 2 --min_allele_freq 0 --pheno_file residuals_chr${chr}.txt --relate_sample_names relate.sample --ass_window_size 5000 --skip_first_tree
+
+You need to provide the sample names of the tree leaves with parameter 'relate_sample_names', and these will be matched to the sample names in the phenotype file. Individuals with missing phenotypes, or individuals who are missing from the ARG, are removed. 
+
+
+If you do not want to use the two-step approach, here are the parameters to correct for population structure:
 
 - --population_structure_matrix: provide prefix for global (e.g. LOCO) genetic relatedness matrix in GCTA's binary format
 - --population_structure_pca_num_eigenvectors: if population structure matrix is provided, this parameter will not include the matrix directly, but instead use GCTA to calculate the specified number of PCs and include those
