@@ -217,6 +217,10 @@ We test the residuals for association with the ARG $treedir/$tree:
 
 You need to provide the sample names of the tree leaves with parameter 'relate_sample_names', and these will be matched to the sample names in the phenotype file. Individuals with missing phenotypes, or individuals who are missing from the ARG, are removed. 
 
+In order to parallelize the task, we split each ARG $tree into smaller ARGs of length 1Mb with the following command:
+
+    python ./ARGWAS.py --task makeTreeChunks --tree_file $tree --out $dir/$example --chunk_size 1000000 --skip_first_tree
+
 
 If you do not want to use the two-step approach, here are the parameters to correct for population structure:
 
