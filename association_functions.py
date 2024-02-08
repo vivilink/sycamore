@@ -18,6 +18,7 @@ import TIndividuals as tind
 import TPhenotypes as pt
 import TAssociationTesting as at
 import TImputation as impute
+import TSimulator as sim
 import glob
 import TParameters
 from typing import IO
@@ -94,16 +95,21 @@ def run_association_testing(args, random, logfile):
     variants.write_variant_info(out=args.out + "_sample", logfile=logfile)
 
     # --------------------------------
+    # create tree with more mutations
+    # --------------------------------
+    trees = sim.TSimulator.add_mutations(trees=trees, rate=args.mu, randomGenerator=random)
+
+    # --------------------------------
     # create phenotypes
     # --------------------------------
 
-    pheno = pt.make_phenotypes(args=args,
-                               trees=trees,
-                               sample_ids=sample_ids,
-                               inds=inds,
-                               plots_dir="",
-                               random=random,
-                               logfile=logfile)
+    pheno = pt.initialize_phenotypes(args=args,
+                                     trees=trees,
+                                     sample_ids=sample_ids,
+                                     inds=inds,
+                                     plots_dir="",
+                                     random=random,
+                                     logfile=logfile)
 
     # --------------------------------
     # run association tests and plot

@@ -111,7 +111,8 @@ if args.task == "simulate":
 
 if args.task == "simulateMoreMutations":
     logger.info("- TASK: simulateMoreMutations")
-    tsim.TSimulator.simulate_more_mutations(arguments=args, logfile=logger)
+    simulator = tsim.TSimulator()
+    simulator.simulate_more_mutations(arguments=args, randomGenerator=r, logfile=logger)
 
 # -----------------------
 # ARG statistics
@@ -257,7 +258,7 @@ if args.task == "covarianceCorrelations":
 # only simulate phenotypes
 # ----------------------------------------------------------------
 
-if args.task == "simulatePhenotypes":
+if args.task == "simulatePhenotypes" or args.task == "standardizeBMIPhenotype":
     if args.tree_file is None:
         raise ValueError("The estimated trees need to be provided with 'tree_file'.")
 
@@ -276,13 +277,13 @@ if args.task == "simulatePhenotypes":
     inds = tind.Individuals(ploidy=args.ploidy, num_haplotypes=N, relate_sample_names_file=args.relate_sample_names,
                             logfile=logger)
 
-    pheno = pt.make_phenotypes(args=args,
-                               trees=trees_object.trees,
-                               sample_ids=sample_ids,
-                               inds=inds,
-                               plots_dir=plots_dir,
-                               random=r,
-                               logfile=logger)
+    pheno = pt.initialize_phenotypes(args=args,
+                                     trees=trees_object.trees,
+                                     sample_ids=sample_ids,
+                                     inds=inds,
+                                     plots_dir=plots_dir,
+                                     random=r,
+                                     logfile=logger)
 
     if args.population_disease_prevalence:
         logger.add()

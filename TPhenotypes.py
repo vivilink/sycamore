@@ -23,8 +23,8 @@ from python_log_indenter import IndentedLoggerAdapter
 
 
 # TODO: being typed or not should be an option for all causal variants
-def make_phenotypes(args: tparams, trees: tskit.trees, sample_ids, inds: tind, plots_dir: str, random: rg,
-                    logfile: IndentedLoggerAdapter):
+def initialize_phenotypes(args: tparams, trees: tskit.trees, sample_ids, inds: tind, plots_dir: str, random: rg,
+                          logfile: IndentedLoggerAdapter):
     if args.simulate_phenotypes or args.task == "simulatePhenotypes":
         if args.tree_file_simulated is None:
             raise ValueError("To simulate phenotypes based on untyped variants the simulated trees need to be "

@@ -10,49 +10,55 @@ import tskit
 import msprime
 import TTree as tt
 import numpy as np
+import TRandomGenerator as rg
+from python_log_indenter import IndentedLoggerAdapter
+import TParameters as tparams
 
 
 class TSimulator:
-    def __init__(self):
-        self.trees = None
-
-    def read_simulation(self, file):
-        self.trees = tskit.load(file)
-
     @staticmethod
-    def simulate_more_mutations(arguments, logfile):
+    def add_mutations(trees: tskit.trees, rate: float, randomGenerator: rg):
         """
-        Add more mutations to existing tskit object
-
-        Parameters
-        ----------
-        arguments : TParams
-        logfile : IndentedLoggerAdapter
-        
-        Returns
-        -------
-        tskit.TreeSequence
-
+        :param trees:
+        :param rate: either a float or msprime rate map
+        :param randomGenerator:
+        :return: trees with more mutations
         """
+        tables = trees.dump_tables()
+        tables.compute_mutation_times()
+        trees = tables.tree_sequence()
+        trees = msprime.sim_mutations(trees, rate=rate, random_seed=randomGenerator.seed, discrete_genome=False)
+        return trees
+
+    def simulate_more_mutations(self, arguments: tparams, randomGenerator: rg, logfile: IndentedLoggerAdapter):
+        """
+        add more mutations to a specific tree given by AH_tree_pos with rate mu
+
+        :param arguments:
+        :param randomGenerator:
+        :param logfile:
+        :return:
+        """
+
         logfile.add()
         trees = tskit.load(arguments.tree_file)
 
-        rate = arguments._mu
+        rate = arguments.mu
         if arguments.AH_tree_pos is not None:
             focal_tree = trees.at(arguments.AH_tree_pos)
             rate = msprime.RateMap(
                 position=[0, focal_tree.interval.left, focal_tree.interval.right, trees.sequence_length],
-                rate=[0, arguments._mu, 0]
+                rate=[0, arguments.mu, 0]
             )
             logfile.info("- Adding more mutations to tree covering " + str(
                 arguments.AH_tree_pos) + " in tree sequence read from " + arguments.tree_file + " with rate " + str(
-                arguments._mu))
+                arguments.mu))
         else:
             logfile.info("- Adding more mutations to trees read from " + arguments.tree_file + " with rate " + str(
-                arguments._mu) + " across the whole tree sequence")
+                arguments.mu) + " across the whole tree sequence")
 
         # set discrete genome to false to assume infinite sites model to avoid triallelic sites
-        trees = msprime.sim_mutations(trees, rate=rate, random_seed=arguments.seed, discrete_genome=False)
+        trees = TSimulator.add_mutations(trees=trees, rate=rate, randomGenerator=randomGenerator)
         trees.dump(arguments.out + "_moreMutations.trees")
         logfile.info("- Wrote new tree file to " + arguments.out + "_moreMutations.trees")
         logfile.sub()
@@ -244,3 +250,5 @@ class TSimulatorMSPrime(TSimulator):
                          + " and ending pos " + str(recomb_map_end))
 
         return recomb_obj
+
+
