@@ -22,6 +22,8 @@ v_identity <- mvrnorm(n = 1, mu = rep(0, n_inds), Sigma = diag(n_inds), tol = 1e
 
 phenotypes <- v_locoGRM + v_identity
 
+
+
 df <- cbind(0, individuals, phenotypes)
 write.table(df, sep=" ", row.names=FALSE, col.names=FALSE, quote=FALSE, file=paste("phenotypes_", rep, ".phen", sep=''))
 

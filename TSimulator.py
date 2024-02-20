@@ -19,10 +19,9 @@ class TSimulator:
     @staticmethod
     def add_mutations(trees: tskit.trees, rate: float, randomGenerator: rg):
         """
-        :param trees:
-        :param rate: either a float or msprime rate map
-        :param randomGenerator:
-        :return: trees with more mutations
+        Add mutations to existing tree. If rate is a float it will be applied to whole tree sequence. Need mutation
+        times of previous mutations need to be computed to be able to add more :param trees: :param rate: either a
+        float or msprime rate map :param randomGenerator: :return: trees with more mutations
         """
         tables = trees.dump_tables()
         tables.compute_mutation_times()

@@ -22,6 +22,8 @@ class TVariants:
     """
 
     def __init__(self, tskit_object: tskit, samp_ids: np.ndarray):
+        print("starting with init in base class")
+
         self._variants = list(tskit_object.variants(samples=samp_ids))
         self._number = len(self._variants)
         self._number_typed = self._number
@@ -29,6 +31,8 @@ class TVariants:
         self._alleleFreq = np.empty(self._number)
         self._info_columns = ['var_index', 'position', 'allele_freq', 'num_alleles', 'typed', 'tree_index']
         self._info = pd.DataFrame(index=range(self._number), columns=self._info_columns)
+
+        print("done with init in base class")
 
     def fill_info(self, tskit_object: tskit, samp_ids: np.ndarray, pos_float: bool, logfile: IndentedLoggerAdapter):
         """
@@ -40,6 +44,7 @@ class TVariants:
         :param logfile:
         :return:
         """
+        print("starting fill info base class")
         if len(list(tskit_object.variants(samples=samp_ids))) < 1:
             logfile.info("WARNING: Found no variants")
         for v, var in enumerate(list(tskit_object.variants(samples=samp_ids))):
@@ -310,6 +315,8 @@ class TVariantsFiltered(TVariants):
         # TODO: develop an iterator for variants that only goes over the typed ones
 
         super().__init__(tskit_object=tskit_object, samp_ids=samp_ids)
+
+        print("done initializing in constructor")
 
         # build variant object from tree file -> filter!
         if filtered_variants_file is None:

@@ -97,7 +97,28 @@ def run_association_testing(args, random, logfile):
     # --------------------------------
     # create tree with more mutations
     # --------------------------------
-    trees = sim.TSimulator.add_mutations(trees=trees, rate=args.mu, randomGenerator=random)
+    trees_moreMut = None
+    variants_moreMut = None
+    if args.approx_eGRM:
+        logfile.info("- Calculating approximate eGRM based on mutations placed randomly on the ARG")
+        if args.mu is None:
+            raise ValueError("Must provide mutation rate to add mutations using 'mu'")
+        if args.mu > 0.001:
+            raise ValueError("This mu is too large. Program will freeze.")
+        trees_moreMut = sim.TSimulator.add_mutations(trees=trees, rate=args.mu, randomGenerator=random)
+        logfile.info("- Done adding more mutations to tree with mutation rate " + str(args.mu))
+
+        variants_moreMut = tvar.TVariantsFiltered(tskit_object=trees_moreMut,
+                                                  samp_ids=sample_ids,
+                                                  min_allele_freq=0,
+                                                  max_allele_freq=1,
+                                                  prop_typed_variants=-1,
+                                                  pos_float=args.pos_float,
+                                                  random=random,
+                                                  logfile=logfile,
+                                                  filtered_variants_file=None)
+
+        print("finished creating variants more mut")
 
     # --------------------------------
     # create phenotypes
@@ -123,23 +144,42 @@ def run_association_testing(args, random, logfile):
         logfile.add()
 
         if method == "GWAS":
-            run_association_GWAS(trees=trees,
-                                 inds=inds,
-                                 variants=variants,
-                                 pheno=pheno,
-                                 args=args,
-                                 logfile=logfile)
+            if args.approx_eGRM:
+                run_association_GWAS(trees=trees_moreMut,
+                                     inds=inds,
+                                     variants=variants_moreMut,
+                                     pheno=pheno,
+                                     args=args,
+                                     logfile=logfile)
+            else:
+                run_association_GWAS(trees=trees,
+                                     inds=inds,
+                                     variants=variants,
+                                     pheno=pheno,
+                                     args=args,
+                                     logfile=logfile)
 
         elif method == "AIM":
-            run_association_AIM(trees=trees,
-                                inds=inds,
-                                variants=variants,
-                                pheno=pheno,
-                                args=args,
-                                ass_method=m,
-                                window_size=args.ass_window_size,
-                                trees_interval=trees_object.actual_trees_interval,
-                                logfile=logfile)
+            if args.approx_eGRM:
+                run_association_AIM(trees=trees_moreMut,
+                                    inds=inds,
+                                    variants=variants_moreMut,
+                                    pheno=pheno,
+                                    args=args,
+                                    ass_method=m,
+                                    window_size=args.ass_window_size,
+                                    trees_interval=trees_object.actual_trees_interval,
+                                    logfile=logfile)
+            else:
+                run_association_AIM(trees=trees,
+                                    inds=inds,
+                                    variants=variants,
+                                    pheno=pheno,
+                                    args=args,
+                                    ass_method=m,
+                                    window_size=args.ass_window_size,
+                                    trees_interval=trees_object.actual_trees_interval,
+                                    logfile=logfile)
 
         else:
             raise ValueError("Unknown association method '" + m + "'. Must be 'AIM' or 'GWAS'.")
@@ -332,7 +372,6 @@ def get_proportion_of_tree_within_window(window_start: int, window_end: int, tre
 
 def write_matrices_for_testing(cholesky_global_GRM_for_cor: cov, covariance_obj: cov, inds: tind, outname: str,
                                covariances_picklefile: IO, index: int, logfile: IndentedLoggerAdapter):
-
     if covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile):
         if cholesky_global_GRM_for_cor:
             # calculate cholesky of local GRM --> get A
@@ -400,7 +439,6 @@ def test_window_for_association(covariance_obj: cov, inds: tind, AIM_methods: li
                                           index=window_index,
                                           covariances_picklefile=covariances_picklefile,
                                           logfile=logfile):
-
                 m.test(index=window_index,
                        out=outname,
                        inds=inds,

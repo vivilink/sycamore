@@ -208,6 +208,9 @@ class TParameters:
         assoc.add_argument('--covariance_picklefiles', type=str, nargs='+',
                            help="calculate correlation between covariances along the genome (user must verify that "
                                 "windows have same coordinates)")
+        assoc.add_argument('--approx_eGRM', action='store_true',
+                           help="Add fake mutations to ARG (with rate 'mu') that are used to calculate approximate eGRM"
+                                "during association")
         assoc.add_argument('--population_structure_matrix', type=str,
                            help="Prefix of covariance matrix in GCTA format used to correct for population structure")
         assoc.add_argument('--population_structure_pca_num_eigenvectors', type=int,

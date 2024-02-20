@@ -1,9 +1,11 @@
 # setwd("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr5")
 # source("/home1/linkv/ARGWAS/argwas/R_scripts/functions.R")
 
-setwd("/data/ARGWAS/hawaiians/association_all_chr/BLUP/local_eGRM")
+# setwd("/data/ARGWAS/hawaiians/association_all_chr/BMI_binary/BLUP/local_eGRM")
+setwd("/data/ARGWAS/hawaiians/association_all_chr/BMI/BLUP/local_eGRM")
 source("~/git/sycamore/R_scripts/functions.R")
 CLUSTER  <- FALSE
+do_gwas <- TRUE
 
 do_annotation <- function(other_GWAS){
   # 
@@ -21,17 +23,21 @@ do_annotation <- function(other_GWAS){
   title(xlab="genomic position [Mb]", line=2.2)
 }
 
-plot_association <- function(df, df_GWAS, method="", CHROM){
-  plot(type='n', x=100, xaxt='n', las=2, xlab="", ylab="", col=blu, pch=20, xlim=c(region_start,region_end), ylim=c(0,8.5), bty='n', main=CHROM) #ylim=c(0,max(-log10(df$p_values)))
+plot_association <- function(df, df_GWAS, method="", CHROM, do_gwas){
+  plot(type='n', x=100, xaxt='n', las=2, xlab="", ylab="", col=blu, pch=20, xlim=c(region_start,region_end), ylim=c(0,8.5), bty='n', main="") #ylim=c(0,max(-log10(df$p_values)))
   do_annotation(other_GWAS)
-  points(x=df_GWAS$bp, y=-log10(df_GWAS$p), col=org, pch=20, lwd=0)
+  if(do_gwas){
+    points(x=df_GWAS$bp, y=-log10(df_GWAS$p), col=org, pch=20, lwd=0)
+  }
   points(x=df$start, y=-log10(df$p_values), col=blu, pch=20, lwd=0)
 
-  legend(legend=c("local eGRM", "GWAS"), pch=20, col=c(blu, org), x="topright", box.lwd=0, box.col = "white", bg = "white") #box.lwd=0, box.col = "white", bg = "white", , horiz = TRUE
+  legend(legend=c("sycamore", "GWAS"), pch=20, col=c(blu, org), x="topright", box.lwd=0, box.col = "white", bg = "white") #box.lwd=0, box.col = "white", bg = "white", , horiz = TRUE
 }
 
+if(do_gwas){
+  df_GWAS <- read.table("MLMA_LOCO.loco.mlma", header=TRUE)
+}
 # GWAS
-df_GWAS <- read.table("MLMA_LOCO.loco.mlma", header=TRUE)
 
 # centromere regions
 if(CLUSTER==TRUE){
@@ -49,10 +55,11 @@ if(CLUSTER==TRUE){
 }
 colnames(regions) <- c("chr", "start", "end", "type")
 
-png(paste("hawaiians_BMI_all_chromosomes_residuals.png", sep=''), width=5, height=50, units="in", res=400)
-par(mfrow=c(22,1))
+pdf(paste("hawaiians_BMI_all_chromosomes_residuals.pdf", sep=''), width=8, height=4)
+# png(paste("hawaiians_BMI_all_chromosomes_residuals.png", sep=''), width=5, height=4, units="in", res=400) #height=50
+par(mfrow=c(1,1))
 
-for(CHROM in seq(1,22,1)){
+for(CHROM in 2){ #seq(1,22,1)
   
 
   if(CLUSTER==TRUE){
@@ -77,7 +84,7 @@ for(CHROM in seq(1,22,1)){
   
   # read local eGRM
   df_BLUP_res <- df_BLUP_res[df_BLUP_res$start >= region_start & df_BLUP_res$start <= region_end,]
- 
+  length(df_BLUP_res$start)
   # remove encode regions
   regions_chr <- regions[regions$chr == paste("chr", CHROM, sep=''),]
   df_BLUP_res <- remove_regions(df_results=df_BLUP_res, regions=regions_chr)
@@ -86,18 +93,107 @@ for(CHROM in seq(1,22,1)){
   regions_centro_chr <- regions_centro[regions_centro$chr == paste("chr", CHROM, sep=''),]
   df_BLUP_res <- remove_regions(df_results=df_BLUP_res, regions=regions_centro_chr)
   
-  # extract GWAS
-  df_GWAS_chr <- df_GWAS[df_GWAS$Chr == CHROM,]
-  df_GWAS_chr <- remove_regions_GWAS(df_results=df_GWAS_chr, regions=regions_chr)
-  df_GWAS_chr <- remove_regions_GWAS(df_results=df_GWAS_chr, regions=regions_centro_chr)
+  if(do_gwas){
+    # extract GWAS
+    df_GWAS_chr <- df_GWAS[df_GWAS$Chr == CHROM,]
+    df_GWAS_chr <- remove_regions_GWAS(df_results=df_GWAS_chr, regions=regions_chr)
+    df_GWAS_chr <- remove_regions_GWAS(df_results=df_GWAS_chr, regions=regions_centro_chr)
+  }
+
   
 
   # t <- table(as.factor(df$start))
   # print(paste("this position is present more than once", names(t)[as.integer(t) > 1]))
   
   #plot
-  plot_association(df=df_BLUP_res, df_GWAS=df_GWAS_chr, CHROM=CHROM)
+  plot_association(df=df_BLUP_res, df_GWAS=df_GWAS_chr, CHROM=CHROM, do_gwas=do_gwas)
   
 }
 dev.off()
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Create a matrix
+df_sycamore <- matrix(ncol = 4)
+
+# Define column names
+col_names <- c("BP", "CHR", "P", "SNP")
+
+# Convert the matrix to a data frame with column names
+df_sycamore <- data.frame(matrix = df_sycamore)
+colnames(df_sycamore) <- col_names
+
+
+for(CHROM in seq(1,22,1)){
+  
+  if(CLUSTER==TRUE){
+    df_BLUP_res <- read.table("", sep=',', header=TRUE) 
+  } else{
+    df_BLUP_res <- read.table(paste("chr", CHROM, "_association_results.csv", sep=''), sep=',', header=TRUE) 
+  }
+  df_BLUP_res <- df_BLUP_res[!is.na(df_BLUP_res$p_values),]
+  df_BLUP_res <- df_BLUP_res[order(df_BLUP_res$start, decreasing=FALSE),]
+  
+  org <- "#E69F00"
+  blu <- "#56B4E9"
+  pin <- "#CC79A7"
+  
+  # region to plot
+  region_start <- 0
+  region_end <- 250000000
+  
+  # other_GWAS <- read.table("/home1/linkv/ARGWAS/argwas/R_scripts/GWAScat_BMIweight_chr5.csv", sep=',', header=TRUE)
+  # other_GWAS <- read.table("~/git/argwas/R_scripts/GWAScat_BMIweight_chr5.csv", sep=',', header=TRUE)
+  # other_GWAS <- other_GWAS[-which(other_GWAS$gwasCatalog.name == "rs12513649"),]
+  
+  # read local eGRM
+  df_BLUP_res <- df_BLUP_res[df_BLUP_res$start >= region_start & df_BLUP_res$start <= region_end,]
+  length(df_BLUP_res$start)
+  # remove encode regions
+  regions_chr <- regions[regions$chr == paste("chr", CHROM, sep=''),]
+  df_BLUP_res <- remove_regions(df_results=df_BLUP_res, regions=regions_chr)
+  
+  # remove centromere regions
+  regions_centro_chr <- regions_centro[regions_centro$chr == paste("chr", CHROM, sep=''),]
+  df_BLUP_res <- remove_regions(df_results=df_BLUP_res, regions=regions_centro_chr)
+  
+  # add to total
+  df_sycamore_chr <- cbind(df_BLUP_res$start, as.numeric(rep(CHROM, times=nrow(df_BLUP_res))), df_BLUP_res$p_values, rep("", nrow(df_BLUP_res)))
+  colnames(df_sycamore_chr) <- c("BP", "CHR", "P", "SNP")
+  df_sycamore <- rbind(df_sycamore, df_sycamore_chr)
+  
+  if(do_gwas){
+    # extract GWAS
+    df_GWAS_chr <- df_GWAS[df_GWAS$Chr == CHROM,]
+    df_GWAS_chr <- remove_regions_GWAS(df_results=df_GWAS_chr, regions=regions_chr)
+    df_GWAS_chr <- remove_regions_GWAS(df_results=df_GWAS_chr, regions=regions_centro_chr)
+  }
+}
+
+df_sycamore <- df_sycamore[-1,]
+df_sycamore$CHR <- as.numeric(df_sycamore$CHR)
+df_sycamore$BP <- as.numeric(df_sycamore$BP)
+df_sycamore$P <- as.numeric(df_sycamore$P)
+
+png("manhattan_all_chr.png", width=8, height=3, units="in", res=400)
+par(mfrow=c(1,2))
+manhattan(df_sycamore, suggestive=FALSE, genomewideline = FALSE, main="sycamore", ylim=c(0,8.5))
+abline(h=-log10(5*(10^-8)), col=org, lty=2)
+abline(h=-log10(4.5*10^-7), col=blu, lty=2)
+manhattan(df_GWAS, ylim=c(0,8.5), suggestive=FALSE, genomewideline = FALSE, main="GWAS")
+abline(h=-log10(5*(10^-8)), col=org, lty=2)
+abline(h=-log10(4.5*10^-7), col=blu, lty=2)
+dev.off()
+
+colnames(df_GWAS) <- c("CHR", "SNP", "BP", "A1", "A2", "freq", "b", "se", "P")
