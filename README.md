@@ -62,6 +62,11 @@ Install tsdate
 
     python3 -m pip install tsdate --user
 
+Install stdpopsim
+
+    conda install -c conda-forge stdpopsim
+
+
 Install pandas_plink
 
     conda install -c conda-forge pandas-plink or pip install pandas-plink
