@@ -42,10 +42,6 @@ Install glimix-core
 
     conda install -c conda-forge glimix-core
 
-Download and unpack gcta
-
-    https://cnsgenomics.com/software/gcta/#Download, provide correct path with parameter --GCTA
-
 Install statsmodel
 
     conda install -c conda-forge statsmodels
@@ -68,7 +64,7 @@ Install tsdate
 
 Install pandas_plink
 
-    conda install -c conda-forge pandas-plink
+    conda install -c conda-forge pandas-plink or pip install pandas-plink
 
 
 Install plinkFile library in R if you want to write covariance matrices in .grm.bin format for GCTA
