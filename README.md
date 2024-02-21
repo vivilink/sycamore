@@ -20,7 +20,7 @@ Creating conda environment
 
 The list of packages installed in my conda environment used to produce all results can be found here in this file: sycamore-package-list.txt. It should thus be possible to recreate my environment with the following command:
 
-    conda env create -n myenv --file sycamore-package-list.txt
+    conda env create -n env_sycamore --file sycamore-package-list.txt
     
 *Build environment from scratch*
 
