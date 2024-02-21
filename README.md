@@ -28,6 +28,10 @@ Build environment
 
     conda env create -f argwas_environment.yml
 
+Install glimix-core
+
+    conda install -c conda-forge glimix-core
+
 Install tskit
 
     conda install -c conda-forge tskit
@@ -37,10 +41,6 @@ Install limix_lmm
 
     conda install -c conda-forge limix
 -->
-
-Install glimix-core
-
-    conda install -c conda-forge glimix-core
 
 Install statsmodel
 
