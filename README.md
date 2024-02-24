@@ -26,11 +26,7 @@ The list of packages installed in my conda environment used to produce all resul
 
 Build environment
 
-    conda env create -f argwas_environment.yml
-
-Install glimix-core
-
-    conda install -c conda-forge glimix-core
+    conda env create -f sycamore_environment.yml
 
 Install tskit
 
@@ -42,10 +38,6 @@ Install limix_lmm
     conda install -c conda-forge limix
 -->
 
-Install statsmodel
-
-    conda install -c conda-forge statsmodels
-
 Install log indenter (I think there is no conda package)
 
     pip install python_log_indenter
@@ -53,10 +45,6 @@ Install log indenter (I think there is no conda package)
 Install tsinfer
 
     conda install -c conda-forge tsinfer 
-
-Install matplotlib
-
-    conda install -c conda-forge matplotlib
  
 Install tsdate
 
@@ -66,7 +54,6 @@ Install stdpopsim
 
     conda install -c conda-forge stdpopsim
 
-
 Install pandas_plink
 
     conda install -c conda-forge pandas-plink or pip install pandas-plink
@@ -75,6 +62,13 @@ Install pandas_plink
 Install plinkFile library in R if you want to write covariance matrices in .grm.bin format for GCTA
 
     install.packages("plinkFile")
+
+
+Make sure conda can access all packages by adding 
+
+    export PATH="/home/<username>/anaconda3/bin:$PATH"
+
+to .bashrc file (not only in conda initialize section)
 
 Parameters
 -----------------
