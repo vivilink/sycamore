@@ -105,7 +105,8 @@ if args.task == "simulate":
     variants = tvar.TVariants(tskit_object=trees, samp_ids=sample_ids)
     variants.fill_info(tskit_object=trees, samp_ids=sample_ids, pos_float=args.pos_float, logfile=logger)
     variants.write_variant_info(out=args.out, logfile=logger)
-    variants.write_genetic_map(out=args.out, logfile=logger)
+    variants.write_genetic_map_relate(out=args.out, logfile=logger)
+    variants.write_genetic_map_argNeedle(out=args.out, logfile=logger)
 
     tt.TTrees.writeStats(ts_object=trees, out=args.out, logfile=logger)
 
@@ -201,9 +202,10 @@ if args.task == "downsampleVariantsWriteShapeit":
                                       args.prop_typed_variants, args.pos_float, r, logger)
     # variants = tvar.TVariantsFiltered(trees, samp_ids, 0.01, 1, 0.5, r)
     variants.write_variant_info(args.out, logger)
-    variants.write_shapeit2(args.out, inds, logger)
+    variants.write_shapeit2(args.out, inds, args.chromosome, logger)
 
-    variants.write_genetic_map(out=args.out, logfile=logger)
+    variants.write_genetic_map_relate(out=args.out, logfile=logger)
+    variants.write_genetic_map_argNeedle(out=args.out, logfile=logger)
 
 # -----------------------
 # Impute

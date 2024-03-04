@@ -113,15 +113,15 @@ class TVariants:
         logfile.info("- Writing variant info to file '" + out + "_sample_variants.csv'")
         self._info.to_csv(out + "_sample_variants.csv", header=True, index=False)
 
-    def write_genetic_map(self, out, logfile):
+    def write_genetic_map_relate(self, out, logfile):
         """
         Taken from egrm/Manuscript/simulate
         @param out: str
         @param logfile:
         @return:
         """
-        outname = out + ".map"
-        logfile.info("- Writing genetic map to " + outname)
+        outname = out + "_relate.map"
+        logfile.info("- Writing genetic map in Relate format to " + outname)
         # if file exists, clear
         map_file = open(outname, "w")
         map_file.close()
@@ -131,8 +131,31 @@ class TVariants:
         map_file.write("pos COMBINED_rate Genetic_Map\n")
         for index, row in self._info.iterrows():
             if row['typed']:
-                string = str(row['position']) + " " + str(1) + " "
+                string = str(int(row['position'])) + " " + str(1) + " "
                 string = string + str(row['position'] / 1000000) + "\n"
+                bytes = map_file.write(string)
+        map_file.close()
+        return outname
+
+    def write_genetic_map_argNeedle(self, out, logfile, chr="chr1"):
+        """
+        according to .map format here
+        @param out: str
+        @param logfile:
+        @return:
+        """
+        outname = out + "_arg-needle.map"
+        logfile.info("- Writing genetic map in ARG-Needle format to " + outname)
+        # if file exists, clear
+        map_file = open(outname, "w")
+        map_file.close()
+
+        # write file line by line
+        map_file = open(outname, 'a')
+        for index, row in self._info.iterrows():
+            if row['typed']:
+                string = chr + " snp_" + str(int(row['position'])) + " "
+                string = string + str(row['position'] / 1000000) + " " + str(int(row['position'])) + "\n"
                 bytes = map_file.write(string)
         map_file.close()
         return outname
@@ -186,28 +209,25 @@ class TVariants:
         haps_file.close()
         logfile.sub()
 
-    def write_shapeit2(self, out, inds, logfile):
+    def write_shapeit2(self, out, inds, chrom: int, logfile):
         """
         Write files in SHAPEIT2 format, to be used as input by RELATE (https://myersgroup.github.io/relate/input_data.html)
 
-        Parameters
-        ----------
-        out : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        None.
-
+        :param out:
+        :param inds:
+        :param chrom: chromosome number
+        :param logfile:
+        :return:
         """
+
         haps = pd.DataFrame(index=range(self._number_typed), columns=range(5 + inds.num_haplotypes))
         info_typed = self._info.loc[self._info['typed'] == True]
         info_typed['index'] = range(self._number_typed)
         info_typed.set_index(info_typed['index'], drop=True, inplace=True)
 
-        haps.iloc[:, 0] = np.repeat(1, self._number_typed)
+        haps.iloc[:, 0] = np.repeat(chrom, self._number_typed)
         haps.iloc[:, 1] = '.'
-        haps.iloc[0:self._number_typed, 2] = info_typed['position']
+        haps.iloc[0:self._number_typed, 2] = info_typed['position'].astype(int)
         haps.iloc[:, 3] = 'A'
         haps.iloc[:, 4] = 'T'
 

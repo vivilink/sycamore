@@ -150,7 +150,7 @@ class TImpute:
 
         # read or write genetic map
         if genetic_map_file is None:
-            genetic_map_file_name = variants_sample.write_genetic_map(out=out, logfile=logfile)
+            genetic_map_file_name = variants_sample.write_genetic_map_relate(out=out, logfile=logfile)
             logfile.info(
                 "- No genetic map file provided. Writing map with constant rate to " + genetic_map_file_name)
         else:
