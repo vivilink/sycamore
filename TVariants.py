@@ -14,6 +14,8 @@ import TRandomGenerator as rg
 import TTree as tt
 from python_log_indenter import IndentedLoggerAdapter
 import tskit
+import TIndividuals as tind
+import os
 
 
 class TVariants:
@@ -137,14 +139,14 @@ class TVariants:
         map_file.close()
         return outname
 
-    def write_genetic_map_argNeedle(self, out, logfile, chr="chr1"):
+    def write_genetic_map_argNeedle(self, out, logfile, chrom):
         """
         according to .map format here
         @param out: str
         @param logfile:
         @return:
         """
-        outname = out + "_arg-needle.map"
+        outname = out + "_argNeedle.map"
         logfile.info("- Writing genetic map in ARG-Needle format to " + outname)
         # if file exists, clear
         map_file = open(outname, "w")
@@ -154,8 +156,8 @@ class TVariants:
         map_file = open(outname, 'a')
         for index, row in self._info.iterrows():
             if row['typed']:
-                string = chr + " snp_" + str(int(row['position'])) + " "
-                string = string + str(row['position'] / 1000000) + " " + str(int(row['position'])) + "\n"
+                string = chrom + "\tsnp_" + str(int(row['position'])) + "\t"
+                string = string + str(row['position'] / 1000000) + "\t" + str(int(row['position'])) + "\n"
                 bytes = map_file.write(string)
         map_file.close()
         return outname
@@ -209,7 +211,7 @@ class TVariants:
         haps_file.close()
         logfile.sub()
 
-    def write_shapeit2(self, out, inds, chrom: int, logfile):
+    def write_haps(self, out: str, inds: tind, chrom: str, logfile: IndentedLoggerAdapter):
         """
         Write files in SHAPEIT2 format, to be used as input by RELATE (https://myersgroup.github.io/relate/input_data.html)
 
@@ -252,46 +254,51 @@ class TVariants:
                 #     print("v", v, "positions\n", self._info.iloc[v])
                 index += 1
 
-        logfile.info("- Writing haplotypes in Shapeit2 format to file '" + out + "_variants.haps'")
-        haps.to_csv(out + "_variants.haps", sep=' ', header=False, index=False)
+        logfile.info("- Writing haplotypes in Shapeit2 and argNeedle format to file '"
+                     + out + "_relate.haps' and creating a soft link to the same called '" + out + "_argNeedle.haps'.")
+        haps.to_csv(out + "_relate.haps", sep=' ', header=False, index=False)
+        if os.path.exists(out + "_argNeedle.haps"):
+            os.remove(out + "_argNeedle.haps")
+        os.symlink(out + "_relate.haps", out + "_argNeedle.haps")
+        # haps.to_csv(out + "_argNeedle.haps", sep=' ', header=False, index=False)
         logfile.sub()
 
-    def write_haplotypes(self, out, inds, logfile):
-        """
-        Write haplotypes in a format defined by me, rows are haplotypes, columns are variants (opposite of shapeit)
-        @param out:
-        @param inds:
-        @param logfile:
-        @return:
-        """
-        haps = pd.DataFrame(index=range(inds.num_haplotypes), columns=range(self._number_typed))
-        info_typed = self._info.loc[self._info['typed'] == True]
-        info_typed['index'] = range(self._number_typed)
-        info_typed.set_index(info_typed['index'], drop=True, inplace=True)
-
-        logfile.info("- Building haplotypes for typed variants and writing to file '" + out + "_haplotypes.txt'")
-        logfile.add()
-        # can't use v for index because it loops over all variants, not only typed ones
-        column = 0
-        # log progress
-        start = time.time()
-
-        for v, var in enumerate(self._variants):
-            if v % 10000 == 0:
-                end = time.time()
-                logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(
-                    round(end - start)) + " s")
-            # print(v, self._info.iloc[v]['typed'])
-            if self._info.iloc[v]['typed']:
-                # if self._info.iloc[v]['position'] == None :
-                #     print(self._info.iloc[v])
-                haps.iloc[:, column] = var.genotypes
-                # if index in [9,10, 11, 12]:
-                #     print("v", v, "positions\n", self._info.iloc[v])
-                column += 1
-
-        haps.to_csv(out + "_haplotypes.txt", sep=' ', header=False, index=False)
-        logfile.sub()
+    # def write_haplotypes(self, out, inds, logfile):
+    #     """
+    #     Write haplotypes in a format defined by me, rows are haplotypes, columns are variants (opposite of shapeit)
+    #     @param out:
+    #     @param inds:
+    #     @param logfile:
+    #     @return:
+    #     """
+    #     haps = pd.DataFrame(index=range(inds.num_haplotypes), columns=range(self._number_typed))
+    #     info_typed = self._info.loc[self._info['typed'] == True]
+    #     info_typed['index'] = range(self._number_typed)
+    #     info_typed.set_index(info_typed['index'], drop=True, inplace=True)
+    #
+    #     logfile.info("- Building haplotypes for typed variants and writing to file '" + out + "_haplotypes.txt'")
+    #     logfile.add()
+    #     # can't use v for index because it loops over all variants, not only typed ones
+    #     column = 0
+    #     # log progress
+    #     start = time.time()
+    #
+    #     for v, var in enumerate(self._variants):
+    #         if v % 10000 == 0:
+    #             end = time.time()
+    #             logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(
+    #                 round(end - start)) + " s")
+    #         # print(v, self._info.iloc[v]['typed'])
+    #         if self._info.iloc[v]['typed']:
+    #             # if self._info.iloc[v]['position'] == None :
+    #             #     print(self._info.iloc[v])
+    #             haps.iloc[:, column] = var.genotypes
+    #             # if index in [9,10, 11, 12]:
+    #             #     print("v", v, "positions\n", self._info.iloc[v])
+    #             column += 1
+    #
+    #     haps.to_csv(out + "_haplotypes.txt", sep=' ', header=False, index=False)
+    #     logfile.sub()
 
 
 class TVariantsFiltered(TVariants):

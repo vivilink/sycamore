@@ -49,7 +49,8 @@ class TParameters:
                             help="Ploidy of individuals. Haplotypes will be assigned to individuals in increasing order")
         parser.add_argument('--ploidy_ref', type=int, choices=[1, 2], default=2,
                             help="Ploidy of individuals. Haplotypes will be assigned to individuals in increasing order")
-
+        parser.add_argument('--chromosome', type=str, default="chr1",
+                            help="Chromosome number. Most of the time it's not important to set it")
         # limit data
         parser.add_argument('--min_allele_freq', type=float, default=0.0,
                             help="Minimum frequency an allele needs to have to be typed")

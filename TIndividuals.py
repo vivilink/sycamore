@@ -115,8 +115,8 @@ class Individuals:
         #     raise ValueError("Do not know which individuals have missing phenotypes. Initiate _ind_has_phenotype!")
         return list(np.arange(0, self._num_inds, 1, dtype=int)[self._ind_has_phenotype == False])
 
-    def write_shapeit2(self, out, logfile):
-        logfile.info("- Writing individuals in Shapeit2 format to file '" + out + "_inds.sample'")
+    def write_shapeit2_relate(self, out, logfile):
+        logfile.info("- Writing individuals in Shapeit2 format to file '" + out + "_relate.sample'")
 
         haps = pd.DataFrame()
         haps['ID_1'] = range(self._num_inds)
@@ -132,4 +132,24 @@ class Individuals:
         haps = pd.concat([top_row, haps]).reset_index(drop=True)
 
         # write to file
-        haps.to_csv(out + "_inds.sample", sep=' ', header=True, index=False)
+        haps.to_csv(out + "_relate.sample", sep=' ', header=True, index=False)
+
+    def write_sample_argNeedle(self, out, logfile):
+        """
+        https://www.cog-genomics.org/plink/2.0/formats#sample
+        :param out:
+        :param logfile:
+        :return:
+        """
+        logfile.info("- Writing individuals in Oxford sample format to file '" + out + "_argNeedle.sample'")
+
+        haps = pd.DataFrame()
+        haps['ID_1'] = range(self._num_inds + 1)
+        if self._ploidy == 1:
+            haps['ID_2'] = "NA"
+        else:
+            haps['ID_2'] = haps['ID_1']
+        haps['missing'] = np.repeat(0, self._num_inds + 1)
+
+        # write to file
+        haps.to_csv(out + "_argNeedle.sample", sep=' ', header=True, index=False)
