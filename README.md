@@ -63,6 +63,12 @@ Make sure msprime uses the correct libgsl by uninstalling the conda version and 
     conda uninstall msprime
     pip install msprime
 
+    mamba uninstall msprime
+    pip install msprime
+    mamba install -c conda-forge tsinfer
+    mamba install -c conda-forge stdpopsim --only-deps
+    mamba install -c conda-forge stdpopsim
+
 
 Install plinkFile library in R if you want to write covariance matrices in .grm.bin format for GCTA
 
