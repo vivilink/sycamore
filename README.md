@@ -58,6 +58,17 @@ Install pandas_plink
 
     conda install -c conda-forge pandas-plink or pip install pandas-plink
 
+Make sure msprime uses the correct libgsl by uninstalling the conda version and then installing it with pip
+
+    conda uninstall msprime
+    pip install msprime
+
+    mamba uninstall msprime
+    pip install msprime
+    mamba install -c conda-forge tsinfer
+    mamba install -c conda-forge stdpopsim --only-deps
+    mamba install -c conda-forge stdpopsim
+
 
 Install plinkFile library in R if you want to write covariance matrices in .grm.bin format for GCTA
 
