@@ -404,7 +404,7 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
         self.name = "regions_GCTA"
 
     def test(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
-            self.run_association_one_window_gcta(index=index, out=out)
+        self.run_association_one_window_gcta(index=index, out=out)
 
     def run_association_one_window_gcta(self, index, out):
         raise ValueError("function run_association_one_window_gcta not implemented in base class")
@@ -676,12 +676,13 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
 
             # grep results
             f.write("sed -n '2,6p' " + outname + "_HE" + ".HEreg | unexpand -a | tr -s \'\t\' > "
-                          + outname + "_HE-CP_result.txt\n")
+                    + outname + "_HE-CP_result.txt\n")
             f.write("sed -n '9,13p' " + outname + "_HE" + ".HEreg | unexpand -a | tr -s \'\t\' > "
-                          + outname + "_HE-SD_result.txt\n")
+                    + outname + "_HE-SD_result.txt\n")
 
     def write_GCTA_command_file_mgrm_cor(self, outname, pheno_file, GCTA, num_GCTA_threads,
-                                         additional_gcta_params, population_structure_grm_prefix, covariance_grm_prefix, logfile):
+                                         additional_gcta_params, population_structure_grm_prefix, covariance_grm_prefix,
+                                         logfile):
         """
         Write executable bash script for running association test with multiple random effects and their correlation using GCTA
 
@@ -711,9 +712,9 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
 
             # grep results
             f.write("sed -n '2,6p' " + outname + "_HE" + ".HEreg | unexpand -a | tr -s \'\t\' > "
-                          + outname + "_HE-CP_result.txt\n")
+                    + outname + "_HE-CP_result.txt\n")
             f.write("sed -n '9,13p' " + outname + "_HE" + ".HEreg | unexpand -a | tr -s \'\t\' > "
-                          + outname + "_HE-SD_result.txt\n")
+                    + outname + "_HE-SD_result.txt\n")
 
     def write_GCTA_command_file_mgrm_pca(self, outname, pheno_file, num_eigenvectors,
                                          population_structure_matrix, GCTA, num_GCTA_threads):
@@ -733,7 +734,7 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
             f.write("#!/bin/bash\n")
 
             f.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
-                          + outname + "> " + outname + "_tmp2.out\n\n")
+                    + outname + "> " + outname + "_tmp2.out\n\n")
 
             f.write(
                 GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
@@ -741,9 +742,9 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
                     num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
             # grep results
             f.write("sed -n '2,6p' " + outname + "_HE" + ".HEreg | unexpand -a | tr -s \'\t\' > "
-                          + outname + "_HE-CP_result.txt\n")
+                    + outname + "_HE-CP_result.txt\n")
             f.write("sed -n '9,13p' " + outname + "_HE" + ".HEreg | unexpand -a | tr -s \'\t\' > "
-                          + outname + "_HE-SD_result.txt\n")
+                    + outname + "_HE-SD_result.txt\n")
 
     def write_GCTA_command_file_grm(self, outname, pheno_file, GCTA, num_GCTA_threads,
                                     additional_gcta_params):
@@ -770,9 +771,9 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
 
             # grep results
             f.write("sed -n '2,4p' " + outname + "_HE" + ".HEreg | unexpand -a | tr -s \'\\t\' > "
-                          + outname + "_HE-CP_result.txt\n")
+                    + outname + "_HE-CP_result.txt\n")
             f.write("sed -n '7,9p' " + outname + "_HE" + ".HEreg | unexpand -a | tr -s \'\\t\' > "
-                          + outname + "_HE-SD_result.txt\n")
+                    + outname + "_HE-SD_result.txt\n")
 
     def write_GCTA_command_file_grm_pca(self, outname, pheno_file, num_eigenvectors,
                                         population_structure_matrix, GCTA, num_GCTA_threads):
@@ -794,16 +795,16 @@ class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
             f.write("#!/bin/bash\n")
 
             f.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
-                          + outname + "> " + outname + "_tmp2.out\n\n")
+                    + outname + "> " + outname + "_tmp2.out\n\n")
 
             f.write(
                 GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_HE --qcovar " + outname + ".eigenvec "
                 + " --threads " + str(num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
             # grep results
             f.write("sed -n '2,4p' " + outname + "_HE" + ".HEreg | unexpand -a | tr -s \'\\t\' > "
-                          + outname + "_HE-CP_result.txt\n")
+                    + outname + "_HE-CP_result.txt\n")
             f.write("sed -n '7,9p' " + outname + "_HE" + ".HEreg | unexpand -a | tr -s \'\\t\' > "
-                          + outname + "_HE-SD_result.txt\n")
+                    + outname + "_HE-SD_result.txt\n")
 
 
 class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
@@ -863,7 +864,8 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         result.replace('V(G1)', 'V(G)', inplace=True)
         result.replace('Sum of V(G)/Vp', 'V(G)/Vp', inplace=True)
 
-        result_pvalue = float(result['Variance'][result['Source'] == 'Pval'])
+        # get p-value and other statistics
+        result_pvalue = result['Variance'].loc[result['Source'] == 'Pval'].item()
         if result_pvalue < 0:
             raise ValueError("Negative p-value for window with index " + str(index))
         if result_pvalue > 1:
@@ -873,18 +875,18 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
         if result_pvalue < 0:
             raise ValueError("window index", index, "produced negative p-value with REML")
 
-        self.V_G[index] = float(result['Variance'][result['Source'] == 'V(G)'])
-        self.V_e[index] = float(result['Variance'][result['Source'] == 'V(e)'])
-        self.Vp[index] = float(result['Variance'][result['Source'] == 'Vp'])
-        self.V_G_over_Vp[index] = float(result['Variance'][result['Source'] == 'V(G)/Vp'])
-        self.logL[index] = float(result['Variance'][result['Source'] == 'logL'])
-        self.logL0[index] = float(result['Variance'][result['Source'] == 'logL0'])
-        self.LRT[index] = float(result['Variance'][result['Source'] == 'LRT'])
+        self.V_G[index] = (result['Variance'].loc[result['Source'] == 'V(G)']).item()
+        self.V_e[index] = result['Variance'].loc[result['Source'] == 'V(e)'].item()
+        self.Vp[index] = result['Variance'].loc[result['Source'] == 'Vp'].item()
+        self.V_G_over_Vp[index] = result['Variance'].loc[result['Source'] == 'V(G)/Vp'].item()
+        self.logL[index] = result['Variance'].loc[result['Source'] == 'logL'].item()
+        self.logL0[index] = result['Variance'].loc[result['Source'] == 'logL0'].item()
+        self.LRT[index] = result['Variance'].loc[result['Source'] == 'LRT'].item()
 
-        self.V_G_SE[index] = float(result['SE'][result['Source'] == 'V(G)'])
-        self.V_e_SE[index] = float(result['SE'][result['Source'] == 'V(e)'])
-        self.Vp_SE[index] = float(result['SE'][result['Source'] == 'Vp'])
-        self.V_G_over_Vp_SE[index] = float(result['SE'][result['Source'] == 'V(G)/Vp'])
+        self.V_G_SE[index] = result['SE'].loc[result['Source'] == 'V(G)'].item()
+        self.V_e_SE[index] = result['SE'].loc[result['Source'] == 'V(e)'].item()
+        self.Vp_SE[index] = result['SE'].loc[result['Source'] == 'Vp'].item()
+        self.V_G_over_Vp_SE[index] = result['SE'].loc[result['Source'] == 'V(G)/Vp'].item()
 
         # delete GCTA results file to make sure it's not used again
         af.remove_files_with_pattern(out + '*REML.hsq')
@@ -998,10 +1000,10 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
             f.write("#!/bin/bash\n")
 
             f.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
-                          + outname + "> " + outname + "_tmp2.out\n\n")
+                    + outname + "> " + outname + "_tmp2.out\n\n")
 
             f.write(GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
-                          + outname + "_REML --reml-lrt 1 " + " --qcovar " + outname + ".eigenvec --threads " + str(
+                    + outname + "_REML --reml-lrt 1 " + " --qcovar " + outname + ".eigenvec --threads " + str(
                 num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
 
     def write_GCTA_command_file_grm(self, outname, pheno_file, GCTA, num_GCTA_threads,
@@ -1048,7 +1050,7 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
             f.write("#!/bin/bash\n")
 
             f.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
-                          + outname + "> " + outname + "_tmp2.out\n\n")
+                    + outname + "> " + outname + "_tmp2.out\n\n")
 
             f.write(
                 GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_REML" + " --qcovar " + outname + ".eigenvec --threads "

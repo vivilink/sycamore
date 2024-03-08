@@ -440,7 +440,7 @@ def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_metho
     for w in range(num_tests):  #
         covariance_obj.calculate_GRM(window_beginning=window_starts[w], window_end=window_ends[w],
                                      variants=variants, inds=inds)
-        tmpCov = covariance_obj.covariance_matrix
+        tmpCov = covariance_obj.get_covariance_matrix(inds.ploidy)
 
         if tmpCov is not None:
             for m in AIM_methods:

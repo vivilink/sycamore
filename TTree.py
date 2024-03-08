@@ -11,9 +11,21 @@ import tskit
 import TCovariance
 from egrm import varGRM_C
 from egrm import egrm_one_tree_no_normalization_C
+from arg_needle_lib import deserialize_arg
+from arg_needle_lib import arg_to_tskit
 import arg_needle_lib
 
+# Silence other loggers
+import logging
+logging.getLogger(arg_needle_lib.__name__).setLevel(logging.WARNING)
 
+logging.basicConfig(level=logging.DEBUG)
+
+logger_blocklist = [
+    "arg_needle_lib",
+]
+for module in logger_blocklist:
+    logging.getLogger(module).setLevel(logging.WARNING)
 # ---------------------
 # read tree file
 # ---------------------
@@ -46,8 +58,8 @@ class TTrees:
         if tree_file.endswith(".argn"):
             logfile.add()
             logfile.info("- Converting arg-needle format to tskit")
-            arg = arg_needle_lib.deserialize_arg(tree_file)
-            trees_full = arg_needle_lib.arg_to_tskit(arg, mutations=True, sample_permutation=None)
+            arg = deserialize_arg(tree_file)
+            trees_full = arg_to_tskit(arg, mutations=True, sample_permutation=None)
         else:
             trees_full = tskit.load(tree_file)
 
