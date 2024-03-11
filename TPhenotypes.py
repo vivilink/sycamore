@@ -20,6 +20,7 @@ import TRandomGenerator as rg
 import TParameters as tparams
 import TIndividuals as tind
 from python_log_indenter import IndentedLoggerAdapter
+import TTree as tt
 
 
 # TODO: being typed or not should be an option for all causal variants
@@ -31,7 +32,13 @@ def make_phenotypes(args: tparams, trees: tskit.trees, sample_ids, inds: tind, p
                              "provided with 'tree_file_simulated'.")
 
         logfile.info("- Reading simulated tree used for simulating phenotypes from " + args.tree_file_simulated)
-        trees_orig = tskit.load(args.tree_file_simulated)
+        trees_object = tt.TTrees(tree_file=args.tree_file,
+                                 trees_interval=args.trees_interval,
+                                 trees_interval_start=args.trees_interval_start,
+                                 trees_interval_end=args.trees_interval_end,
+                                 skip_first_tree=args.skip_first_tree,
+                                 logfile=logfile)
+        trees_orig = trees_object.trees
 
         if trees_orig.num_samples != trees.num_samples:
             raise ValueError("The trees provided with params 'tree_file_simulated' and 'tree_file' must have the same "
