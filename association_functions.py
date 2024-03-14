@@ -36,7 +36,7 @@ def run_association_testing(args, random, logfile):
     """
 
     logfile.info("- TASK: Associate")
-    logfile.add()
+    # logfile.add()
 
     # --------------------------------
     # read ARG
