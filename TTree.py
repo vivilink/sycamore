@@ -13,19 +13,7 @@ from egrm import varGRM_C
 from egrm import egrm_one_tree_no_normalization_C
 from arg_needle_lib import deserialize_arg
 from arg_needle_lib import arg_to_tskit
-import arg_needle_lib
 
-# Silence other loggers
-import logging
-logging.getLogger(arg_needle_lib.__name__).setLevel(logging.WARNING)
-
-logging.basicConfig(level=logging.DEBUG)
-
-logger_blocklist = [
-    "arg_needle_lib",
-]
-for module in logger_blocklist:
-    logging.getLogger(module).setLevel(logging.WARNING)
 # ---------------------
 # read tree file
 # ---------------------

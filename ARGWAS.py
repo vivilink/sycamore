@@ -34,9 +34,9 @@ args = TParams.initialize()
 # initialize logfile
 # -----------------------------
 
-logger = logging.getLogger()
+logger = logging.getLogger("indented")
 file_handler = logging.FileHandler(args.out + ".log")
-logger.addHandler(logging.StreamHandler())
+# logger.addHandler(logging.StreamHandler())
 logger.addHandler(file_handler)
 
 logging.basicConfig(
