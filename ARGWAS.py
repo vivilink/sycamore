@@ -52,7 +52,7 @@ logger.setLevel(logging.INFO)
 # -----------------------------
 
 logger.info("--------------------->")
-logger.info("AIM 1.0")
+logger.info("sycamore 1.0")
 logger.info("--------------------->")
 
 # print arguments to logfile
@@ -352,7 +352,7 @@ if args.task == "writeToPlink":
 # Write variants plink files
 # ----------------------------------------------------------------
 logger.info("<---------------------")
-logger.info("AIM done")
+logger.info("sycamore done")
 logger.info("<---------------------")
 
 # if __name__ == "__main__":
