@@ -106,7 +106,7 @@ class Individuals:
         table['haploid_genotypes'] = haploid_genotypes
 
         table = table.groupby('individual').agg(
-            diploid_genotypes=pd.NamedAgg(column='haploid_genotypes', aggfunc=sum)
+            diploid_genotypes=pd.NamedAgg(column='haploid_genotypes', aggfunc="sum")
         )
         return table['diploid_genotypes']
 

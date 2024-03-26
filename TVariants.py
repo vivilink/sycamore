@@ -24,8 +24,8 @@ class TVariants:
     """
 
     def __init__(self, tskit_object: tskit, samp_ids: np.ndarray):
-        self._variants = list(tskit_object.variants(samples=samp_ids))
-        self._number = len(self._variants)
+        # self._variants = list(tskit_object.variants(samples=samp_ids))
+        self._number = tskit_object.num_mutations
         self._number_typed = self._number
         self._positions = np.empty(self._number)
         self._alleleFreq = np.empty(self._number)
@@ -79,13 +79,13 @@ class TVariants:
         self._info['tree_index'] = np.digitize(self._info['position'], tskit_object.breakpoints(as_array=True)) - 1
         self._info['causal_region'] = "FALSE"
 
-    @property
-    def variants(self):
-        return self._variants
-
-    @variants.setter
-    def variants(self, variants):
-        self._variants = variants
+    # @property
+    # def variants(self):
+    #     return self._variants
+    #
+    # @variants.setter
+    # def variants(self, variants):
+    #     self._variants = variants
 
     @property
     def number(self):
@@ -162,7 +162,7 @@ class TVariants:
         map_file.close()
         return outname
 
-    def write_gen(self, out, inds, logfile):
+    def write_gen(self, tree_object: tt, samp_ids, out, inds, logfile):
         """
         According to https://mathgen.stats.ox.ac.uk/genetics_software/shapeit/shapeit.html#gensample
         @param out:
@@ -181,8 +181,8 @@ class TVariants:
 
         # write line by line
         haps_file = open(out + ".gen", "a")
-        i = 0
-        for v, var in enumerate(self._variants):
+        v = 0
+        for var in tree_object.tree.variants(samples=samp_ids):
             if v % 10000 == 0:
                 end = time.time()
                 logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(
@@ -204,17 +204,19 @@ class TVariants:
                 buffer[np.arange(1, n_gen, 3)] = tmp2
                 buffer[np.arange(2, n_gen, 3)] = tmp3
 
-                string = "chr snp" + str(i + 1) + " " + str(int(self._info['position'].values[v])) + " A" + " T "
+                string = "chr snp" + str(v + 1) + " " + str(int(self._info['position'].values[v])) + " A" + " T "
                 string = string + " ".join(map(str, buffer)) + "\n"
                 bytes = haps_file.write(string)
-                i += 1
+                v += 1
         haps_file.close()
         logfile.sub()
 
-    def write_haps(self, out: str, inds: tind, chrom: str, logfile: IndentedLoggerAdapter):
+    def write_haps(self, tree_object: tt, out: str, inds: tind, chrom: str, samp_ids: np.ndarray,
+                   logfile: IndentedLoggerAdapter):
         """
         Write files in SHAPEIT2 format, to be used as input by RELATE (https://myersgroup.github.io/relate/input_data.html)
 
+        :param tree_object: ttree object
         :param out:
         :param inds:
         :param chrom: chromosome number
@@ -239,8 +241,8 @@ class TVariants:
         index = 0
         # log progress
         start = time.time()
-
-        for v, var in enumerate(self._variants):
+        v = 0
+        for var in tree_object.trees.variants(samples=samp_ids):
             if v % 10000 == 0:
                 end = time.time()
                 logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(
@@ -253,6 +255,8 @@ class TVariants:
                 # if index in [9,10, 11, 12]:
                 #     print("v", v, "positions\n", self._info.iloc[v])
                 index += 1
+
+            v += 1
 
         logfile.info("- Writing haplotypes in Shapeit2 and argNeedle format to file '"
                      + out + "_relate.haps' and creating a soft link to the same called '" + out + "_argNeedle.haps'.")
@@ -417,8 +421,11 @@ class TVariantsFiltered(TVariants):
         logfile.info("- Writing variant info to file '" + out + "_filtered_sample_variants.csv'")
         self._info.to_csv(out + "_filtered_sample_variants.csv", header=True, index=False)
 
-    def find_variant(self, typed: bool, freq: float, interval: list, subplot, random: rg, logfile):
+    def find_variant(self, typed: bool, freq: float, interval: list, random: rg, logfile):
+    # def find_variant(self, typed: bool, freq: float, interval: list, subplot, random: rg, logfile):
+
         """
+        Find a causal variant with the correct allele frequency.
 
         :param typed: Should the variant returned be typed or not.
         :param freq: Requested allele frequency of the variant. If there is no variant with this exact frequency within the
@@ -453,11 +460,11 @@ class TVariantsFiltered(TVariants):
         # info_interval['index'] = range(num_lines)
         # info_interval.set_index(info_interval['index'], drop=True, inplace=True)
 
-        # plot allele freq spectrum
-        n, bins, patches = subplot.hist(info_interval['allele_freq'], density=False)
-        subplot.axvline(x=freq, color="red", lw=1)
-        subplot.set(xlabel='Allele freq', ylabel='count',
-                    title='Histogram of af in requested interval and typed status')
+        # # plot allele freq spectrum
+        # n, bins, patches = subplot.hist(info_interval['allele_freq'], density=False)
+        # subplot.axvline(x=freq, color="red", lw=1)
+        # subplot.set(xlabel='Allele freq', ylabel='count',
+        #             title='Histogram of af in requested interval and typed status')
 
         # find first variant with requested allele frequency
         info = info_interval[np.isclose(np.array(info_interval['allele_freq'], dtype=float), freq, rtol=0.01)]
@@ -498,7 +505,7 @@ class TVariantsFiltered(TVariants):
             if freq < 0 or freq > 0.5:
                 raise ValueError("Could not find locus with requested allele frequency")
 
-        subplot.axvline(x=freq, color="black", lw=1)
+        # subplot.axvline(x=freq, color="black", lw=1)
 
         # logfile.info("--> Found variant with freq " + str(freq) + " within the following interval: " + str(interval))
         return info.iloc[0]['var_index'], info.iloc[0]['position']

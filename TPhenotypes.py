@@ -64,7 +64,7 @@ def make_phenotypes(args: tparams, trees: tskit.trees, sample_ids, inds: tind, p
         pheno = PhenotypesSimulated(variants=variants_orig, num_inds=inds.num_inds)
 
         pheno.simulate(args=args, r=random, logfile=logfile, variants_orig=variants_orig, trees=trees, inds=inds,
-                       plots_dir=plots_dir)
+                       plots_dir=plots_dir, samp_ids=sample_ids, trees_orig=trees_orig)
         logfile.sub()
 
     else:
@@ -450,9 +450,10 @@ class PhenotypesSimulated(Phenotypes):
     def genetic_variance(self, genetic_variance: float):
         self._genetic_variance = genetic_variance.find_missing_individuals
 
-    def simulate(self, args, r, logfile, variants_orig, inds, trees, plots_dir):
+    def simulate(self, args, r, logfile, variants_orig, inds, trees: tskit, trees_orig: tskit, plots_dir, samp_ids):
         """
         Simulate phenotypes
+        :param trees_orig:
         :param args: TArgs
         :param r: TRandomGenerator
         :param logfile: IndentedLoggerAdapter
@@ -463,8 +464,9 @@ class PhenotypesSimulated(Phenotypes):
         :return:
         """
         # simulate trait architecture
-        self.simulate_trait_architecture(args=args, r=r, logfile=logfile, variants_orig=variants_orig, inds=inds,
-                                         trees=trees, plots_dir=plots_dir)
+        self.simulate_trait_architecture(args=args, r=r, logfile=logfile, variants_orig=variants_orig,
+                                         trees_orig=trees_orig, inds=inds, trees=trees, plots_dir=plots_dir,
+                                         samp_ids=samp_ids)
 
         # calculate genetic variance
         self._genetic_variance = float(np.var(self._y))
@@ -505,8 +507,7 @@ class PhenotypesSimulated(Phenotypes):
         self.filled = True
 
     def simulate_trait_architecture(self, args: tparams, r: rg, logfile: IndentedLoggerAdapter, variants_orig: tvar,
-                                    inds: tind,
-                                    trees: tskit.trees, plots_dir: str):
+                                    inds: tind, trees: tskit, trees_orig: tskit, plots_dir: str, samp_ids):
         """
         Simulate phenotype's genetic architecture
         """
@@ -532,7 +533,8 @@ class PhenotypesSimulated(Phenotypes):
 
             logfile.info("- Simulating phenotypes based on the following indeces: " + str(
                 args.pty_fixed_variant_indeces) + " and the following betas: " + str(args.pty_fixed_betas))
-            self.simulate_fixed(variants_orig, inds, args.pty_fixed_variant_indeces, args.pty_fixed_betas, logfile)
+            self.simulate_fixed(trees=trees_orig, inds=inds, causal_variant_indeces=args.pty_fixed_variant_indeces,
+                                betas=args.pty_fixed_betas, logfile=logfile)
 
         elif args.pty_sim_method == 'singleTyped':
             if args.pty_fixed_betas is None:
@@ -546,21 +548,21 @@ class PhenotypesSimulated(Phenotypes):
                 raise ValueError("single_variant_interval end cannot be larger than tree sequence length, which is "
                                  + str(trees.sequence_length))
 
-            fig, ax = plt.subplots(1, figsize=(30, 30))
+            # fig, ax = plt.subplots(1, figsize=(30, 30))
             var_index, pos = variants_orig.find_variant(typed=True, freq=args.single_variant_af,
-                                                        interval=args.single_variant_interval, subplot=ax,
+                                                        interval=args.single_variant_interval,
                                                         random=r, logfile=logfile)
-            fig.tight_layout()
-            fig.set_size_inches(30, 30)
-            fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
+            # fig.tight_layout()
+            # fig.set_size_inches(30, 30)
+            # fig.savefig(plots_dir + 'allele_freq_spectrum.png', bbox_inches='tight')
 
             logfile.info("- Simulating a phenotypes based on the following typed variant index: " + str(
                 var_index) + " at position " + str(
                 variants_orig.info['position'][var_index]) + " with allele freq " + str(
                 variants_orig.info['allele_freq'][var_index]) + " and the following betas: " + str(
                 args.pty_fixed_betas))
-            self.simulate_fixed(variants_orig, inds, [var_index], args.pty_fixed_betas, logfile)
-
+            self.simulate_fixed(trees=trees_orig, inds=inds, causal_variant_indeces=[var_index],
+                                betas=args.pty_fixed_betas, logfile=logfile)
         elif args.pty_sim_method == 'singleUntyped':
             if args.pty_fixed_betas is None:
                 raise ValueError("Must provide beta values for phenotype 'singleUntyped' using '--pty_fixed_betas'")
@@ -588,7 +590,8 @@ class PhenotypesSimulated(Phenotypes):
             if args.variants_file is None:
                 raise ValueError(
                     "Must provide file with untyped variants to simulate phenotype with 'singleUntyped' model")
-            self.simulate_fixed(variants_orig, inds, [var_index], args.pty_fixed_betas, logfile)
+            self.simulate_fixed(trees=trees_orig, inds=inds, causal_variant_indeces=[var_index],
+                                betas=args.pty_fixed_betas, logfile=logfile)
 
         elif args.pty_sim_method == 'oneTree':
             # TODO: This should be the tree from the original simulated trees, so that at different propTyped the
@@ -602,8 +605,9 @@ class PhenotypesSimulated(Phenotypes):
             causal_tree = trees.at(args.causal_tree_pos)
             logfile.info("- Simulating phenotypes based on all variants of the tree covering postion " + str(
                 args.causal_tree_pos))
-            self.simulate_causal_region(variants_orig, inds, left_bound=causal_tree.interval.left,
+            self.simulate_causal_region(variants=variants_orig, inds=inds, left_bound=causal_tree.interval.left,
                                         right_bound=causal_tree.interval.right,
+                                        trees=trees,
                                         causal_mutations_effect_size_def=args.pty_sd_beta_causal_mutations,
                                         random=r,
                                         local_heritability=args.pty_h_squared,
@@ -611,7 +615,8 @@ class PhenotypesSimulated(Phenotypes):
                                         prop_causal_mutations=args.pty_prop_causal_mutations,
                                         max_allele_freq_causal=args.max_allele_freq_causal,
                                         allow_typed_causal_variants=args.allow_typed_causal_variants,
-                                        logfile=logfile)
+                                        logfile=logfile,
+                                        samp_ids=samp_ids)
 
         elif args.pty_sim_method == "oneRegion":
             if args.causal_region_coordinates is None or len(args.causal_region_coordinates) != 2:
@@ -627,6 +632,7 @@ class PhenotypesSimulated(Phenotypes):
                 args.causal_region_coordinates))
 
             self.simulate_causal_region(variants=variants_orig,
+                                        trees=trees,
                                         inds=inds,
                                         left_bound=args.causal_region_coordinates[0],
                                         right_bound=args.causal_region_coordinates[1],
@@ -637,7 +643,8 @@ class PhenotypesSimulated(Phenotypes):
                                         min_allele_freq_causal=args.min_allele_freq_causal,
                                         max_allele_freq_causal=args.max_allele_freq_causal,
                                         allow_typed_causal_variants=args.allow_typed_causal_variants,
-                                        logfile=logfile)
+                                        logfile=logfile,
+                                        samp_ids=samp_ids)
 
         elif args.pty_sim_method == 'allelicHetero':
             if args.allelic_hetero_file is None:
@@ -698,7 +705,7 @@ class PhenotypesSimulated(Phenotypes):
 
             logfile.info("- Simulating phenotypes:")
             logfile.add()
-            self.simulate_fixed(variants=variants_orig, inds=inds, causal_variant_indeces=variant_indeces,
+            self.simulate_fixed(trees=trees_orig, inds=inds, causal_variant_indeces=variant_indeces,
                                 betas=fixed_betas, logfile=logfile)
             logfile.sub()
 
@@ -748,9 +755,10 @@ class PhenotypesSimulated(Phenotypes):
         """
         return
 
-    def simulate_fixed(self, variants, inds, causal_variant_indeces, betas, logfile):
+    def simulate_fixed(self, trees: tskit, inds, causal_variant_indeces, betas, logfile):
         """
-        Simulate phenotypes based on predefined causal variant positions and effects
+        Simulate phenotypes based on predefined causal variant positions and effects.
+        This function is not efficient if there are many causal variants because the tskit variants iterator is not used
 
         :param variants: TVariants
         :param inds: TInds
@@ -760,8 +768,12 @@ class PhenotypesSimulated(Phenotypes):
         :return:
         """
 
-        causal_variants = [variants.variants[i] for i in causal_variant_indeces]
-        causal_pos = [variants.variants[i].site.position for i in causal_variant_indeces]
+        causal_variants = []
+        causal_pos = []
+        for var in trees.variants():
+            if var.site.id in causal_variant_indeces:
+                causal_variants.append(var)
+                causal_pos.append(var.site.position)
 
         if len(causal_variants) != len(betas):
             raise ValueError("must provide equal number of causal variants and betas to simulate fixed phenotype")
@@ -769,31 +781,24 @@ class PhenotypesSimulated(Phenotypes):
         for v, var in enumerate(causal_variants):
             # define beta
             self.betas[causal_variant_indeces[v]] = betas[v]
-
-            # simulate phenotype
-            if inds.ploidy == 1:
-                self._y[var.genotypes == 1] += betas[v]
-            else:
-                genotypes = inds.get_diploid_genotypes(var.genotypes)
-                self._y[genotypes == 1] += betas[v]
-                self._y[genotypes == 2] += 2.0 * betas[v]
-
-            # save causal position
-            self.causal_variants.append(var)
-            self.causal_betas.append(betas[v])
             allele_freq = sum(var.genotypes) / len(var.genotypes)
-            self.causal_power.append(betas[v] ** 2.0 * allele_freq * (1.0 - allele_freq))
-            self.causal_variant_indeces.append(causal_variant_indeces[v])
+            allele_freq = min(allele_freq, 1 - allele_freq)
+
+            self.add_one_variant_effect(tskit_variant_object=var,
+                                        variant_index=var.site.id,
+                                        inds=inds,
+                                        beta=betas[v],
+                                        allele_freq=allele_freq)
 
             logfile.info("- Simulated causal variant at position " + str(causal_pos[v]) + " at index " + str(
                 causal_variant_indeces[v]) + " with beta " + str(round(betas[v], 3)) + " and allele freq " + str(
                 allele_freq) + " resulting in a power of " + str(
                 round(betas[v] ** 2 * allele_freq * (1 - allele_freq), 3)))
 
-    def simulate_uniform(self, variants, inds, prop_causal_mutations, sd_beta_causal_mutations, random, logfile,
-                         mean_beta_causal_mutation=0.0):
+    def simulate_uniform(self, variants: tvar, inds: tind, prop_causal_mutations: float, sd_beta_causal_mutations:float,
+                         random: rg, logfile, mean_beta_causal_mutation=0.0):
         """
-        Simulate phenotypes based on uniformly distributed causal variant positions and normally distributed effect sizes
+        DEPRECATED! Simulate phenotypes based on uniformly distributed causal variant positions and normally distributed effect sizes
 
         Parameters
         ----------
@@ -810,6 +815,9 @@ class PhenotypesSimulated(Phenotypes):
         None.
         """
         # add phenotypic effect to mutations that are uniformly distributed
+
+        logfile.warning("Deprecated!")
+
         for v, var in enumerate(variants.variants):
 
             # if variants.info["typed"] == True:
@@ -817,53 +825,83 @@ class PhenotypesSimulated(Phenotypes):
             r = random.random.uniform(0, 1, 1)
 
             if r < prop_causal_mutations:
+                allele_freq = variants.info['allele_freq'][var.site.id]
 
                 # define beta
                 beta = np.random.normal(loc=mean_beta_causal_mutation, scale=sd_beta_causal_mutations, size=None)
                 self.betas[v] = beta
 
-                # simulate phenotype
-                if inds.ploidy == 1:
-                    self._y[var.genotypes == 1] += beta
-                    self._y[var.genotypes == 2] += 2.0 * beta
-                else:
-                    genotypes = inds.get_diploid_genotypes(var.genotypes)
-                    self._y[genotypes == 1] += beta
-                    self._y[genotypes == 2] += 2.0 * beta
-
-                # save causal position
-                self.causal_variants.append(var)
-                self.causal_betas.append(beta)
-                allele_freq = variants.info['allele_freq'][v]
-                self.causal_power.append(beta ** 2 * allele_freq * (1 - allele_freq))
-                self.causal_variant_indeces.append(v)
+                self.add_one_variant_effect(tskit_variant_object=var,
+                                            variant_index=var.site.id,
+                                            inds=inds,
+                                            beta=beta,
+                                            allele_freq=allele_freq)
 
         logfile.info("- Simulated phenotypes based on " + str(
             len(self.causal_variants)) + " causal variants out of a total of " + str(variants.number) + ".")
         self.filled = True
 
-    def simulate_causal_region(self, variants, inds, left_bound, right_bound, causal_mutations_effect_size_def,
-                               local_heritability, prop_causal_mutations, random, min_allele_freq_causal,
-                               max_allele_freq_causal, logfile, allow_typed_causal_variants):
+    def add_one_variant_effect(self, tskit_variant_object: tskit.Variant, variant_index: int,
+                               inds: tind, beta: float, allele_freq: float):
+
+        # simulate phenotype
+        if inds.ploidy == 1:
+            self._y[tskit_variant_object.genotypes == 1] += beta
+        else:
+            genotypes = inds.get_diploid_genotypes(tskit_variant_object.genotypes)
+            self._y[genotypes == 1] += beta
+            self._y[genotypes == 2] += 2.0 * beta
+
+        # save causal position
+        self.causal_variants.append(tskit_variant_object)
+        self.causal_betas.append(beta)
+        self.causal_power.append(beta ** 2 * allele_freq * (1 - allele_freq))
+        self.causal_variant_indeces.append(variant_index)
+
+    def simulate_beta(self, variants: tvar, causal_mutations_effect_size_def: str, random: rg, variant_index: int,
+                               local_heritability: float, num_causal_vars: int, ):
+        # get beta
+        sd = None
+        # get effect size sd
+        try:
+            sd = float(causal_mutations_effect_size_def)
+        except ValueError:
+            causal_mutations_effect_size_def = causal_mutations_effect_size_def
+            if causal_mutations_effect_size_def != "freq_dependant":
+                raise ValueError("'sd_beta_causal_mutations' is set to unknown option. Must be a float or "
+                                 "'freq_dependant'")
+            f = variants.info['allele_freq'][variant_index]
+            sd = (local_heritability / num_causal_vars) / np.sqrt(2 * f * (1 - f))
+
+        beta = self.get_beta_normal(random, sd)
+        self.betas[variant_index] = beta
+
+        return beta
+
+    def simulate_causal_region(self, trees: tskit, variants: tvar, inds, left_bound: float, right_bound: float,
+                               causal_mutations_effect_size_def: str, local_heritability, prop_causal_mutations: float,
+                               random, min_allele_freq_causal: float,
+                               max_allele_freq_causal, logfile, allow_typed_causal_variants: bool, samp_ids):
         """
-        Simulate causal effect sizes for variants with
-        @param allow_typed_causal_variants: If true, only also typed variants can be causal
-        @param prop_causal_mutations: float [0,1]
-        @param local_heritability: float [0,1]
-        @param variants: TVariants
-        @param inds: TInds
-        @param left_bound: float. Left bound of causal region (included)
-        @param right_bound: Right bound of causal region (included)
-        @param causal_mutations_effect_size_def: str, Std. dev. for betas of causal mutations . If it can be converted to a
+        Simulate causal effect sizes for variants within a region
+        :param trees:
+        :param variants:
+        :param inds:
+        :param left_bound:
+        :param right_bound:
+        :param causal_mutations_effect_size_def: Std. dev. for betas of causal mutations . If it can be converted to a
                                         float, betas will sampled from N(0, pty_sd_beta_causal_mutations). If set to
                                         'freq_dependant', betas will be sampled from
                                         N(0, [2 * f * (1 - f)]^{-0.5} * h2g / p),
                                         where h2g is the heritability of the trait and p is the number of causal SNPs.
-        @param random: TRandom
-        @param min_allele_freq_causal: float. Only variants with freq higher than this can be causal
-        @param max_allele_freq_causal: Only variants with freq lower than this can be causal
-        @param logfile:
-        @return:
+        :param local_heritability:
+        :param prop_causal_mutations: [0,1]
+        :param random:
+        :param min_allele_freq_causal: [0,1] Only variants with freq higher than this can be causal
+        :param max_allele_freq_causal: [0,1] Only variants with freq lower than this can be causal
+        :param logfile:
+        :param allow_typed_causal_variants: If true, only also typed variants can be causal
+        :return:
         """
 
         # define causal variants
@@ -896,38 +934,25 @@ class PhenotypesSimulated(Phenotypes):
             num_causal_vars = 1
 
         # add phenotypic effect to mutations that are uniformly distributed
-        for v_i, v in enumerate(info_window['var_index']):
-            if causal[v_i] == 1:
-                # get beta
-                sd = None
-                # get effect size sd
-                try:
-                    sd = float(causal_mutations_effect_size_def)
-                except ValueError:
-                    causal_mutations_effect_size_def = causal_mutations_effect_size_def
-                    if causal_mutations_effect_size_def != "freq_dependant":
-                        raise ValueError("'sd_beta_causal_mutations' is set to unknown option. Must be a float or "
-                                         "'freq_dependant'")
-                    f = variants.info['allele_freq'][v]
-                    sd = (local_heritability / num_causal_vars) / np.sqrt(2 * f * (1 - f))
+        v_i = 0
+        for var in trees.variants(samples=samp_ids):
+            if var.site.id in info_window['var_index']:
+                if causal[v_i] == 1:
+                    allele_freq = variants.info['allele_freq'][var.site.id]
 
-                beta = self.get_beta_normal(random, sd)
-                self.betas[v] = beta
+                    beta = self.simulate_beta(causal_mutations_effect_size_def=causal_mutations_effect_size_def,
+                                              random=random,
+                                              local_heritability=local_heritability,
+                                              variant_index=var.site.id,
+                                              variants=variants,
+                                              num_causal_vars=num_causal_vars)
 
-                # simulate phenotype
-                if inds.ploidy == 1:
-                    self._y[variants.variants[v].genotypes == 1] += beta
-                else:
-                    genotypes = inds.get_diploid_genotypes(variants.variants[v].genotypes)
-                    self._y[genotypes == 1] += beta
-                    self._y[genotypes == 2] += 2.0 * beta
-
-                # save causal position
-                self.causal_variants.append(variants.variants[v])
-                self.causal_betas.append(beta)
-                allele_freq = variants.info['allele_freq'][v]
-                self.causal_power.append(beta ** 2 * allele_freq * (1 - allele_freq))
-                self.causal_variant_indeces.append(v)
+                    self.add_one_variant_effect(tskit_variant_object=var,
+                                                variant_index=var.site.id,
+                                                inds=inds,
+                                                beta=beta,
+                                                allele_freq=allele_freq)
+                v_i += 1
 
         logfile.info("- Simulated phenotypes based on " + str(
             len(self.causal_variants)) + " causal variants out of a total of " + str(variants.number) + ".")
@@ -979,7 +1004,7 @@ class PhenotypesSimulated(Phenotypes):
         table.loc[self.causal_variant_indeces, 'causal'] = "TRUE"
         table['causal_region'] = variants.info['causal_region']
         table['betas'] = self.betas
-        table['power'] = 0
+        table['power'] = 0.0
         table.loc[self.causal_variant_indeces, 'power'] = self.causal_power
         table['var_genotypic_from_betas'] = np.repeat(float(inds.ploidy), variants.number) * np.array(
             self.betas) * np.array(
