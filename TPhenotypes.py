@@ -795,7 +795,7 @@ class PhenotypesSimulated(Phenotypes):
                 allele_freq) + " resulting in a power of " + str(
                 round(betas[v] ** 2 * allele_freq * (1 - allele_freq), 3)))
 
-    def simulate_uniform(self, variants: tvar, inds: tind, prop_causal_mutations: float, sd_beta_causal_mutations:float,
+    def simulate_uniform(self, variants: tvar, inds: tind, prop_causal_mutations: float, sd_beta_causal_mutations: float,
                          random: rg, logfile, mean_beta_causal_mutation=0.0):
         """
         DEPRECATED! Simulate phenotypes based on uniformly distributed causal variant positions and normally distributed effect sizes
@@ -867,9 +867,9 @@ class PhenotypesSimulated(Phenotypes):
             sd = float(causal_mutations_effect_size_def)
         except ValueError:
             causal_mutations_effect_size_def = causal_mutations_effect_size_def
-            if causal_mutations_effect_size_def != "freq_dependant":
+            if causal_mutations_effect_size_def != "freq_dependent":
                 raise ValueError("'sd_beta_causal_mutations' is set to unknown option. Must be a float or "
-                                 "'freq_dependant'")
+                                 "'freq_dependent'")
             f = variants.info['allele_freq'][variant_index]
             sd = (local_heritability / num_causal_vars) / np.sqrt(2 * f * (1 - f))
 
@@ -891,7 +891,7 @@ class PhenotypesSimulated(Phenotypes):
         :param right_bound:
         :param causal_mutations_effect_size_def: Std. dev. for betas of causal mutations . If it can be converted to a
                                         float, betas will sampled from N(0, pty_sd_beta_causal_mutations). If set to
-                                        'freq_dependant', betas will be sampled from
+                                        'freq_dependent', betas will be sampled from
                                         N(0, [2 * f * (1 - f)]^{-0.5} * h2g / p),
                                         where h2g is the heritability of the trait and p is the number of causal SNPs.
         :param local_heritability:

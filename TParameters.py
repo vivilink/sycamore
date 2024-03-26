@@ -139,7 +139,7 @@ class TParameters:
         pty.add_argument('--pty_sd_beta_causal_mutations', type=str,
                          help="Std. dev. for betas of causal mutations if pty_sim_method is set to 'uniform', "
                               "'oneTree' or 'oneWindow'. If it can be converted to a float, betas will sampled from "
-                              "N(0, pty_sd_beta_causal_mutations). If set to 'freq_dependant', betas will be sampled "
+                              "N(0, pty_sd_beta_causal_mutations). If set to 'freq_dependent', betas will be sampled "
                               "from N(0, [2 * f * (1 - f)]^{-0.5} * h2g / p), where h2g is the heritability of the "
                               "trait and p is the number of causal SNPs.")
         pty.add_argument('--pty_fixed_betas', nargs='+', type=float,
