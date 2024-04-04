@@ -23,6 +23,72 @@ from python_log_indenter import IndentedLoggerAdapter
 import TTree as tt
 
 
+def transformAndAscertain(args, random, logger):
+    if args.pheno_file is None:
+        raise ValueError("Provide pheno_file file with 'pheno_file'")
+    if args.sample_size is None:
+        raise ValueError("Provide expected sample size with 'sample_size'")
+    if args.sample_prevalence is None:
+        raise ValueError("Provide expected sample prevalence with 'sample_prevalence'")
+    if args.population_disease_prevalence is None:
+        raise ValueError("Provide expected population prevalence with 'population_disease_prevalence'")
+
+    # read file and find population size
+    pheno_file = pd.read_csv(args.pheno_file, delim_whitespace=True, header=None)
+    pheno_file.columns = ['1', '2', '3']
+    population_size = pheno_file.shape[0]
+    if population_size < args.sample_size:
+        raise ValueError(
+            "Sample size cannot be larger than number of phenotypes in phen file (" + str(population_size) + ")")
+
+    # standardize the phenotype
+    pheno_standardized = pheno_file['3']
+    pheno_standardized = (pheno_standardized - np.mean(pheno_standardized)) / np.std(pheno_standardized)
+    print(pheno_standardized)
+
+    # population prevalence
+    qnorm_values = [norm.ppf(i) for i in args.population_disease_prevalence]
+    print("qnorm_values", qnorm_values)
+
+    # assign cases
+    for pp in args.population_disease_prevalence:
+        tmp = pheno_standardized
+        tmp.loc[tmp < pp] = 0
+        tmp.loc[tmp >= pp] = 1
+        pheno_file["popPrevalence" + str(pp)] = tmp
+
+    print("pheno_file", pheno_file)
+
+    # determine number of cases and controls
+    num_cases_required = np.round(args.sample_prevalence * args.sample_size)
+    num_controls = args.sample_size - num_cases_required
+    logger.info(
+        "- Keeping " + str(num_cases_required) + " cases and " + str(num_controls) + " controls from a total of " +
+        str(population_size) + " individuals")
+    if num_controls <= 0:
+        raise ValueError("Sample size needs to be larger than number of cases")
+
+    # find cases
+    cases = pheno_file.loc[pheno_file['3'] == 1.0, :]
+    num_cases_available = cases.shape[0]
+
+    if num_cases_available < num_cases_available:
+        raise ValueError("Cannot satisfy sample_prevalence of " + str(num_cases_required) + ". Only "
+                         + num_cases_available + " cases are available.")
+
+    if num_cases_available > num_cases_required:
+        cases = cases.sample(n=num_cases_required, replace=False, random_state=random.seed)
+
+    # find controls
+    controls = pheno_file.loc[pheno_file['3'] == 0.0, :].sample(n=num_controls)
+
+    # concatenate and write
+    pheno_file_new = pd.concat([cases, controls])
+    logger.info(
+        "- Writing ascertained sample's disease status to '" + args.out + "_disease_status_ascertained.phen'")
+    pheno_file_new.to_csv(args.out + "_disease_status_ascertained.phen", sep=' ', index=False, header=False)
+
+
 # TODO: being typed or not should be an option for all causal variants
 def make_phenotypes(args: tparams, trees: tskit.trees, sample_ids, inds: tind, plots_dir: str, random: rg,
                     logfile: IndentedLoggerAdapter):
@@ -795,7 +861,8 @@ class PhenotypesSimulated(Phenotypes):
                 allele_freq) + " resulting in a power of " + str(
                 round(betas[v] ** 2 * allele_freq * (1 - allele_freq), 3)))
 
-    def simulate_uniform(self, variants: tvar, inds: tind, prop_causal_mutations: float, sd_beta_causal_mutations: float,
+    def simulate_uniform(self, variants: tvar, inds: tind, prop_causal_mutations: float,
+                         sd_beta_causal_mutations: float,
                          random: rg, logfile, mean_beta_causal_mutation=0.0):
         """
         DEPRECATED! Simulate phenotypes based on uniformly distributed causal variant positions and normally distributed effect sizes
@@ -859,7 +926,7 @@ class PhenotypesSimulated(Phenotypes):
         self.causal_variant_indeces.append(variant_index)
 
     def simulate_beta(self, variants: tvar, causal_mutations_effect_size_def: str, random: rg, variant_index: int,
-                               local_heritability: float, num_causal_vars: int, ):
+                      local_heritability: float, num_causal_vars: int, ):
         # get beta
         sd = None
         # get effect size sd

@@ -298,6 +298,7 @@ if args.task == "simulatePhenotypes":
     pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)
     logger.sub()
 
+
 # ----------------------------------------------------------------
 # Read simulation to simulate phenotypes and perform association
 # ----------------------------------------------------------------
@@ -309,37 +310,46 @@ if args.task == "associate":
 # Create case control sample
 # ----------------------------------------------------------------
 
-if args.task == "ascertainCaseControlSample":
-    if args.disease_status_file is None:
-        raise ValueError("Provide disease status file with 'disease_status_file'")
-    if args.sample_size is None:
-        raise ValueError("Provide expected sample size with 'sample_size'")
-
-    # read file and find population size
-    pheno_file = pd.read_csv(args.disease_status_file, delim_whitespace=True, header=None)
-    pheno_file.columns = ['1', '2', '3']
-    population_size = pheno_file.shape[0]
-    if population_size < args.sample_size:
-        raise ValueError("Sample size cannot be larger than number of phenotypes in phen file (" + str(population_size) + ")")
-
-    # find cases
-    cases = pheno_file.loc[pheno_file['3'] == 1.0, :]
-    num_cases = cases.shape[0]
-
-    # find controls
-    num_controls = args.sample_size - num_cases
-    if num_controls <= 0:
-        raise ValueError("Sample size needs to be larger than number of cases")
-    logger.info("- Keeping " + str(num_cases) + " cases and " + str(num_controls) + " controls from a total of " +
-                str(population_size) + " individuals")
-    controls = pheno_file.loc[pheno_file['3'] == 0.0, :].sample(n=num_controls)
-
-    # concatenate and write
-    pheno_file_new = pd.concat([cases, controls])
-    logger.info("- Writing ascertained sample's disease status to '" + args.out + "_disease_status_ascertained.phen'")
-    pheno_file_new.to_csv(args.out + "_disease_status_ascertained.phen", sep=' ', index=False, header=False)
+if args.task == "transformToBinaryAndAscertain":
+    pt.transformAndAscertain(args=args, random=r, logger=logger)
 
     # print(pheno_file['3'].iloc[pheno_file['3'] == 0.0])
+
+# # ----------------------------------------------------------------
+# # Create case control sample
+# # ----------------------------------------------------------------
+#
+# if args.task == "ascertainCaseControlSample":
+#     if args.disease_status_file is None:
+#         raise ValueError("Provide disease status file with 'disease_status_file'")
+#     if args.sample_size is None:
+#         raise ValueError("Provide expected sample size with 'sample_size'")
+#
+#     # read file and find population size
+#     pheno_file = pd.read_csv(args.disease_status_file, delim_whitespace=True, header=None)
+#     pheno_file.columns = ['1', '2', '3']
+#     population_size = pheno_file.shape[0]
+#     if population_size < args.sample_size:
+#         raise ValueError("Sample size cannot be larger than number of phenotypes in phen file (" + str(population_size) + ")")
+#
+#     # find cases
+#     cases = pheno_file.loc[pheno_file['3'] == 1.0, :]
+#     num_cases = cases.shape[0]
+#
+#     # find controls
+#     num_controls = args.sample_size - num_cases
+#     if num_controls <= 0:
+#         raise ValueError("Sample size needs to be larger than number of cases")
+#     logger.info("- Keeping " + str(num_cases) + " cases and " + str(num_controls) + " controls from a total of " +
+#                 str(population_size) + " individuals")
+#     controls = pheno_file.loc[pheno_file['3'] == 0.0, :].sample(n=num_controls)
+#
+#     # concatenate and write
+#     pheno_file_new = pd.concat([cases, controls])
+#     logger.info("- Writing ascertained sample's disease status to '" + args.out + "_disease_status_ascertained.phen'")
+#     pheno_file_new.to_csv(args.out + "_disease_status_ascertained.phen", sep=' ', index=False, header=False)
+#
+#     # print(pheno_file['3'].iloc[pheno_file['3'] == 0.0])
 
 # ----------------------------------------------------------------
 # Write variants plink files
