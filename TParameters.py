@@ -22,7 +22,7 @@ class TParameters:
                             choices=['simulate', 'impute', 'associate', 'downsampleVariantsWriteShapeit',
                                      'ARGStatistics', 'getTreeAtPosition', 'simulateMoreMutations',
                                      'covarianceCorrelations', 'simulatePhenotypes', 'makeTreeChunks',
-                                     'transformToBinaryAndAscertain'],
+                                     'transformToBinaryPhenotype', 'ascertainSampleBinaryPhenotype'],
                             help='The task to be executed (simulate or associate)')
         parser.add_argument('--out', required=True, type=str,
                             help='Prefix of all output files')
@@ -172,7 +172,7 @@ class TParameters:
                          help="The disease prevalence in the population. Specifying this parameter turns the "
                               "quantitative phenotype into a liability score and considers the top x percent of "
                               "individuals to have the disease")
-        pty.add_argument('--sample_prevalence', type=float, nargs='+',
+        pty.add_argument('--sample_prevalence', type=float,
                          help="The sample disease prevalence in the population")
         pty.add_argument('--disease_status_file', type=str,
                           help="A GCTA phen formatted file where the third column is disease status")

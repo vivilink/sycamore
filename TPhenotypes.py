@@ -23,45 +23,79 @@ from python_log_indenter import IndentedLoggerAdapter
 import TTree as tt
 
 
-def transformAndAscertain(args, random, logger):
-    if args.pheno_file is None:
+def transform_to_binary(pheno_file: str, population_disease_prevalence: list[float], out: str,
+                        logger: IndentedLoggerAdapter, pheno_column=2):
+    """
+    Transform phenotypes of a sample in liability scale to binary scale by using the population_disease_prevalence as
+    cutoff. It expects a .phen file with three columns. 1: family ID, 2: sample ID, 3: phenotype on liability scale (
+    continuous). It produces a file where the liability phenotypes are replaced by binary phenotype, defined based on
+    population_disease_prevalence cutoff.
+
+     :param pheno_column: column in pheno file with liability phenotypes
+     :param pheno_file:
+     :param population_disease_prevalence:
+     :param out:
+     :param logger:
+
+    """
+    if pheno_file is None:
         raise ValueError("Provide pheno_file file with 'pheno_file'")
-    if args.sample_size is None:
-        raise ValueError("Provide expected sample size with 'sample_size'")
-    if args.sample_prevalence is None:
-        raise ValueError("Provide expected sample prevalence with 'sample_prevalence'")
-    if args.population_disease_prevalence is None:
+    if population_disease_prevalence is None:
         raise ValueError("Provide expected population prevalence with 'population_disease_prevalence'")
 
-    # read file and find population size
-    pheno_file = pd.read_csv(args.pheno_file, delim_whitespace=True, header=None)
-    pheno_file.columns = ['1', '2', '3']
-    population_size = pheno_file.shape[0]
-    if population_size < args.sample_size:
-        raise ValueError(
-            "Sample size cannot be larger than number of phenotypes in phen file (" + str(population_size) + ")")
-
     # standardize the phenotype
-    pheno_standardized = pheno_file['3']
+    pheno_file = pd.read_csv(pheno_file, delim_whitespace=True, header=None)
+    pheno_standardized = pheno_file.iloc[:, pheno_column]
     pheno_standardized = (pheno_standardized - np.mean(pheno_standardized)) / np.std(pheno_standardized)
     print(pheno_standardized)
 
-    # population prevalence
-    qnorm_values = [norm.ppf(i) for i in args.population_disease_prevalence]
-    print("qnorm_values", qnorm_values)
+    # find cutoffs for standardized phenotypes
+    qnorm_values = [1 - norm.ppf(i) for i in population_disease_prevalence]
 
     # assign cases
-    for pp in args.population_disease_prevalence:
+    for pp in qnorm_values:
         tmp = pheno_standardized
         tmp.loc[tmp < pp] = 0
         tmp.loc[tmp >= pp] = 1
-        pheno_file["popPrevalence" + str(pp)] = tmp
+        pheno_file[pheno_file.shape[1]] = tmp
 
-    print("pheno_file", pheno_file)
+    logger.info("- Writing population's disease status to '" + out + "_disease_status.phen'")
+    pheno_file.to_csv(out + "_disease_status.phen", sep=' ', index=False, header=False)
+
+
+def ascertain_sample(pheno_file: str, sample_size: int, sample_prevalence: float, out: str, random: rg,
+                     logger: IndentedLoggerAdapter, pheno_column:int=3):
+    """
+    Creates ascertained sample from the population file of phenotypes (e.g. .phen file produced by task
+    'transformToBinaryPhenotype'). It samples cases and controls according to satisfy the sample_prevalence parameter.
+
+    :param pheno_column: column in pheno file with binary phenotypes
+    :param pheno_file:
+    :param sample_size:
+    :param sample_prevalence:
+    :param out:
+    :param random:
+    :param logger:
+    :return:
+    """
+    if pheno_file is None:
+        raise ValueError("Provide pheno_file file with 'pheno_file'")
+    if sample_size is None:
+        raise ValueError("Provide expected sample size with 'sample_size'")
+    if sample_prevalence is None:
+        raise ValueError("Provide expected sample prevalence with 'sample_prevalence'")
+
+    # read file and find population size
+    pheno_file = pd.read_csv(pheno_file, delim_whitespace=True, header=None)
+    # pheno_file.columns = ['1', '2', '3']
+    population_size = pheno_file.shape[0]
+    if population_size < sample_size:
+        raise ValueError(
+            "Sample size cannot be larger than number of phenotypes in phen file (" + str(population_size) + ")")
 
     # determine number of cases and controls
-    num_cases_required = np.round(args.sample_prevalence * args.sample_size)
-    num_controls = args.sample_size - num_cases_required
+    num_cases_required = round(np.ceil(sample_prevalence * sample_size))
+    num_controls = sample_size - num_cases_required
     logger.info(
         "- Keeping " + str(num_cases_required) + " cases and " + str(num_controls) + " controls from a total of " +
         str(population_size) + " individuals")
@@ -69,7 +103,7 @@ def transformAndAscertain(args, random, logger):
         raise ValueError("Sample size needs to be larger than number of cases")
 
     # find cases
-    cases = pheno_file.loc[pheno_file['3'] == 1.0, :]
+    cases = pheno_file[pheno_file.iloc[:, pheno_column] == 1.0]
     num_cases_available = cases.shape[0]
 
     if num_cases_available < num_cases_available:
@@ -80,13 +114,20 @@ def transformAndAscertain(args, random, logger):
         cases = cases.sample(n=num_cases_required, replace=False, random_state=random.seed)
 
     # find controls
-    controls = pheno_file.loc[pheno_file['3'] == 0.0, :].sample(n=num_controls)
+    print("pheno_file", pheno_file)
+    controls = pheno_file[pheno_file.iloc[:, pheno_column] == 0.0]
+    num_controls_available = controls.shape[0]
+    if num_controls_available < num_controls:
+        raise ValueError("Cannot satisfy requested number " + str(num_controls) + " of controls. Only "
+                         + str(num_controls_available) + " controls are available.")
+    controls = pheno_file[pheno_file.iloc[:, pheno_column] == 0.0].sample(n=num_controls)
 
     # concatenate and write
     pheno_file_new = pd.concat([cases, controls])
+    pheno_file_new = pheno_file_new.sort_values(by=pheno_file_new.columns[1])
     logger.info(
-        "- Writing ascertained sample's disease status to '" + args.out + "_disease_status_ascertained.phen'")
-    pheno_file_new.to_csv(args.out + "_disease_status_ascertained.phen", sep=' ', index=False, header=False)
+        "- Writing ascertained sample's disease status to '" + out + "_disease_status_ascertained.phen'")
+    pheno_file_new.to_csv(out + "_disease_status_ascertained.phen", sep=' ', index=False, header=False)
 
 
 # TODO: being typed or not should be an option for all causal variants

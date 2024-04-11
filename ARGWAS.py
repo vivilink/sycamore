@@ -298,7 +298,6 @@ if args.task == "simulatePhenotypes":
     pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)
     logger.sub()
 
-
 # ----------------------------------------------------------------
 # Read simulation to simulate phenotypes and perform association
 # ----------------------------------------------------------------
@@ -310,8 +309,18 @@ if args.task == "associate":
 # Create case control sample
 # ----------------------------------------------------------------
 
-if args.task == "transformToBinaryAndAscertain":
-    pt.transformAndAscertain(args=args, random=r, logger=logger)
+if args.task == "transformToBinaryPhenotype":
+    pt.transform_to_binary(pheno_file=args.pheno_file, population_disease_prevalence=args.population_disease_prevalence,
+                           out=args.out, logger=logger)
+
+# ----------------------------------------------------------------
+# Sample from population with binary phenotype with ascertainment
+# ----------------------------------------------------------------
+
+if args.task == "ascertainSampleBinaryPhenotype":
+    pt.ascertain_sample(pheno_file=args.pheno_file, sample_size=args.sample_size,
+                        sample_prevalence=args.sample_prevalence,
+                        out=args.out, random=r, logger=logger)
 
     # print(pheno_file['3'].iloc[pheno_file['3'] == 0.0])
 

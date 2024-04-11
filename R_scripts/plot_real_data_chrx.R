@@ -1,7 +1,7 @@
 # setwd("/home1/linkv/ARGWAS/hawaiian/all_chr_for_review/chr5")
 # source("/home1/linkv/ARGWAS/argwas/R_scripts/functions.R")
 
-setwd("/data/ARGWAS/hawaiians/association_all_chr/BLUP/local_eGRM")
+setwd("/data/ARGWAS/hawaiians/association_all_chr/BMI/BLUP/local_eGRM")
 source("~/git/sycamore/R_scripts/functions.R")
 CLUSTER  <- FALSE
 
@@ -49,10 +49,16 @@ if(CLUSTER==TRUE){
 }
 colnames(regions) <- c("chr", "start", "end", "type")
 
-png(paste("hawaiians_BMI_all_chromosomes_residuals.png", sep=''), width=5, height=50, units="in", res=400)
-par(mfrow=c(22,1))
+# png(paste("hawaiians_BMI_all_chromosomes_residuals.png", sep=''), width=5, height=50, units="in", res=400)
+png(paste("hawaiians_BMI_chr5.png", sep=''), width=8, height=4, units="in", res=600)
 
-for(CHROM in seq(1,22,1)){
+# par(mfrow=c(22,1))
+par(mfrow=c(1,1))
+
+
+# for(CHROM in seq(1,22,1)){
+
+for(CHROM in 5){
   
 
   if(CLUSTER==TRUE){
