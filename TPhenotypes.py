@@ -47,17 +47,15 @@ def transform_to_binary(pheno_file: str, population_disease_prevalence: list[flo
     pheno_file = pd.read_csv(pheno_file, delim_whitespace=True, header=None)
     pheno_standardized = pheno_file.iloc[:, pheno_column]
     pheno_standardized = (pheno_standardized - np.mean(pheno_standardized)) / np.std(pheno_standardized)
-    print(pheno_standardized)
 
     # find cutoffs for standardized phenotypes
-    qnorm_values = [1 - norm.ppf(i) for i in population_disease_prevalence]
-
+    qnorm_values = [norm.ppf(1 - i) for i in population_disease_prevalence]
     # assign cases
     for pp in qnorm_values:
         tmp = pheno_standardized
         tmp.loc[tmp < pp] = 0
         tmp.loc[tmp >= pp] = 1
-        pheno_file[pheno_file.shape[1]] = tmp
+        pheno_file[pheno_file.shape[1]] = tmp.astype(int)
 
     logger.info("- Writing population's disease status to '" + out + "_disease_status.phen'")
     pheno_file.to_csv(out + "_disease_status.phen", sep=' ', index=False, header=False)
@@ -95,39 +93,43 @@ def ascertain_sample(pheno_file: str, sample_size: int, sample_prevalence: float
 
     # determine number of cases and controls
     num_cases_required = round(np.ceil(sample_prevalence * sample_size))
-    num_controls = sample_size - num_cases_required
+    num_controls_required = sample_size - num_cases_required
     logger.info(
-        "- Keeping " + str(num_cases_required) + " cases and " + str(num_controls) + " controls from a total of " +
+        "- Keeping " + str(num_cases_required) + " cases and " + str(num_controls_required) + " controls from a total of " +
         str(population_size) + " individuals")
-    if num_controls <= 0:
+    if num_controls_required <= 0:
         raise ValueError("Sample size needs to be larger than number of cases")
 
-    # find cases
-    cases = pheno_file[pheno_file.iloc[:, pheno_column] == 1.0]
-    num_cases_available = cases.shape[0]
+    # remove surplus cases
+    cases_rows = pheno_file[pheno_file.iloc[:, pheno_column] == 1].index.tolist()
+    num_cases_available = len(cases_rows)
 
-    if num_cases_available < num_cases_available:
+    if num_cases_available < num_cases_required:
         raise ValueError("Cannot satisfy sample_prevalence of " + str(num_cases_required) + ". Only "
-                         + num_cases_available + " cases are available.")
+                         + str(num_cases_available) + " cases are available.")
 
     if num_cases_available > num_cases_required:
-        cases = cases.sample(n=num_cases_required, replace=False, random_state=random.seed)
+        random_rows = np.random.choice(cases_rows, num_cases_available - num_cases_required, replace=False)
+        for row in random_rows:
+            pheno_file.iloc[row, pheno_column] = -9
 
-    # find controls
-    print("pheno_file", pheno_file)
-    controls = pheno_file[pheno_file.iloc[:, pheno_column] == 0.0]
-    num_controls_available = controls.shape[0]
-    if num_controls_available < num_controls:
-        raise ValueError("Cannot satisfy requested number " + str(num_controls) + " of controls. Only "
+    # remove surplus controls
+    controls_rows = pheno_file[pheno_file.iloc[:, pheno_column] == 0].index.tolist()
+    num_controls_available = len(controls_rows)
+
+    if num_controls_available < num_controls_required:
+        raise ValueError("Cannot satisfy requested number " + str(num_controls_required) + " of controls. Only "
                          + str(num_controls_available) + " controls are available.")
-    controls = pheno_file[pheno_file.iloc[:, pheno_column] == 0.0].sample(n=num_controls)
 
-    # concatenate and write
-    pheno_file_new = pd.concat([cases, controls])
-    pheno_file_new = pheno_file_new.sort_values(by=pheno_file_new.columns[1])
+    if num_controls_available > num_controls_required:
+        random_rows = np.random.choice(controls_rows, num_controls_available - num_controls_required, replace=False)
+        for row in random_rows:
+            pheno_file.iloc[row, pheno_column] = -9
+
+    # write
     logger.info(
         "- Writing ascertained sample's disease status to '" + out + "_disease_status_ascertained.phen'")
-    pheno_file_new.to_csv(out + "_disease_status_ascertained.phen", sep=' ', index=False, header=False)
+    pheno_file.to_csv(out + "_disease_status_ascertained.phen", sep=' ', index=False, header=False)
 
 
 # TODO: being typed or not should be an option for all causal variants
