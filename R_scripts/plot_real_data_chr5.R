@@ -40,12 +40,12 @@ do_annotation <- function(rs373863828_causal, rs12513649_proxy, other_GWAS){
 
   abline(h=-log10(5*(10^-8)), col=org, lty=2)
   abline(h=-log10(4.5*10^-7), col=blu, lty=2)
-  abline(h=-log10(2.3*10^-7), col=pin, lty=2)
+  # abline(h=-log10(2.3*10^-7), col=pin, lty=2)
   
   # axes
   label_pos <- seq(region_start, region_end, 20000000)
   axis(1, at=label_pos, labels=label_pos / 1000000, las=1)
-  title(ylab=expression("-log"[10]*"(p)"), line=2)
+  title(ylab=expression("-log"[10]*"(p value)"), line=2)
   title(xlab="genomic position [Mb]", line=2.2)
 }
 
@@ -54,14 +54,15 @@ plot_association <- function(df, df_GWAS, df_GRM, method=""){
   do_annotation(rs373863828_causal, rs12513649_proxy, other_GWAS)
   points(x=df_GWAS$BP, y=-log10(df_GWAS$P), col=org, pch=20, lwd=0)
   points(x=df$start, y=-log10(df$p_values), col=blu, pch=20, lwd=0)
-  points(x=df_GRM$start, y=-log10(df_GRM$p_values), col=pin, pch=20)
+  # points(x=df_GRM$start, y=-log10(df_GRM$p_values), col=pin, pch=20)
 
   index_min_pvalue <- which(df$p_values == min(df$p_values))
   print(paste("min pvalue",min(df$p_values)))
   print(paste("distance rs373863828 and most significant REML hit:", round(abs(rs373863828_causal - df$start[index_min_pvalue]) / 1000), "kb", "pvalue",-log10(df$p_values[index_min_pvalue])))
 
- legend(legend=c("local eGRM", "GWAS", "local GRM"), pch=20, col=c(blu, org, pin), x="topleft", bty='n', horiz = TRUE) #box.lwd=0, box.col = "white", bg = "white"
-  # legend(legend=c("local eGRM", "GWAS"), pch=20, col=c(blu, org), x="topleft", bty='n', horiz = TRUE) #box.lwd=0, box.col = "white", bg = "white"
+ # legend(legend=c("sycamore", "local GRM", "GWAS"), pch=20, col=c(blu, pin, org), x="topleft", bty='n', horiz = TRUE) #box.lwd=0, box.col = "white", bg = "white"
+ legend(legend=c("sycamore", "GWAS"), pch=20, col=c(blu, org), x="topleft", bty='n', horiz = TRUE) #box.lwd=0, box.col = "white", bg = "white"
+ # legend(legend=c("local eGRM"), pch=20, col=c(blu, org), x="topleft", bty='n', horiz = TRUE) #box.lwd=0, box.col = "white", bg = "white"
   
 }
 
@@ -107,16 +108,21 @@ df_GWAS_PC20 <- remove_regions_GWAS(df_results=df_GWAS_PC20, regions=regions_cen
 # pdf(paste("hawaiians_BMI_chr5_residuals_GRM.pdf", sep=''), width=8, height=4)
 png(paste("hawaiians_BMI_chr5_residuals.png", sep=''), width=8, height=4, units="in", res=600)
 par(mfrow=c(1,1))
+plot_association(df=df_BLUP_res, df_GWAS=df_GWAS_GRM, df_GRM=df_GRM_residuals)
+dev.off()
+
+pdf(paste("hawaiians_BMI_chr5_residuals_only_eGRM.pdf", sep=''), width=8, height=4)
+par(mfrow=c(1,1))
 # plot_association(df=df_BLUP_res, df_GWAS=df_GWAS_GRM, df_GRM=df_GRM_residuals)
 plot_association(df=df_BLUP_res, df_GWAS=df_GWAS_GRM, df_GRM=df_GRM_residuals)
 dev.off()
 
 
-#plot
-# pdf(paste("hawaiians_BMI_chr5.pdf", sep=''), width=8, height=4)
-png(paste("hawaiians_BMI_chr5_eGRM_PC100.png", sep=''), width=8, height=4, units="in", res=600)
-par(mfrow=c(1,1))
-plot_association(df=df_PC100_egrm, df_GWAS=df_GWAS_GRM, df_GRM=df_GRM_residuals)
-dev.off()
-
+# #plot
+# # pdf(paste("hawaiians_BMI_chr5.pdf", sep=''), width=8, height=4)
+# png(paste("hawaiians_BMI_chr5_eGRM_PC100.png", sep=''), width=8, height=4, units="in", res=600)
+# par(mfrow=c(1,1))
+# plot_association(df=df_PC100_egrm, df_GWAS=df_GWAS_GRM, df_GRM=df_GRM_residuals)
+# dev.off()
+# 
 

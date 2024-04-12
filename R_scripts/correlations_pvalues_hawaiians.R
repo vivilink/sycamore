@@ -65,6 +65,7 @@ make_plots <- function(df_eGRM, df_GWAS, df_GRM, MAIN){
   df_GWAS <- remove_regions_GWAS(df_result=df_GWAS, regions=regions_centro)
   
   num_windows <- min(num_windows, length(df_eGRM$p_values))
+  print(paste("length(df_eGRM$p_values)", length(df_eGRM$p_values)))
   
   gwas_mean_arithmetic <- rep(NA, length=num_windows)
   gwas_mean_geometric <- rep(NA, length=num_windows)

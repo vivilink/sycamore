@@ -45,7 +45,7 @@ do_annotation <- function(other_GWAS){
   # axes
   label_pos <- seq(region_start, region_end, 10000000)
   axis(1, at=label_pos, labels=label_pos / 1000000, las=1)
-  title(ylab=expression("-log"[10]*"(p)"), line=2)
+  title(ylab=expression("-log"[10]*"(p value)"), line=2)
   title(xlab="genomic position [Mb]", line=2.2)
 }
 
@@ -65,7 +65,7 @@ plot_association <- function(df, df_GRM, df_GWAS){
   print(paste("min pvalue",min(df$p_values)))
   #print(paste("distance rs373863828 and most significant REML hit:", round(abs(rs373863828_causal - df$start[index_min_pvalue]) / 1000), "kb", "pvalue",-log10(df$p_values[index_min_pvalue])))
 
-  legend(legend=c("local eGRM", "GWAS", "local GRM"), pch=20, col=c(blu, org, pin), x="topleft", bty='n', horiz = TRUE)
+  legend(legend=c("local eGRM", "local GRM", "GWAS"), pch=20, col=c(blu, pin, org), x="topleft", bty='n', horiz = TRUE)
 # legend(legend=c("local eGRM", "GWAS"), pch=20, col=c(blu, org), x="topleft", bty='n', horiz=TRUE) #, box.lwd=0, box.col = "white", bg = "white"
   
   dev.off()

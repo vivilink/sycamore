@@ -55,7 +55,7 @@ do_annotation <- function(other_GWAS){
   # axes
   label_pos <- seq(region_start, region_end, 1000000)
   axis(1, at=label_pos, labels=label_pos / 1000000, las=1)
-  title(ylab=expression("-log"[10]*"(p)"), line=2)
+  title(ylab=expression("-log"[10]*"(p value)"), line=2)
   title(xlab="genomic position [Mb]", line=2.2)
 }
 
