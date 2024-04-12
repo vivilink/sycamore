@@ -136,7 +136,7 @@ class TImpute:
         trees_ref = tt.TTrees.remove_monomorphic(trees_ref)
         samp_ids_ref = trees_ref.samples()
         N_ref = len(samp_ids_ref)
-        variants_ref = tvar.TVariants(ts_object=trees_ref, samp_ids=samp_ids_ref)
+        variants_ref = tvar.TVariants(trees_object=trees_ref, samp_ids=samp_ids_ref)
         variants_ref.fill_info(ts_object=trees_ref, samp_ids=samp_ids_ref, pos_float=False, logfile=logfile)
         variants_ref.write_variant_info(out=out + "_reference", logfile=logfile)
 
@@ -150,7 +150,7 @@ class TImpute:
 
         # read or write genetic map
         if genetic_map_file is None:
-            genetic_map_file_name = variants_sample.write_genetic_map(out=out, logfile=logfile)
+            genetic_map_file_name = variants_sample.write_genetic_map_relate(out=out, logfile=logfile)
             logfile.info(
                 "- No genetic map file provided. Writing map with constant rate to " + genetic_map_file_name)
         else:

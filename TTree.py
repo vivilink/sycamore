@@ -11,7 +11,8 @@ import tskit
 import TCovariance
 from egrm import varGRM_C
 from egrm import egrm_one_tree_no_normalization_C
-
+from arg_needle_lib import deserialize_arg
+from arg_needle_lib import arg_to_tskit
 
 # ---------------------
 # read tree file
@@ -40,8 +41,15 @@ class TTrees:
         @param logfile:
         @return:
         """
-        logfile.info("- Reading tree from " + tree_file)
-        trees_full = tskit.load(tree_file)
+        logfile.info("- Reading tree from " + tree_file + ". Assuming it is in tskit format unless ending with '.argn'")
+
+        if tree_file.endswith(".argn"):
+            logfile.add()
+            logfile.info("- Converting arg-needle format to tskit")
+            arg = deserialize_arg(tree_file)
+            trees_full = arg_to_tskit(arg, mutations=True, sample_permutation=None)
+        else:
+            trees_full = tskit.load(tree_file)
 
         # define interval
         if trees_interval is None:

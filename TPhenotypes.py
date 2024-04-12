@@ -11,21 +11,34 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+from scipy.stats import norm
 from statsmodels.distributions.empirical_distribution import ECDF
 from scipy.stats import norm
 import TVariants as tvar
 import tskit
+import TRandomGenerator as rg
+import TParameters as tparams
+import TIndividuals as tind
+from python_log_indenter import IndentedLoggerAdapter
+import TTree as tt
 
 
 # TODO: being typed or not should be an option for all causal variants
-def make_phenotypes(args, trees, sample_ids, inds, plots_dir, random, logfile):
-    if args.simulate_phenotypes:
+def make_phenotypes(args: tparams, trees: tskit.trees, sample_ids, inds: tind, plots_dir: str, random: rg,
+                    logfile: IndentedLoggerAdapter):
+    if args.simulate_phenotypes or args.task == "simulatePhenotypes":
         if args.tree_file_simulated is None:
             raise ValueError("To simulate phenotypes based on untyped variants the simulated trees need to be "
                              "provided with 'tree_file_simulated'.")
 
         logfile.info("- Reading simulated tree used for simulating phenotypes from " + args.tree_file_simulated)
-        trees_orig = tskit.load(args.tree_file_simulated)
+        trees_object = tt.TTrees(tree_file=args.tree_file,
+                                 trees_interval=args.trees_interval,
+                                 trees_interval_start=args.trees_interval_start,
+                                 trees_interval_end=args.trees_interval_end,
+                                 skip_first_tree=args.skip_first_tree,
+                                 logfile=logfile)
+        trees_orig = trees_object.trees
 
         if trees_orig.num_samples != trees.num_samples:
             raise ValueError("The trees provided with params 'tree_file_simulated' and 'tree_file' must have the same "
@@ -34,7 +47,8 @@ def make_phenotypes(args, trees, sample_ids, inds, plots_dir, random, logfile):
         # variants_orig are used to simulate phenotypes. They need to be consistent with original tree and the typed
         # status that might have been defined earlier with a variants file. The causal mutation should not be affected
         # by a freq filter
-        variants_orig = tvar.TVariantsFiltered(ts_object=trees_orig,
+
+        variants_orig = tvar.TVariantsFiltered(tskit_object=trees_orig,
                                                samp_ids=sample_ids,
                                                min_allele_freq=0,
                                                max_allele_freq=1,
@@ -95,6 +109,7 @@ class Phenotypes:
     def __init__(self):
         self._sample_IDs = None
         self._y = np.ndarray
+        self._disease_status = np.ndarray
         self._num_inds = -1
         self._genetic_variance = -1.0
         self.causal_variants = []
@@ -105,7 +120,7 @@ class Phenotypes:
         self.causal_tree_indeces = []
         self.causal_window_indeces = []
         self.filled = False
-        self._pheno_df = None #this is needed when the phentypes are not simulated but initialized from file (there might be missing individuals)
+        self._pheno_df = None  # this is needed when the phentypes are not simulated but initialized from file (there might be missing individuals)
 
     @property
     def y(self):
@@ -149,6 +164,35 @@ class Phenotypes:
         logfile.info("- Standardizing phenotypes")
         self._y = (self._y - np.mean(self._y)) / np.std(self._y)
 
+    def write_to_file_fam(self, inds, out):
+        """
+        Write fam file (plink file format) with missing phenotypes (-9)
+        :param inds:
+        :param out:
+        :param logfile:
+        :return:
+        """
+        # logfile.info("- Writing phenotype data in fam format to '" + out + ".fam")
+        tmp_pheno = pd.DataFrame()
+        tmp_pheno['1'] = np.repeat(0, inds.num_inds)
+        tmp_pheno['2'] = inds.names
+        tmp_pheno['3'] = np.repeat(0, inds.num_inds)
+        tmp_pheno['4'] = np.repeat(0, inds.num_inds)
+        tmp_pheno['5'] = np.repeat(-9, inds.num_inds)
+        tmp_pheno['6'] = np.repeat(-9, inds.num_inds)
+
+        self.set_missing_phenotype_status(inds=inds)
+        indeces_to_remove = inds.get_indeces_inds_no_phenotype()
+
+        if np.count_nonzero(np.isnan(self._y)) > 0 and len(indeces_to_remove) == 0:
+            raise ValueError("There are phenotypes that are nan")
+
+        # remove missing data
+        if len(indeces_to_remove) > 0:
+            tmp_pheno.drop(axis=0, index=indeces_to_remove, inplace=True)
+
+        tmp_pheno.to_csv(out + ".fam", sep=' ', index=False, header=False)
+
     def write_to_file_gcta_eGRM(self, inds, out, logfile):
         """
         Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
@@ -178,6 +222,35 @@ class Phenotypes:
 
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 
+    def write_to_file_gcta_eGRM_disease_status(self, inds, out, logfile):
+        """
+        Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
+        will match the binary output created with plinkFile R package.
+
+        Returns
+        -------
+        None.
+
+        """
+        logfile.info("- Writing disease status data in gcta format to '" + out + "_disease_status.phen'")
+
+        tmp_pheno = pd.DataFrame()
+        tmp_pheno['1'] = np.repeat(0, inds.num_inds)
+        tmp_pheno['2'] = inds.names
+        tmp_pheno['3'] = self._disease_status
+
+        self.set_missing_phenotype_status(inds=inds)
+        indeces_to_remove = inds.get_indeces_inds_no_phenotype()
+
+        if np.count_nonzero(np.isnan(self._disease_status)) > 0 and len(indeces_to_remove) == 0:
+            raise ValueError("There are phenotypes that are nan")
+
+        # remove missing data
+        if len(indeces_to_remove) > 0:
+            tmp_pheno.drop(axis=0, index=indeces_to_remove, inplace=True)
+
+        tmp_pheno.to_csv(out + "_disease_status.phen", sep=' ', index=False, header=False)
+
     def write_to_file_gcta_scaled(self, out, inds, logfile):
         """
         Write phenotypes to file in gtca format (first column=family, second=ind id, third=pheno value). This format
@@ -200,13 +273,13 @@ class Phenotypes:
 
     def initialize_from_file(self, filename, out, inds, logfile):
         if filename is None:
-            raise ValueError("Provide file with phenotype information using 'filename' or simulate phenotypes using "
-                             "'simulate_phenotypes'")
+            raise ValueError("Provide file with phenotype information in gcta .phen format using 'pheno_file' or "
+                             "simulate phenotypes using 'simulate_phenotypes'")
         logfile.info("- Reading phenotype information from " + filename)
         pheno_df = pd.read_csv(filename, names=["0", "ID", "phenotype"], sep=' ')
 
         missing_in_phenotypes, added_in_phenotypes = find_missing_individuals(inds_tree=inds.names,
-                                                                                   inds_phenotype=pheno_df['ID'])
+                                                                              inds_phenotype=pheno_df['ID'])
         logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
                                                                         "and " + str(
             len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
@@ -228,6 +301,23 @@ class Phenotypes:
         self._sample_IDs = np.array(pheno_df['ID'])
         self._y = np.array(pheno_df['phenotype'])
 
+    def scale(self):
+        self._y = (self._y - np.mean(self._y)) / np.std(self._y)
+
+    def add_disease_status(self, prevalence, logfile):
+        """
+        Define binary phenotype based on liability score. Individuals with a liability score above threshold given by
+        prevalence will have disease
+        :param prevalence:
+        :return:
+        """
+        logfile.info("- Scaling phenotypes to add disease status")
+        self.scale()
+        liability_cutoff = norm.ppf(1 - prevalence)
+        logfile.info("- The liability cutoff is set to " + str(liability_cutoff))
+        self._disease_status = np.zeros(self._num_inds)
+        self._disease_status[self._y > liability_cutoff] = 1
+
 
 class PhenotypesBMI(Phenotypes):
     _sample_IDs: np.ndarray
@@ -242,7 +332,7 @@ class PhenotypesBMI(Phenotypes):
         logfile.info("- Reading BMI phenotype information from " + filename)
         pheno_df = pd.read_csv(filename, names=["ID", "sex", "age", "BMI"])
         missing_in_phenotypes, added_in_phenotypes = find_missing_individuals(inds_tree=inds.names,
-                                                                                   inds_phenotype=pheno_df['ID'])
+                                                                              inds_phenotype=pheno_df['ID'])
         logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
                                                                         "and " + str(
             len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
@@ -350,6 +440,7 @@ class PhenotypesSimulated(Phenotypes):
         self.betas = [0] * variants.number
         self._y = np.zeros(
             num_inds)  # must be zero and not np.empty because we add noise afterwards! np-empty leads to nan
+        self._num_inds = num_inds
 
     @property
     def genetic_variance(self):
@@ -413,17 +504,11 @@ class PhenotypesSimulated(Phenotypes):
 
         self.filled = True
 
-    def simulate_trait_architecture(self, args, r, logfile, variants_orig, inds, trees, plots_dir):
+    def simulate_trait_architecture(self, args: tparams, r: rg, logfile: IndentedLoggerAdapter, variants_orig: tvar,
+                                    inds: tind,
+                                    trees: tskit.trees, plots_dir: str):
         """
         Simulate phenotype's genetic architecture
-        :param args: TArgs
-        :param r: TRandomGenerator
-        :param logfile: IndentedLoggerAdapter
-        :param variants_orig: TVariants
-        :param inds: TInds
-        :param trees: tskit.TreeSequence
-        :param plots_dir: str
-        :return:
         """
 
         if args.pty_sim_method is None:
@@ -771,7 +856,7 @@ class PhenotypesSimulated(Phenotypes):
         @param right_bound: Right bound of causal region (included)
         @param causal_mutations_effect_size_def: str, Std. dev. for betas of causal mutations . If it can be converted to a
                                         float, betas will sampled from N(0, pty_sd_beta_causal_mutations). If set to
-                                        'standardized', betas will be sampled from
+                                        'freq_dependant', betas will be sampled from
                                         N(0, [2 * f * (1 - f)]^{-0.5} * h2g / p),
                                         where h2g is the heritability of the trait and p is the number of causal SNPs.
         @param random: TRandom
@@ -810,8 +895,6 @@ class PhenotypesSimulated(Phenotypes):
             causal[c] = 1
             num_causal_vars = 1
 
-            print("info_window", info_window, "causal variants", causal)
-
         # add phenotypic effect to mutations that are uniformly distributed
         for v_i, v in enumerate(info_window['var_index']):
             if causal[v_i] == 1:
@@ -822,9 +905,9 @@ class PhenotypesSimulated(Phenotypes):
                     sd = float(causal_mutations_effect_size_def)
                 except ValueError:
                     causal_mutations_effect_size_def = causal_mutations_effect_size_def
-                    if causal_mutations_effect_size_def != "standardized":
+                    if causal_mutations_effect_size_def != "freq_dependant":
                         raise ValueError("'sd_beta_causal_mutations' is set to unknown option. Must be a float or "
-                                         "'standardized'")
+                                         "'freq_dependant'")
                     f = variants.info['allele_freq'][v]
                     sd = (local_heritability / num_causal_vars) / np.sqrt(2 * f * (1 - f))
 

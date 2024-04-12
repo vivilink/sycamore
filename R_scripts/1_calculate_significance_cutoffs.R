@@ -1,11 +1,13 @@
 library(ACAT)
 
-setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/relate_trees_allVariants/window_based/5k")
+setwd("/data/ARGWAS/experiments_cutoff_N2K/diploid/GRM_eGRM/arg_needle_trees/window_based/5k")
 
-reps <- 300
+reps <- 200
 cutoff_rep <- 0.05 * reps
 position_interval <- c(49000000, 50000000)
-run_acat <- TRUE
+position_interval <- c(0, 50000000)
+
+run_acat <- FALSE
 # position_interval <- c(0, 1000000)
 # result_file_prefix <- "two_pops"
 result_file_prefix <- "cutoff_sims"
@@ -43,13 +45,13 @@ for(i in 1:length(covariance_types)){
   for(rep in 1:reps){
     print(rep)
     # read REML results
-    df_REML <- read.csv(paste(result_file_prefix, "_", rep, "_", covariance_types[i], "_trees_REML_results.csv", sep=''))
+    df_REML <- read.csv(paste(result_file_prefix, "_", rep, "_", covariance_types[i], "_trees_GCTA_REML_results.csv", sep=''))
     # df_REML <- df_REML[-1,]
     df_REML <- df_REML[which(df_REML$start > position_interval[1] & df_REML$start < position_interval[2]),]
     # df_REML <- df_REML[-nrow(df_REML),]
 
     # read HE results
-    df_HE <- read.csv(paste(result_file_prefix, "_", rep, "_", covariance_types[i], "_trees_HE_results.csv", sep=''))
+    df_HE <- read.csv(paste(result_file_prefix, "_", rep, "_", covariance_types[i], "_trees_GCTA_HE_results.csv", sep=''))
     df_HE <- df_HE[-1,]
     df_HE <- df_HE[which(df_HE$start > position_interval[1] & df_HE$start < position_interval[2]),]
     # df_HE_eGRM <- df_HE_eGRM[-nrow(df_HE_eGRM),]

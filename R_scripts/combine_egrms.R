@@ -2,15 +2,17 @@ source("/home1/linkv/ARGWAS/argwas/R_scripts/functions.R")
 library("plinkFile")
 
 
-setwd("/home1/linkv/ARGWAS/hawaiian/global_grm")
+setwd("/home1/linkv/ARGWAS/hawaiian/global_grm/global_egrms")
 
 args = commandArgs(trailingOnly=TRUE)
 files <- read.table(args[1])
 out_prefix <- args[2]
+grm_loccation <- args[3]
 
 # read first egrm to get dimensions
 prefix <- strsplit(files$V1[1], split=".trees")[[1]]
 prefix <- strsplit(prefix, split="/")[[1]][7]
+prefix <- paste(grm_loccation, prefix, sep='/')
 grm_obj <- ReadGRMBin(prefix)
 
 
@@ -26,6 +28,7 @@ colnames(m) <- sample_names$ID_1
 for(f in files$V1){
 	prefix <- strsplit(f, split=".trees")[[1]]
 	prefix <- strsplit(prefix, split="/")[[1]][7]
+	prefix <- paste(grm_loccation, prefix, sep='/')
 	print(paste("adding grm",prefix))
 	grm_obj <- ReadGRMBin(prefix)
 	m <- m + grm_obj$total_grm * grm_obj$N

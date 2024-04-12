@@ -7,7 +7,15 @@ Created on Mon Aug 30 17:44:45 2021
 """
 import numpy as np
 import pandas as pd
+
+pd.options.mode.chained_assignment = None  # do not print SettingWithCopyWarning
 import time
+import TRandomGenerator as rg
+import TTree as tt
+from python_log_indenter import IndentedLoggerAdapter
+import tskit
+import TIndividuals as tind
+import os
 
 
 class TVariants:
@@ -15,8 +23,8 @@ class TVariants:
     A class containing all variants of a tree, all variants are typed
     """
 
-    def __init__(self, ts_object, samp_ids):
-        self._variants = list(ts_object.variants(samples=samp_ids))
+    def __init__(self, tskit_object: tskit, samp_ids: np.ndarray):
+        self._variants = list(tskit_object.variants(samples=samp_ids))
         self._number = len(self._variants)
         self._number_typed = self._number
         self._positions = np.empty(self._number)
@@ -24,10 +32,19 @@ class TVariants:
         self._info_columns = ['var_index', 'position', 'allele_freq', 'num_alleles', 'typed', 'tree_index']
         self._info = pd.DataFrame(index=range(self._number), columns=self._info_columns)
 
-    def fill_info(self, ts_object, samp_ids, pos_float, logfile):
-        if len(list(ts_object.variants(samples=samp_ids))) < 1:
+    def fill_info(self, tskit_object: tskit, samp_ids: np.ndarray, pos_float: bool, logfile: IndentedLoggerAdapter):
+        """
+        Create table with information about variants
+
+        :param trees_object:
+        :param samp_ids:
+        :param pos_float: false if positions are not continuous but instead integers (default)
+        :param logfile:
+        :return:
+        """
+        if len(list(tskit_object.variants(samples=samp_ids))) < 1:
             logfile.info("WARNING: Found no variants")
-        for v, var in enumerate(list(ts_object.variants(samples=samp_ids))):
+        for v, var in enumerate(list(tskit_object.variants(samples=samp_ids))):
             tmp = sum(var.genotypes) / len(var.genotypes)
 
             if len(np.bincount(var.genotypes)) > 2:
@@ -44,11 +61,9 @@ class TVariants:
             if not pos_float:
                 pos = round(var.site.position)
                 if v > 0 and pos <= self._positions[v - 1]:
-                    logfile.info("WARNING: Pos (" + str(pos) + ") is smaller than previous one ("
-                                 + str(self._positions[v - 1]) + "). Setting to " + str(self._positions[v - 1] + 1))
+                    # logfile.info("WARNING: Pos (" + str(pos) + ") is smaller than previous one ("
+                    #              + str(self._positions[v - 1]) + "). Setting to " + str(self._positions[v - 1] + 1))
                     pos = self._positions[v - 1] + 1
-                    # if pos > 49499400:
-                    #     raise ValueError("stop")
             else:
                 pos = var.site.position
 
@@ -61,7 +76,7 @@ class TVariants:
         self._info['typed'] = "True"
 
         # set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
-        self._info['tree_index'] = np.digitize(self._info['position'], ts_object.breakpoints(as_array=True)) - 1
+        self._info['tree_index'] = np.digitize(self._info['position'], tskit_object.breakpoints(as_array=True)) - 1
         self._info['causal_region'] = "FALSE"
 
     @property
@@ -100,15 +115,15 @@ class TVariants:
         logfile.info("- Writing variant info to file '" + out + "_sample_variants.csv'")
         self._info.to_csv(out + "_sample_variants.csv", header=True, index=False)
 
-    def write_genetic_map(self, out, logfile):
+    def write_genetic_map_relate(self, out, logfile):
         """
         Taken from egrm/Manuscript/simulate
         @param out: str
         @param logfile:
         @return:
         """
-        outname = out + ".map"
-        logfile.info("- Writing genetic map to " + outname)
+        outname = out + "_relate.map"
+        logfile.info("- Writing genetic map in Relate format to " + outname)
         # if file exists, clear
         map_file = open(outname, "w")
         map_file.close()
@@ -118,8 +133,31 @@ class TVariants:
         map_file.write("pos COMBINED_rate Genetic_Map\n")
         for index, row in self._info.iterrows():
             if row['typed']:
-                string = str(row['position']) + " " + str(1) + " "
+                string = str(int(row['position'])) + " " + str(1) + " "
                 string = string + str(row['position'] / 1000000) + "\n"
+                bytes = map_file.write(string)
+        map_file.close()
+        return outname
+
+    def write_genetic_map_argNeedle(self, out, logfile, chrom):
+        """
+        according to .map format here
+        @param out: str
+        @param logfile:
+        @return:
+        """
+        outname = out + "_argNeedle.map"
+        logfile.info("- Writing genetic map in ARG-Needle format to " + outname)
+        # if file exists, clear
+        map_file = open(outname, "w")
+        map_file.close()
+
+        # write file line by line
+        map_file = open(outname, 'a')
+        for index, row in self._info.iterrows():
+            if row['typed']:
+                string = chrom + "\tsnp_" + str(int(row['position'])) + "\t"
+                string = string + str(row['position'] / 1000000) + "\t" + str(int(row['position'])) + "\n"
                 bytes = map_file.write(string)
         map_file.close()
         return outname
@@ -173,28 +211,25 @@ class TVariants:
         haps_file.close()
         logfile.sub()
 
-    def write_shapeit2(self, out, inds, logfile):
+    def write_haps(self, out: str, inds: tind, chrom: str, logfile: IndentedLoggerAdapter):
         """
         Write files in SHAPEIT2 format, to be used as input by RELATE (https://myersgroup.github.io/relate/input_data.html)
 
-        Parameters
-        ----------
-        out : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        None.
-
+        :param out:
+        :param inds:
+        :param chrom: chromosome number
+        :param logfile:
+        :return:
         """
+
         haps = pd.DataFrame(index=range(self._number_typed), columns=range(5 + inds.num_haplotypes))
         info_typed = self._info.loc[self._info['typed'] == True]
         info_typed['index'] = range(self._number_typed)
         info_typed.set_index(info_typed['index'], drop=True, inplace=True)
 
-        haps.iloc[:, 0] = np.repeat(1, self._number_typed)
+        haps.iloc[:, 0] = np.repeat(chrom, self._number_typed)
         haps.iloc[:, 1] = '.'
-        haps.iloc[0:self._number_typed, 2] = info_typed['position']
+        haps.iloc[0:self._number_typed, 2] = info_typed['position'].astype(int)
         haps.iloc[:, 3] = 'A'
         haps.iloc[:, 4] = 'T'
 
@@ -219,46 +254,51 @@ class TVariants:
                 #     print("v", v, "positions\n", self._info.iloc[v])
                 index += 1
 
-        logfile.info("- Writing haplotypes in Shapeit2 format to file '" + out + "_variants.haps'")
-        haps.to_csv(out + "_variants.haps", sep=' ', header=False, index=False)
+        logfile.info("- Writing haplotypes in Shapeit2 and argNeedle format to file '"
+                     + out + "_relate.haps' and creating a soft link to the same called '" + out + "_argNeedle.haps'.")
+        haps.to_csv(out + "_relate.haps", sep=' ', header=False, index=False)
+        if os.path.exists(out + "_argNeedle.haps"):
+            os.remove(out + "_argNeedle.haps")
+        os.symlink(out + "_relate.haps", out + "_argNeedle.haps")
+        # haps.to_csv(out + "_argNeedle.haps", sep=' ', header=False, index=False)
         logfile.sub()
 
-    def write_haplotypes(self, out, inds, logfile):
-        """
-        Write haplotypes in a format defined by me, rows are haplotypes, columns are variants (opposite of shapeit)
-        @param out:
-        @param inds:
-        @param logfile:
-        @return:
-        """
-        haps = pd.DataFrame(index=range(inds.num_haplotypes), columns=range(self._number_typed))
-        info_typed = self._info.loc[self._info['typed'] == True]
-        info_typed['index'] = range(self._number_typed)
-        info_typed.set_index(info_typed['index'], drop=True, inplace=True)
-
-        logfile.info("- Building haplotypes for typed variants and writing to file '" + out + "_haplotypes.txt'")
-        logfile.add()
-        # can't use v for index because it loops over all variants, not only typed ones
-        column = 0
-        # log progress
-        start = time.time()
-
-        for v, var in enumerate(self._variants):
-            if v % 10000 == 0:
-                end = time.time()
-                logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(
-                    round(end - start)) + " s")
-            # print(v, self._info.iloc[v]['typed'])
-            if self._info.iloc[v]['typed']:
-                # if self._info.iloc[v]['position'] == None :
-                #     print(self._info.iloc[v])
-                haps.iloc[:, column] = var.genotypes
-                # if index in [9,10, 11, 12]:
-                #     print("v", v, "positions\n", self._info.iloc[v])
-                column += 1
-
-        haps.to_csv(out + "_haplotypes.txt", sep=' ', header=False, index=False)
-        logfile.sub()
+    # def write_haplotypes(self, out, inds, logfile):
+    #     """
+    #     Write haplotypes in a format defined by me, rows are haplotypes, columns are variants (opposite of shapeit)
+    #     @param out:
+    #     @param inds:
+    #     @param logfile:
+    #     @return:
+    #     """
+    #     haps = pd.DataFrame(index=range(inds.num_haplotypes), columns=range(self._number_typed))
+    #     info_typed = self._info.loc[self._info['typed'] == True]
+    #     info_typed['index'] = range(self._number_typed)
+    #     info_typed.set_index(info_typed['index'], drop=True, inplace=True)
+    #
+    #     logfile.info("- Building haplotypes for typed variants and writing to file '" + out + "_haplotypes.txt'")
+    #     logfile.add()
+    #     # can't use v for index because it loops over all variants, not only typed ones
+    #     column = 0
+    #     # log progress
+    #     start = time.time()
+    #
+    #     for v, var in enumerate(self._variants):
+    #         if v % 10000 == 0:
+    #             end = time.time()
+    #             logfile.info("- Added genotypes for variant " + str(v) + " of " + str(self.number) + " in " + str(
+    #                 round(end - start)) + " s")
+    #         # print(v, self._info.iloc[v]['typed'])
+    #         if self._info.iloc[v]['typed']:
+    #             # if self._info.iloc[v]['position'] == None :
+    #             #     print(self._info.iloc[v])
+    #             haps.iloc[:, column] = var.genotypes
+    #             # if index in [9,10, 11, 12]:
+    #             #     print("v", v, "positions\n", self._info.iloc[v])
+    #             column += 1
+    #
+    #     haps.to_csv(out + "_haplotypes.txt", sep=' ', header=False, index=False)
+    #     logfile.sub()
 
 
 class TVariantsFiltered(TVariants):
@@ -267,12 +307,12 @@ class TVariantsFiltered(TVariants):
     filtered_variants_file, or if none given it depends on the allele frequency filteres and prop_typed_variants filters
     """
 
-    def __init__(self, ts_object, samp_ids, min_allele_freq, max_allele_freq, prop_typed_variants, pos_float, random,
-                 logfile, filtered_variants_file=None):
+    def __init__(self, tskit_object: tskit, samp_ids: np.ndarray, min_allele_freq: float, max_allele_freq: float,
+                 prop_typed_variants: float, pos_float: bool, random: rg, logfile, filtered_variants_file=None):
         """
         Parameters
         ----------
-        ts_object : TreeSequence
+        trees_object : TreeSequence
             This tree sequence must match the file provided with filtered_variants_file, if provided.
         samp_ids : numpy.ndarray (dtype=np.int32)
             Samples given by ts_object.samples()
@@ -280,7 +320,8 @@ class TVariantsFiltered(TVariants):
         max_allele_freq : float
         prop_typed_variants : float
         pos_float : bool
-            Defines if positions of variants are to be saved as integers (default) or as float.
+            Defines if positions of variants are to be saved as integers (defau
+            lt) or as float.
         random : TRandomGenerator
         logfile : logger
         filtered_variants_file : str, optional
@@ -295,20 +336,22 @@ class TVariantsFiltered(TVariants):
         #  enumerate in TPhenotypes does not work
         # TODO: develop an iterator for variants that only goes over the typed ones
 
-        super().__init__(ts_object=ts_object, samp_ids=samp_ids)
+        super().__init__(tskit_object=tskit_object, samp_ids=samp_ids)
 
         # build variant object from tree file -> filter!
         if filtered_variants_file is None:
-            self.fill_info(ts_object, samp_ids, pos_float, logfile=logfile)
+            self.fill_info(tskit_object, samp_ids, pos_float, logfile=logfile)
             self._number_typed = -1
 
             logfile.info("- Building variant information from scratch based on simulated trees")
 
-            if min_allele_freq < 0 or max_allele_freq < 0 or min_allele_freq > 1 or max_allele_freq > 1 or min_allele_freq > max_allele_freq:
+            if (min_allele_freq < 0 or max_allele_freq < 0
+                    or min_allele_freq > 1 or max_allele_freq > 1
+                    or min_allele_freq > max_allele_freq):
                 raise ValueError("allele frequency filters are nonsensical")
 
             # determine typed status for each variant
-            for v, var in enumerate(ts_object.variants(samples=samp_ids)):
+            for v, var in enumerate(tskit_object.variants(samples=samp_ids)):
                 # is variant typed? Depends on freq filter and proportion typed
                 af = self._info['allele_freq'].iloc[v]
                 if min_allele_freq <= af <= max_allele_freq:
@@ -346,7 +389,8 @@ class TVariantsFiltered(TVariants):
                     len(self._info['var_index'])) + " variants, expected " + str(self._number))
             if 'tree_index' not in self._info.columns:
                 # set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
-                self._info['tree_index'] = np.digitize(self._info['position'], ts_object.breakpoints(as_array=True)) - 1
+                self._info['tree_index'] = np.digitize(self._info['position'],
+                                                       tskit_object.breakpoints(as_array=True)) - 1
 
             # remove variants that now do not pass the frequency filter
             self._info['typed'].iloc[self._info['allele_freq'] < min_allele_freq] = False
@@ -373,30 +417,17 @@ class TVariantsFiltered(TVariants):
         logfile.info("- Writing variant info to file '" + out + "_filtered_sample_variants.csv'")
         self._info.to_csv(out + "_filtered_sample_variants.csv", header=True, index=False)
 
-    def find_variant(self, typed, freq, interval, subplot, random, logfile):
+    def find_variant(self, typed: bool, freq: float, interval: list, subplot, random: rg, logfile):
         """
-        Find a variant that fits criteria to simulate fixed genotype depending on only one variant
 
-        Parameters
-        ----------
-        typed : bool
-            Should the variant returned be typed or not.
-        freq : float
-            Requested allele frequency of the variant. If there is no variant with this exact frequency within the
+        :param typed: Should the variant returned be typed or not.
+        :param freq: Requested allele frequency of the variant. If there is no variant with this exact frequency within the
             requested interval, 0.001 will be deducted from the freq repeatedly until a variant is found.
-        interval : list of floats
-            Requested genomic interval within which the variant should be.
-
-        Raises
-        ------
-        ValueError
-            If the search for a variant within the requested genomic interval ends up with the allele freq being
-            negative, the search is stopped an an error is thrown.
-
-        Returns
-        -------
-        Index of the variant found, can be used to simulate fixed phenotype.
-
+        :param interval: Requested genomic interval within which the variant should be.
+        :param subplot:
+        :param random:
+        :param logfile:
+        :return: Index of the variant found, can be used to simulate fixed phenotype.
         """
 
         # check if interval is valid

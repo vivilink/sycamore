@@ -1,0 +1,20 @@
+name: env_sycamore  # Name of your Conda environment
+
+channels:            # Conda channels to search for packages
+  - defaults         # Default Conda channel
+  - conda-forge     # Conda Forge channel (optional, but often useful for additional packages)
+
+dependencies:
+  - numpy
+  - tqdm
+  - matplotlib
+  - pip
+  - pandas
+  - statsmodels
+  - xarray
+  - spyder
+  - SciPy
+  - glimix-core
+  - stdpopsim
+  - pandas-plink
+

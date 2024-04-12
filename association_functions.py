@@ -19,8 +19,9 @@ import TPhenotypes as pt
 import TAssociationTesting as at
 import TImputation as impute
 import glob
-import stat
-import pandas as pd
+import TParameters
+from typing import IO
+from python_log_indenter import IndentedLoggerAdapter
 
 
 def run_association_testing(args, random, logfile):
@@ -35,7 +36,7 @@ def run_association_testing(args, random, logfile):
     """
 
     logfile.info("- TASK: Associate")
-    logfile.add()
+    # logfile.add()
 
     # --------------------------------
     # read ARG
@@ -56,9 +57,9 @@ def run_association_testing(args, random, logfile):
     # trees_tmp = trees.keep_intervals([interval], simplify=True)
     # trees_tmp.dump("/data/ARGWAS/hawaiians/chr5.part-05_1mb.trees")
 
-    plots_dir = args.out + "_plots/"
-    if not os.path.exists(plots_dir):
-        os.mkdir(plots_dir)
+    # plots_dir = args.out + "_plots/"
+    # if not os.path.exists(plots_dir):
+    #     os.mkdir(plots_dir)
 
     sample_ids = trees.samples()
     N = len(sample_ids)
@@ -81,7 +82,7 @@ def run_association_testing(args, random, logfile):
     #  won't match (tree only contains typed variants). The variant file is only useful for simulating phenotypes to
     #  be able to keep track of untyped variants (i.e. for variants_orig)
     logfile.info("- Compiling variant info from trees file")
-    variants = tvar.TVariantsFiltered(ts_object=trees,
+    variants = tvar.TVariantsFiltered(tskit_object=trees,
                                       samp_ids=sample_ids,
                                       min_allele_freq=args.min_allele_freq,
                                       max_allele_freq=args.max_allele_freq,
@@ -100,7 +101,7 @@ def run_association_testing(args, random, logfile):
                                trees=trees,
                                sample_ids=sample_ids,
                                inds=inds,
-                               plots_dir=plots_dir,
+                               plots_dir="",
                                random=random,
                                logfile=logfile)
 
@@ -177,7 +178,7 @@ def OLS(genotypes, phenotypes):
     return PVALUE
 
 
-def run_association_GWAS(trees, inds, variants, pheno, args, logfile):
+def run_association_GWAS(trees, inds, variants: tvar, pheno: pt, args: TParameters, logfile):
     outname = args.out + "_GWAS"
 
     if args.imputation_ref_panel_tree_file is not None:
@@ -220,7 +221,7 @@ def run_association_GWAS(trees, inds, variants, pheno, args, logfile):
         GWAS.write_to_file_with_X_matrix(positions=pos, name=outname, logfile=logfile)
 
     else:
-        logfile.info("- Using genotypes from tree file for GWAS:")
+        logfile.info("- Using genotypes from tree file for GWAS")
         # run association tests
         GWAS = at.TAssociationTestingGWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
         GWAS.test_with_variants_object(variants=variants, phenotypes=pheno, inds=inds, logfile=logfile)
@@ -228,61 +229,18 @@ def run_association_GWAS(trees, inds, variants, pheno, args, logfile):
         # GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
 
 
-def write_GCTA_command_script(test_name, pheno_file, outname, logfile, args):
-    with open(outname + "_run_" + test_name + ".sh", 'w') as f:
-        f.write("#!/bin/bash\n")
-        if args.population_structure and args.population_structure_pca_num_eigenvectors is None:
-            logfile.info("- Writing gcta command file to test a model containing the local GRM and a global GRM as "
-                         "random effects")
-            write_GCTA_command_file_mgrm(testing_method=test_name,
-                                         outname=outname,
-                                         pheno_file=pheno_file,
-                                         outfile=f,
-                                         GCTA=args.GCTA,
-                                         num_GCTA_threads=args.num_gcta_threads,
-                                         additional_gcta_params=args.additional_gcta_params)
-
-        elif args.population_structure and args.population_structure_pca_num_eigenvectors \
-                and args.do_all_stratification_correction:
-            logfile.info("- Writing gcta command file to run a PCA on the population structure GRM, and then test a "
-                         "model containing the local GRM and a global GRM as a random effects, and the PCs as "
-                         "fixed effects")
-            write_GCTA_command_file_mgrm_pca(testing_method=test_name,
-                                             outname=outname,
-                                             pheno_file=pheno_file,
-                                             num_eigenvectors=args.population_structure_pca_num_eigenvectors,
-                                             population_structure_matrix=args.population_structure,
-                                             outfile=f,
-                                             GCTA=args.GCTA,
-                                             num_GCTA_threads=args.num_gcta_threads)
-
-        elif args.population_structure and args.population_structure_pca_num_eigenvectors \
-                and not args.do_all_stratification_correction:
-            logfile.info("- Writing gcta command file to run a PCA on the population structure GRM, and then test a "
-                         "model containing the local GRM as a random effect, and the PCs as fixed effects")
-            write_GCTA_command_file_grm_pca(testing_method=test_name,
-                                            outname=outname,
-                                            pheno_file=pheno_file,
-                                            num_eigenvectors=args.population_structure_pca_num_eigenvectors,
-                                            population_structure_matrix=args.population_structure,
-                                            outfile=f,
-                                            GCTA=args.GCTA,
-                                            num_GCTA_threads=args.num_gcta_threads)
-        else:
-            logfile.info("- Writing gcta command file to test a model containing the local GRM as a random effect")
-            write_GCTA_command_file_grm(testing_method=test_name,
-                                        outname=outname,
-                                        pheno_file=pheno_file,
-                                        outfile=f,
-                                        GCTA=args.GCTA,
-                                        additional_gcta_params=args.additional_gcta_params,
-                                        num_GCTA_threads=args.num_gcta_threads)
-
-    st = os.stat(outname + "_run_" + test_name + ".sh")
-    os.chmod(outname + "_run_" + test_name + ".sh", st.st_mode | stat.S_IEXEC)
-
-
-def get_AIM_test_object(test_name, phenotypes, pheno_file, num_associations, outname, logfile, args):
+def get_AIM_test_object(test_name: str, phenotypes, pheno_file, num_associations, outname: str, logfile,
+                        args: TParameters):
+    """
+    :param test_name: str describing the association algorithm to be used
+    :param phenotypes:
+    :param pheno_file:
+    :param num_associations:
+    :param outname:
+    :param logfile:
+    :param args:
+    :return: TAssociationTestingRegions object
+    """
     # rename deprecated test names
     if test_name == "HE":
         logfile.info("WARNING: AIM method 'HE' is deprecated. Use 'GCTA_HE'")
@@ -293,27 +251,26 @@ def get_AIM_test_object(test_name, phenotypes, pheno_file, num_associations, out
 
     # create object
     if test_name == "GCTA_HE":
-        write_GCTA_command_script(test_name=test_name, pheno_file=pheno_file, outname=outname, args=args, logfile=logfile)
-        test_obj = at.TAssociationTestingRegionsGCTA_HE(phenotypes, num_associations)
+        test_obj = at.TAssociationTestingRegionsGCTA_HE(phenotypes, num_associations, test_name=test_name,
+                                                        pheno_file=pheno_file, outname=outname, args=args,
+                                                        logfile=logfile)
     elif test_name == "GCTA_REML":
-        write_GCTA_command_script(test_name=test_name, pheno_file=pheno_file, outname=outname, args=args, logfile=logfile)
-        test_obj = at.TAssociationTestingRegionsGCTA_REML(phenotypes, num_associations)
+        test_obj = at.TAssociationTestingRegionsGCTA_REML(phenotypes, num_associations, test_name=test_name,
+                                                          pheno_file=pheno_file, outname=outname, args=args,
+                                                          logfile=logfile)
     elif test_name == "glimix_REML":
         test_obj = at.TAssociationTestingRegionsGlimix(phenotypes, num_associations)
+    elif test_name == "mtg2":
+        raise ValueError("mtg2 is not implemented yet!")
+        # test_obj = at.TAssociationTestingRegionsMtg2(phenotypes, num_associations)
     else:
         raise ValueError("Did not recognize " + str(test_name) + " as a association test type")
 
     return test_obj
 
 
-def get_window_starts_and_ends(window_size, trees_interval):
+def get_window_starts_and_ends(window_size: int, trees_interval: list):
     """
-    @param skip_first_tree: bool
-    @param trees_object: TTrees
-    @param trees_interval: int genomic region covered by ARG
-    @param window_size: int
-    @return list: list of window ends
-
     Get coordinates of windows of non-overlapping windows of size window_size
     """
 
@@ -336,7 +293,7 @@ def get_window_starts_and_ends(window_size, trees_interval):
     return window_starts, window_ends
 
 
-def get_proportion_of_tree_within_window(window_start, window_end, tree_start, tree_end):
+def get_proportion_of_tree_within_window(window_start: int, window_end: int, tree_start: float, tree_end: float):
     """
     Return proportion of tree that is within a genomic window. I guess the window_end and tree_end are not included.
     @param window_start:
@@ -367,49 +324,112 @@ def get_proportion_of_tree_within_window(window_start, window_end, tree_start, t
         return 0.0
 
 
-def test_window_for_association(covariance_obj, inds, AIM_methods, outname, window_index, phenotypes_obj,
-                                covariances_picklefile):
+def write_matrices_for_testing(cholesky_global_GRM_for_cor: cov, covariance_obj: cov, inds: tind, outname: str,
+                               covariances_picklefile: IO, index: int, logfile: IndentedLoggerAdapter):
+
+    if covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile):
+        if cholesky_global_GRM_for_cor:
+            # calculate cholesky of local GRM --> get A
+            covariance_obj.calculate_cholesky_decomposition(ploidy=inds.ploidy, logfile=logfile)
+            A = covariance_obj.get_cholesky_decomposition(ploidy=inds.ploidy)
+
+            # add A to global_GRM
+            Q = A + cholesky_global_GRM_for_cor.get_cholesky_decomposition(ploidy=inds.ploidy)
+
+            # write sum (Q) to GCTA
+            cholesky_global_GRM_for_cor.write_gcta_format(covariance_matrix=Q,
+                                                          mu=cholesky_global_GRM_for_cor.mu,
+                                                          inds=inds, out=outname + "_cov")
+        return True
+
+    else:
+        print("did not run association because covariance objects could not be written at index", index)
+
+
+def test_window_for_association(covariance_obj: cov, inds: tind, AIM_methods: list, outname: str, window_index: int,
+                                phenotypes_obj: pt, cholesky_global_GRM_for_cor: cov, covariances_picklefile: IO,
+                                logfile: IndentedLoggerAdapter):
+    """
+    Finalize covariance object and run association test. If global GRM is given and the testing method is GCTA,
+    first also calculate the correlation between the local and global matrix
+
+    :param covariance_obj:
+    :param inds:
+    :param AIM_methods:
+    :param outname:
+    :param window_index:
+    :param phenotypes_obj:
+    :param global_GRM_for_cor: TCovariance, if provided the correlation between the local and global matrix are written to file
+    :param covariances_picklefile: bool, should local covariance matrix be written to a pickle file
+    :return:
+    """
+
     covariance_obj.finalize(inds=inds)
 
     for m in AIM_methods:
         if m.name == "regions_glimix":
-            m.run_association(index=window_index,
-                              out=outname,
-                              inds=inds,
-                              phenotypes_object=phenotypes_obj,
-                              covariance_object=covariance_obj,
-                              covar=None,
-                              covariances_picklefile=None,
-                              )
+            m.test(index=window_index,
+                   out=outname,
+                   inds=inds,
+                   phenotypes_object=phenotypes_obj,
+                   covariance_object=covariance_obj,
+                   covar=None,
+                   covariances_picklefile=None,
+                   )
+        elif m.name == "regions_mtg2":
+            m.test(index=window_index,
+                   out=outname,
+                   inds=inds,
+                   phenotypes_object=phenotypes_obj,
+                   covariance_object=covariance_obj,
+                   covar=None,
+                   covariances_picklefile=None,
+                   )
+        elif m.name == "regions_GCTA_HE" or m.name == "regions_GCTA_REML":
+
+            if write_matrices_for_testing(cholesky_global_GRM_for_cor=cholesky_global_GRM_for_cor,
+                                          covariance_obj=covariance_obj,
+                                          inds=inds,
+                                          outname=outname,
+                                          index=window_index,
+                                          covariances_picklefile=covariances_picklefile,
+                                          logfile=logfile):
+
+                m.test(index=window_index,
+                       out=outname,
+                       inds=inds,
+                       phenotypes_object=None,
+                       covariance_object=covariance_obj,
+                       covar=None,
+                       covariances_picklefile=covariances_picklefile)
+
         else:
-            m.run_association(index=window_index,
-                              out=outname,
-                              inds=inds,
-                              phenotypes_object=None,
-                              covariance_object=covariance_obj,
-                              covar=None,
-                              covariances_picklefile=covariances_picklefile)
+            raise ValueError("There is no association test implemented for '" + m.name + "'")
 
     covariance_obj.clear()
 
 
-def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, window_ends, window_starts, num_tests,
-                                         inds, covariances_picklefile, pheno, logfile, outname, population_structure):
+def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_methods: list, variants: tvar,
+                                                  window_ends: list, window_starts: list, num_tests: int, inds: tind,
+                                                  covariances_picklefile: IO, pheno: pt,
+                                                  cholesky_global_GRM_for_cor: cov, logfile, outname: str):
     """
     Write covariance calculated based on variants within a window (can be one tree) to file and test it for association with
     phenotypes. Currently, the only covariance type based on variants is GRM.
-    @param covariances_picklefile: write covariance matrix to a pickle file
-    @param covariance_obj: TCovariance
-    @param AIM_methods: list
-    @param variants: TVariants
-    @param window_ends: list
-    @param window_starts: list
-    @param num_tests: int
-    @param inds: TInds
-    @param logfile: Tlogger
-    @param outname: str
-    @return: None
-    :param pheno: TPhenotype
+
+    :param covariance_obj:
+    :param AIM_methods:
+    :param variants:
+    :param window_ends:
+    :param window_starts:
+    :param num_tests:
+    :param inds:
+    :param covariances_picklefile:
+    :param pheno:
+    :param cholesky_global_GRM_for_cor:
+    :param logfile:
+    :param outname:
+    :return:
     """
     window_ends_copy = window_ends.copy()
     window_starts_copy = window_starts.copy()
@@ -420,19 +440,19 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
     for w in range(num_tests):  #
         covariance_obj.calculate_GRM(window_beginning=window_starts[w], window_end=window_ends[w],
                                      variants=variants, inds=inds)
-        tmpCov = covariance_obj.covariance_matrix
+        tmpCov = covariance_obj.get_covariance_matrix(inds.ploidy)
 
         if tmpCov is not None:
             for m in AIM_methods:
                 # covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile) removed
                 # because already in run association function
-                m.run_association(index=w,
-                                  out=outname,
-                                  covariance_object=covariance_obj,
-                                  phenotypes_object=pheno,
-                                  inds=inds,
-                                  covar=None,
-                                  covariances_picklefile=covariances_picklefile)
+                m.test(index=w,
+                       out=outname,
+                       covariance_object=covariance_obj,
+                       phenotypes_object=pheno,
+                       inds=inds,
+                       covar=None,
+                       covariances_picklefile=covariances_picklefile)
             covariance_obj.clear()
 
         # log progress
@@ -448,26 +468,31 @@ def run_variant_based_covariance_testing(covariance_obj, AIM_methods, variants, 
                                             out=outname)
 
 
-def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window_ends, window_starts,
-                                      window_size, skip_first_tree, inds, pheno, covariances_picklefile,
-                                      logfile, outname, limit_association_tests):
+def loop_windows_tree_based_covariance_testing(trees, covariance_obj: cov, AIM_methods: list,
+                                               window_ends: list,
+                                               window_starts: list, window_size: int, skip_first_tree: bool,
+                                               inds: tind, pheno: pt, covariances_picklefile: IO,
+                                               cholesky_global_GRM_for_cor: cov, logfile, outname: str,
+                                               limit_association_tests: int):
+    """
+    Loop over windows, write necessary files and run association tests
+    :param trees:
+    :param covariance_obj:
+    :param AIM_methods:
+    :param window_ends:
+    :param window_starts:
+    :param window_size: if not specified, trees will be used
+    :param skip_first_tree:
+    :param inds: TInds
+    :param pheno:
+    :param covariances_picklefile: when true picklefiles with all covariances are written to a pickle file
+    :param cholesky_global_GRM_for_cor:
+    :param logfile:
+    :param outname:
+    :param limit_association_tests:
+    :return:
     """
 
-    @param population_structure: str prefix of covariance matrix files used for correcting for population structure (can be None)
-    @param covariances_picklefile:
-    @param trees:
-    @param covariance_obj:
-    @param AIM_methods:
-    @param window_ends:
-    @param window_starts:
-    @param window_size: if not specified, trees will be used
-    @param skip_first_tree: bool
-    @param inds: TInds
-    @param write_covariance_picklefiles: should picklefiles with all covariances be written to a pickle file
-    @param logfile:
-    @param outname:
-    @return:
-    """
     window_ends_copy = window_ends.copy()
     window_starts_copy = window_starts.copy()
     window_index = 0
@@ -493,7 +518,9 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                                                 phenotypes_obj=pheno,
                                                 outname=outname,
                                                 window_index=window_index,
-                                                covariances_picklefile=covariances_picklefile)
+                                                cholesky_global_GRM_for_cor=cholesky_global_GRM_for_cor,
+                                                covariances_picklefile=covariances_picklefile,
+                                                logfile=logfile)
 
             window_index += 1
             # log progress
@@ -546,7 +573,9 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                                                     outname=outname,
                                                     window_index=window_index,
                                                     phenotypes_obj=pheno,
-                                                    covariances_picklefile=covariances_picklefile)
+                                                    cholesky_global_GRM_for_cor=cholesky_global_GRM_for_cor,
+                                                    covariances_picklefile=covariances_picklefile,
+                                                    logfile=logfile)
 
                         if len(window_ends) == 1:  # that was the last window
                             break
@@ -579,147 +608,6 @@ def run_tree_based_covariance_testing(trees, covariance_obj, AIM_methods, window
                                             out=outname,
                                             phenotypes=pheno,
                                             logfile=logfile)
-
-
-def write_GCTA_command_file_mgrm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads, additional_gcta_params):
-    """
-    Write executable bash script for running association test with multiple random effects using GCTA
-
-    @param testing_method:
-    @param outname:
-    @param pheno_file:
-    @param outfile:
-    @param GCTA:
-    @param num_GCTA_threads:
-    @return:
-    """
-
-    if testing_method == "GCTA_REML":
-        gcta_string = GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out " \
-                      + outname + "_REML --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
-        if additional_gcta_params is not None:
-            for p in additional_gcta_params:
-                gcta_string += " --" + p
-        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
-    elif testing_method == "GCTA_HE":
-        gcta_string = GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "\
-                      + outname + "_HE --reml-lrt 1 --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
-        if additional_gcta_params is not None:
-            for p in additional_gcta_params:
-                gcta_string += " --" + p
-        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
-
-        # grep results
-        outfile.write("sed -n '2,6p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
-                      + outname + "_HE-CP_result.txt\n")
-        outfile.write("sed -n '9,13p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
-                      + outname + "_HE-SD_result.txt\n")
-
-
-def write_GCTA_command_file_mgrm_pca(testing_method, outname, pheno_file, outfile, num_eigenvectors,
-                                     population_structure_matrix, GCTA, num_GCTA_threads):
-    """
-    Write executable bash script for running association test with multiple random effects and fixed effects using GCTA
-
-    @param testing_method:
-    @param outname:
-    @param pheno_file:
-    @param outfile:
-    @param GCTA:
-    @param num_GCTA_threads:
-    @return:
-    """
-
-    outfile.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
-                  + outname + "> " + outname + "_tmp2.out\n\n")
-
-    if testing_method == "GCTA_REML":
-        outfile.write(GCTA + " --reml --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
-                      + outname + "_REML --reml-lrt 1 " + " --qcovar " + outname + ".eigenvec --threads " + str(
-            num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
-    elif testing_method == "GCTA_HE":
-        outfile.write(
-            GCTA + " --HEreg --mgrm " + outname + "_multi_grm.txt --pheno " + pheno_file + " --out "
-            + outname + "_HE --reml-lrt 1 " + " --qcovar " + outname + ".eigenvec --threads " + str(
-                num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
-        # grep results
-        outfile.write("sed -n '2,6p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
-                      + outname + "_HE-CP_result.txt\n")
-        outfile.write("sed -n '9,13p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\t\' > "
-                      + outname + "_HE-SD_result.txt\n")
-
-
-def write_GCTA_command_file_grm(testing_method, outname, pheno_file, outfile, GCTA, num_GCTA_threads, additional_gcta_params):
-    """
-    Write executable bash script for running association test with only the local eGRM as random effects using GCTA
-
-    @param testing_method:
-    @param outname:
-    @param pheno_file:
-    @param outfile:
-    @param GCTA:
-    @param num_GCTA_threads:
-    @return:
-    """
-    if testing_method == "GCTA_REML":
-        gcta_string = GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname\
-                      + "_REML --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
-        if additional_gcta_params is not None:
-            for p in additional_gcta_params:
-                gcta_string += " --" + p
-        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
-
-    elif testing_method == "GCTA_HE":
-        gcta_string = GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname \
-                      + "_HE --threads " + str(num_GCTA_threads) + " --reml-maxit 500 "
-        if additional_gcta_params is not None:
-            for p in additional_gcta_params:
-                gcta_string += " --" + p
-        outfile.write(gcta_string + " > " + outname + "_tmp.out\n")
-
-        # grep results
-        outfile.write("sed -n '2,4p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
-                      + outname + "_HE-CP_result.txt\n")
-        outfile.write("sed -n '7,9p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
-                      + outname + "_HE-SD_result.txt\n")
-    else:
-        raise ValueError("Unrecognized AIM testing method")
-
-
-def write_GCTA_command_file_grm_pca(testing_method, outname, pheno_file, outfile, num_eigenvectors,
-                                    population_structure_matrix, GCTA, num_GCTA_threads):
-    """
-    Write executable bash script for running association test with local eGRM as random effects and PCA of global
-    population structure matrix using GCTA
-
-    @param num_eigenvectors:
-    @param population_structure_matrix:
-    @param testing_method:
-    @param outname:
-    @param pheno_file:
-    @param outfile:
-    @param GCTA:
-    @param num_GCTA_threads:
-    @return:
-    """
-    outfile.write(GCTA + " --grm " + population_structure_matrix + " --pca " + str(num_eigenvectors) + " --out "
-                  + outname + "> " + outname + "_tmp2.out\n\n")
-
-    if testing_method == "GCTA_REML":
-        outfile.write(
-            GCTA + " --reml --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_REML" + " --qcovar " + outname + ".eigenvec --threads "
-            + str(num_GCTA_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
-    elif testing_method == "GCTA_HE":
-        outfile.write(
-            GCTA + " --HEreg --grm " + outname + " --pheno " + pheno_file + " --out " + outname + "_HE --qcovar " + outname + ".eigenvec "
-            + " --threads " + str(num_GCTA_threads) + " --reml-maxit 500 > " + outname + "_tmp.out\n")
-        # grep results
-        outfile.write("sed -n '2,4p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
-                      + outname + "_HE-CP_result.txt\n")
-        outfile.write("sed -n '7,9p' " + outname + "_" + testing_method + ".HEreg | unexpand -a | tr -s \'\\t\' > "
-                      + outname + "_HE-SD_result.txt\n")
-    else:
-        raise ValueError("Unknown testing method '" + str(testing_method) + "'")
 
 
 def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_size, trees_interval,
@@ -761,12 +649,6 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
         pheno.find_causal_trees(trees)
         pheno.find_causal_windows(window_ends=window_ends, window_starts=window_starts)
 
-    # write GCTA files and scripts
-    if args.population_structure:
-        with open(outname + '_multi_grm.txt', 'w') as f:
-            f.write(outname + '\n')
-            f.write(args.population_structure + '\n')
-
     pheno_file = args.out + "_phenotypes.phen"
     # if args.simulate_phenotypes:
     #     pheno_file = args.out + "_phenotypes.phen"
@@ -793,44 +675,53 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     logfile.info("- Running association tests")
 
     # write covariances to picklefile for later comparison?
-    covariances_picklefile = None
-    if args.write_covariance_picklefiles:
-        covariances_picklefile = open(outname + "_matrices_" + covariance_obj.covariance_type + ".pickle", "wb")
+    covariance_picklefiles = None
+    if args.covariance_picklefiles:
+        covariances_picklefiles = open(outname + "_matrices_" + covariance_obj.covariance_type + ".pickle", "wb")
+
+    cholesky_global_GRM_for_cor = None
+    if args.coreGREML_model:
+        global_GRM = cov.get_covariance_object("base")
+        global_GRM.read_gcta_format(args.population_structure_matrix, inds.ploidy)
+        global_GRM.calculate_cholesky_decomposition(ploidy=inds.ploidy, logfile=logfile)
+        cholesky_global_GRM_for_cor = global_GRM
+        cholesky_global_GRM_for_cor.forget_original_matrix()
 
     # variant based covariance
     if covariance == "GRM":
-        run_variant_based_covariance_testing(covariance_obj=covariance_obj,
-                                             AIM_methods=AIM_methods,
-                                             variants=variants,
-                                             window_ends=window_ends,
-                                             window_starts=window_starts,
-                                             num_tests=num_tests,
-                                             inds=inds,
-                                             covariances_picklefile=covariances_picklefile,
-                                             pheno=pheno,
-                                             logfile=logfile,
-                                             outname=outname,
-                                             population_structure=args.population_structure)
+        loop_windows_variant_based_covariance_testing(covariance_obj=covariance_obj,
+                                                      AIM_methods=AIM_methods,
+                                                      variants=variants,
+                                                      window_ends=window_ends,
+                                                      window_starts=window_starts,
+                                                      num_tests=num_tests,
+                                                      inds=inds,
+                                                      covariances_picklefile=covariance_picklefiles,
+                                                      cholesky_global_GRM_for_cor=cholesky_global_GRM_for_cor,
+                                                      pheno=pheno,
+                                                      logfile=logfile,
+                                                      outname=outname)
 
     # window based covariance (need to loop over trees)
     else:
-        run_tree_based_covariance_testing(trees=trees,
-                                          covariance_obj=covariance_obj,
-                                          AIM_methods=AIM_methods,
-                                          window_ends=window_ends,
-                                          window_starts=window_starts,
-                                          window_size=window_size,
-                                          inds=inds,
-                                          skip_first_tree=args.skip_first_tree,
-                                          covariances_picklefile=covariances_picklefile,
-                                          pheno=pheno,
-                                          logfile=logfile,
-                                          outname=outname,
-                                          limit_association_tests=args.limit_association_tests)
+        loop_windows_tree_based_covariance_testing(trees=trees,
+                                                   covariance_obj=covariance_obj,
+                                                   AIM_methods=AIM_methods,
+                                                   window_ends=window_ends,
+                                                   window_starts=window_starts,
+                                                   window_size=window_size,
+                                                   inds=inds,
+                                                   skip_first_tree=args.skip_first_tree,
+                                                   covariances_picklefile=covariance_picklefiles,
+                                                   cholesky_global_GRM_for_cor=cholesky_global_GRM_for_cor,
+                                                   pheno=pheno,
+                                                   logfile=logfile,
+                                                   outname=outname,
+                                                   limit_association_tests=args.limit_association_tests)
 
     # close covariance picklefiles
-    if args.write_covariance_picklefiles:
-        covariances_picklefile.close()
+    if args.covariance_picklefiles:
+        covariance_picklefiles.close()
 
     logfile.sub()
 

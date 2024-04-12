@@ -15,13 +15,14 @@ class TParameters:
 
     @staticmethod
     def initialize():
-        parser = argparse.ArgumentParser(description='Running association tests on variants and trees.')
+        parser = argparse.ArgumentParser(description='')
 
         # general arguments
         parser.add_argument('--task', required=True,
                             choices=['simulate', 'impute', 'associate', 'downsampleVariantsWriteShapeit',
                                      'ARGStatistics', 'getTreeAtPosition', 'simulateMoreMutations',
-                                     'covarianceCorrelations', 'simulatePhenotypes', 'makeTreeChunks'],
+                                     'covarianceCorrelations', 'simulatePhenotypes', 'makeTreeChunks',
+                                     'ascertainCaseControlSample'],
                             help='The task to be executed (simulate or associate)')
         parser.add_argument('--out', required=True, type=str,
                             help='Prefix of all output files')
@@ -48,7 +49,8 @@ class TParameters:
                             help="Ploidy of individuals. Haplotypes will be assigned to individuals in increasing order")
         parser.add_argument('--ploidy_ref', type=int, choices=[1, 2], default=2,
                             help="Ploidy of individuals. Haplotypes will be assigned to individuals in increasing order")
-
+        parser.add_argument('--chromosome', type=str, default="chr1",
+                            help="Chromosome number. Most of the time it's not important to set it")
         # limit data
         parser.add_argument('--min_allele_freq', type=float, default=0.0,
                             help="Minimum frequency an allele needs to have to be typed")
@@ -137,7 +139,7 @@ class TParameters:
         pty.add_argument('--pty_sd_beta_causal_mutations', type=str,
                          help="Std. dev. for betas of causal mutations if pty_sim_method is set to 'uniform', "
                               "'oneTree' or 'oneWindow'. If it can be converted to a float, betas will sampled from "
-                              "N(0, pty_sd_beta_causal_mutations). If set to 'standardized', betas will be sampled "
+                              "N(0, pty_sd_beta_causal_mutations). If set to 'freq_dependant', betas will be sampled "
                               "from N(0, [2 * f * (1 - f)]^{-0.5} * h2g / p), where h2g is the heritability of the "
                               "trait and p is the number of causal SNPs.")
         pty.add_argument('--pty_fixed_betas', nargs='+', type=float,
@@ -166,15 +168,23 @@ class TParameters:
         pty.add_argument('--add_1_to_half_of_inds', action='store_true',
                          help="Add 1 to half of all individuals (only makes sense when simulating with "
                               "sim_two_populations")
+        pty.add_argument('--population_disease_prevalence', type=float,
+                         help="The disease prevalence in the population. Specifying this parameter turns the "
+                              "quantitative phenotype into a liability score and considers the top x percent of "
+                              "individuals to have the disease")
+        pty.add_argument('--disease_status_file', type=str,
+                          help="A GCTA phen formatted file where the third column is disease status")
+        pty.add_argument('--sample_size', type=int,
+                          help="A GCTA phen formatted file where the third column is disease status")
 
         # run associations
         assoc = parser.add_argument_group('running association tests')
         assoc.add_argument('--ass_method', nargs='+', type=str,
                            help="Provide association method [AIM, GWAS] and for AIM covariance type [eGRM, GRM, "
                                 "scaled] with the following format: 'method:covariance'")
-        assoc.add_argument('--AIM_method', type=str, nargs='+',
-                           help="Use GCTA Haseman-Elston, GCTA REML, glimix REML, or any combination of these to test "
-                                "GRM for association")
+        assoc.add_argument("--AIM_method", type=str, nargs='+',
+                           help="Provide association algorithm to be used by AIM [GCTA_HE, GCTA_REML, glimix_REML] "
+                                "or any combination of these to test the local GRM for association")
         assoc.add_argument('--no_clean_up', action='store_true',
                            help="don't clean up temporary files created during association testing")
         assoc.add_argument('--test_only_tree_at', type=float,
@@ -194,27 +204,33 @@ class TParameters:
                            help="genetic map with columns for Position [bp], Rate [cM/Mb] and Map [cM]")
         assoc.add_argument('--ass_window_size', type=int,
                            help="window size for region-based association tests")
-        assoc.add_argument('--write_covariance_picklefiles', action='store_true',
-                           help="write covariances from association tests to picklefile")
+        # assoc.add_argument('--write_covariance_picklefiles', action='store_true',
+        #                    help="write covariances from association tests to picklefile")
         assoc.add_argument('--covariance_picklefiles', type=str, nargs='+',
                            help="calculate correlation between covariances along the genome (user must verify that "
                                 "windows have same coordinates)")
-        assoc.add_argument('--population_structure', type=str,
+        assoc.add_argument('--population_structure_matrix', type=str,
                            help="Prefix of covariance matrix in GCTA format used to correct for population structure")
         assoc.add_argument('--population_structure_pca_num_eigenvectors', type=int,
                            help="Correct for population structure with this number of PCA eigenvectors computed with "
                                 "gcta")
         assoc.add_argument('--PC_keep', type=int, nargs='+',
                            help="List of PCs to keep (1-based)")
-        assoc.add_argument('--do_all_stratification_correction', action='store_true',
+        assoc.add_argument('--global_GRM_and_PCs_model', action='store_true',
                            help="Correct for stratification with global GRM provided with '--population_strucure' and "
                                 "also with PCs")
+        assoc.add_argument('--coreGREML_model', action='store_true',
+                           help="Correct for stratification with global GRM provided with '--population_structure' and "
+                                "also the correlation between the local and global GRMs (this is the coreGREML model of "
+                                "Zhou et al. 2023)")
         assoc.add_argument('--GCTA', type=str, default="gcta-1.94.1-linux-kernel-3-x86_64/gcta-1.94.1",
                            help="path to GCTA executable")
         assoc.add_argument("--num_gcta_threads", type=int, default=2,
                            help="number of threads on which to run GCTA. Going from 2 to 8 roughly doubles the speed")
         assoc.add_argument("--additional_gcta_params", type=str, nargs='+',
                            help="additional arguments to be passed to GCTA")
+        assoc.add_argument("--additional_mtg2_params", type=str, nargs='+',
+                           help="additional arguments to be passed to mtg2")
         assoc.add_argument("--limit_association_tests", type=int, default=1000000000,
                            help="Limit number of association tests to be run. Applies to trees and windows (tree-based tests)")
 
