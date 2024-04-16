@@ -20,31 +20,45 @@ Creating conda environment
 
 The list of packages installed in my conda environment used to produce all results can be found here in this file: sycamore-package-list.txt. It should thus be possible to recreate my environment with the following command:
 
-    conda env create -n env_sycamore --file sycamore-package-list.txt
+    mamba env create -n env_sycamore --file sycamore-package-list.txt
     
 *Build environment from scratch*
 
 Build environment
 
-    conda env create -f sycamore_environment.yml
+    mamba env create -f sycamore_environment.yml
 
-Install tskit
+Make sure conda can access all packages in the environment by adding the location of the environment to your .bashrc file (not only in conda initialize section). In the case of mamba, this means adding the following line:
 
-    conda install -c conda-forge tskit
+    export PATH="/home/<username>/miniforge3/bin:$PATH"
 
-<!---
-Install limix_lmm
+(make sure to source the .bashrc file after doing this)
 
-    conda install -c conda-forge limix
--->
+Now, load the environment with 
+
+    mamba activate env_sycamore
 
 Install log indenter (I think there is no conda package)
 
     pip install python_log_indenter
 
+Install arg-needle
+
+    pip install arg-needle
+    
+<!---
+
+Install tskit
+
+    mamba install -c conda-forge tskit
+
+Install limix_lmm
+
+    mamba install -c conda-forge limix
+
 Install tsinfer
 
-    conda install -c conda-forge tsinfer 
+    mamba install -c conda-forge tsinfer 
  
 Install tsdate
 
@@ -52,20 +66,22 @@ Install tsdate
 
 Install stdpopsim
 
-    conda install -c conda-forge stdpopsim
+    mamba install -c conda-forge stdpopsim
 
 Install pandas_plink
 
-    conda install -c conda-forge pandas-plink or pip install pandas-plink
+    mamba install -c conda-forge pandas-plink or pip install pandas-plink
+    
+-->
 
-Make sure msprime uses the correct libgsl by uninstalling the conda version and then installing it with pip
 
-    conda uninstall msprime
-    pip install msprime
+Make sure msprime uses the correct libgsl by uninstalling the conda version and then installing it with pip 
 
     mamba uninstall msprime
     pip install msprime
-    mamba install -c conda-forge tsinfer
+
+Reinstall the missing packages that were uninstalled when uninstalling msprime
+
     mamba install -c conda-forge stdpopsim --only-deps
     mamba install -c conda-forge stdpopsim
 
@@ -75,11 +91,7 @@ Install plinkFile library in R if you want to write covariance matrices in .grm.
     install.packages("plinkFile")
 
 
-Make sure conda can access all packages by adding 
 
-    export PATH="/home/<username>/anaconda3/bin:$PATH"
-
-to .bashrc file (not only in conda initialize section)
 
 Parameters
 -----------------

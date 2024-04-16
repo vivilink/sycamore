@@ -56,7 +56,7 @@ do_annotation <- function(rs373863828_causal, rs12513649_proxy, other_GWAS){
   # axes
   label_pos <- seq(region_start, region_end, 500000)
   axis(1, at=label_pos, labels=label_pos / 1000000, las=1)
-  title(ylab=expression("-log"[10]*"(p)"), line=2)
+  title(ylab=expression("-log"[10]*"(p value)"), line=2)
   title(xlab="genomic position [Mb]", line=2.2)
 }
 
@@ -104,9 +104,10 @@ df_GRM_PC100 <- remove_regions(df_results=df_GRM_PC100, regions=regions)
 df_GRM_PC100 <- remove_regions(df_results=df_GRM_PC100, regions=regions_centro)
 
 #plot
-pdf(paste("CREBRF.pdf", sep=''), width=8, height=4)
-#png(paste("CREBRF_PC", num_PCs, "_GWAS.png", sep=''), width=8, height=4, units="in", res=1200)
-  
+# pdf(paste("CREBRF.pdf", sep=''), width=8, height=4)
+png(paste("CREBRF_tmp.png", sep=''), width=8, height=4, units="in", res=600)
+
+
 par(mfrow=c(1,1))
 
 plot_association(df=df_BLUP_res, df_GWAS=df_GWAS_GRM, df_GRM=df_GRM_residuals)
