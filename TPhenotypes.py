@@ -183,7 +183,9 @@ def make_phenotypes(args: tparams, trees: tskit.trees, sample_ids, inds: tind, p
             # TODO: maybe restrict tree to inds for which we have phenotypes here
         else:
             pheno = Phenotypes()
-            pheno.initialize_from_file(filename=args.pheno_file, inds=inds, out=args.out, logfile=logfile)
+            pheno.initialize_from_file(filename=args.pheno_file, inds=inds, out=args.out, logfile=logfile,
+                                       num_phenotypes=args.num_phenotypes,
+                                       phenotype_number_of_interest=args.phenotype_number_of_interest)
 
     return pheno
 
@@ -380,12 +382,15 @@ class Phenotypes:
 
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 
-    def initialize_from_file(self, filename, out, inds, logfile):
+    def initialize_from_file(self, filename, out, inds, logfile, num_phenotypes=1, phenotype_number_of_interest=1):
         if filename is None:
             raise ValueError("Provide file with phenotype information in gcta .phen format using 'pheno_file' or "
                              "simulate phenotypes using 'simulate_phenotypes'")
         logfile.info("- Reading phenotype information from " + filename)
-        pheno_df = pd.read_csv(filename, names=["0", "ID", "phenotype"], sep=' ')
+        header = ["0", "ID"]
+        for i in range(num_phenotypes):
+            header.append("phenotype" + str(i))
+        pheno_df = pd.read_csv(filename, names=header, sep=' ')
 
         missing_in_phenotypes, added_in_phenotypes = find_missing_individuals(inds_tree=inds.names,
                                                                               inds_phenotype=pheno_df['ID'])
@@ -408,7 +413,7 @@ class Phenotypes:
 
         self._num_inds = len(pheno_df['ID'])
         self._sample_IDs = np.array(pheno_df['ID'])
-        self._y = np.array(pheno_df['phenotype'])
+        self._y = np.array(pheno_df['phenotype' + str(phenotype_number_of_interest)])
 
     def scale(self):
         self._y = (self._y - np.mean(self._y)) / np.std(self._y)
@@ -559,7 +564,7 @@ class PhenotypesSimulated(Phenotypes):
     def genetic_variance(self, genetic_variance: float):
         self._genetic_variance = genetic_variance.find_missing_individuals
 
-    def simulate(self, args: tparams, r: rg, logfile, variants_orig: tvar, inds: tind, trees: tskit, trees_orig: tskit, plots_dir: str, samp_ids: tskit.iterator):
+    def simulate(self, args: tparams, r: rg, logfile, variants_orig: tvar, inds: tind, trees: tskit, trees_orig: tskit, plots_dir: str, samp_ids: list):
         """
         Simulate phenotypes. If this is run on simulated trees for which the variants have not yet been downsampled
         (or 'typed'), trees and trees_orig can both be the original simulated trees. variants_orig is then the variants
@@ -626,7 +631,7 @@ class PhenotypesSimulated(Phenotypes):
         self.filled = True
 
     def simulate_trait_architecture(self, args: tparams, r: rg, logfile: IndentedLoggerAdapter, variants_orig: tvar,
-                                    inds: tind, trees: tskit, trees_orig: tskit, plots_dir: str, samp_ids: tskit.iterator):
+                                    inds: tind, trees: tskit, trees_orig: tskit, plots_dir: str, samp_ids: list):
         """
         Simulate phenotype's genetic architecture
         """
@@ -1001,7 +1006,7 @@ class PhenotypesSimulated(Phenotypes):
     def simulate_causal_region(self, trees: tskit, variants: tvar, inds, left_bound: float, right_bound: float,
                                causal_mutations_effect_size_def: str, local_heritability, prop_causal_mutations: float,
                                random, min_allele_freq_causal: float,
-                               max_allele_freq_causal, logfile, allow_typed_causal_variants: bool, samp_ids: tskit.iterator):
+                               max_allele_freq_causal, logfile, allow_typed_causal_variants: bool, samp_ids: list):
         """
         Simulate causal effect sizes for variants within a region
         :param samp_ids:

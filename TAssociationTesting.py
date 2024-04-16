@@ -89,7 +89,6 @@ class TAssociationTestingGWAS(TAssociationTesting):
         i = 0
 
         for var in trees.variants(samples=samp_ids):
-            # print("variants.info.loc[variants.info['var_index'] == var.site.id, 'typed']", len(variants.info.loc[variants.info['var_index'] == var.site.id, 'typed']))
             if variants.info.loc[variants.info['var_index'] == var.site.id, 'typed'].any():
                 if inds.ploidy == 2:
                     genotypes = inds.get_diploid_genotypes(var.genotypes)
@@ -105,24 +104,6 @@ class TAssociationTestingGWAS(TAssociationTesting):
                 self.p_values[i] = PVALUE
                 i += 1
         logfile.info("- Ran OLS for " + str(variants.num_typed) + " variants")
-
-
-        # for v, variant in enumerate(variants.variants):
-        #     if variants.info.iloc[v]['typed']:
-        #         if inds.ploidy == 2:
-        #             genotypes = inds.get_diploid_genotypes(variant.genotypes)
-        #         else:
-        #             genotypes = variant.genotypes
-        #         #
-        #         # if len(genotypes) != len(phenotypes.y):
-        #         #     # TODO: remove this after debugging on real data
-        #         #     raise ValueError("Genotypes length (" + str(len(genotypes)) + ") is not same as phenotypes length ("
-        #         #                      + str(len(phenotypes.y)) + ")")
-        #
-        #         PVALUE = af.OLS(genotypes=genotypes, phenotypes=phenotypes.y)
-        #         self.p_values[i] = PVALUE
-        #         i += 1
-        # logfile.info("- Ran OLS for " + str(variants.num_typed) + " variants")
 
     def test_with_positions_from_X_matrix(self, X, positions, variants_sample, phenotypes, logfile):
         # counter respective to typed variants
