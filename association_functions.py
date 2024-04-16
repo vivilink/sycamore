@@ -66,17 +66,9 @@ def run_association_testing(args, random, logfile):
     inds = tind.Individuals(ploidy=args.ploidy, num_haplotypes=N, relate_sample_names_file=args.relate_sample_names,
                             logfile=logfile)
 
-    # --------------------------------
-    # create diploids and variants
-    # --------------------------------
-
-    # TODO: trees_orig and variants_orig should be initialized at the same time, e.g. together in one function. We
-    #  should not have 2 tree files and 2 variant files just floating around separately. Maybe TTrees class could
-    #  contain the tskit sequence and variants
-
-    # TODO: find way to save variants in their tskit format without needing to read the original tree. I only need
-    #  original tree in association task for this. It would be nice if the only tree that needs to be read would be
-    #  estimated tree
+    # -----------------------------------------
+    # create variants object from tskit trees
+    # -----------------------------------------
 
     #  do not provide variant file here but have it estimated from tree, otherwise variants and tree
     #  won't match (tree only contains typed variants). The variant file is only useful for simulating phenotypes to

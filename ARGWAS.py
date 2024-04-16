@@ -72,8 +72,8 @@ logger.info("- randomGenerator seed is set to " + str(r.random.get_state()[1][0]
 # Simulate
 # -----------------------
 
-if args.task == "simulate":
-    logger.info("- TASK: simulate")
+if args.task == "simulateTrees":
+    logger.info("- TASK: simulateTrees")
 
     if args.N is None:
         raise ValueError("Must provide sample size with argument '--N'")
@@ -214,6 +214,9 @@ if args.task == "downsampleVariantsWriteShapeit":
 # -----------------------
 if args.task == "impute":
     logger.info("- TASK: Impute")
+
+    logger.warning("This task is not maintained and might not work!")
+
     if args.imputation_ref_panel_tree_file is None:
         raise ValueError("Most provide reference panel tree file using --imputation_ref_panel_tree_file")
 
@@ -288,12 +291,6 @@ if args.task == "simulatePhenotypes":
                                random=r,
                                logfile=logger)
 
-    if args.population_disease_prevalence:
-        logger.add()
-        logger.info(
-            "- Adding binary disease status with a population prevalence of " + str(args.population_disease_prevalence))
-        pheno.add_disease_status(prevalence=args.population_disease_prevalence, logfile=logger)
-        pheno.write_to_file_gcta_eGRM_disease_status(inds=inds, out=args.out, logfile=logger)
 
     pheno.write_to_file_gcta_eGRM(inds=inds, out=args.out, logfile=logger)
     logger.sub()

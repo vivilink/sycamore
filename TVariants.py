@@ -141,7 +141,7 @@ class TVariants:
 
     def write_genetic_map_argNeedle(self, out, logfile, chrom):
         """
-        according to .map format here
+        according to .map format here XX
         @param out: str
         @param logfile:
         @return:

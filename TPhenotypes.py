@@ -559,16 +559,26 @@ class PhenotypesSimulated(Phenotypes):
     def genetic_variance(self, genetic_variance: float):
         self._genetic_variance = genetic_variance.find_missing_individuals
 
-    def simulate(self, args, r, logfile, variants_orig, inds, trees: tskit, trees_orig: tskit, plots_dir, samp_ids):
+    def simulate(self, args: tparams, r: rg, logfile, variants_orig: tvar, inds: tind, trees: tskit, trees_orig: tskit, plots_dir: str, samp_ids: tskit.iterator):
         """
-        Simulate phenotypes
-        :param trees_orig:
+        Simulate phenotypes. If this is run on simulated trees for which the variants have not yet been downsampled
+        (or 'typed'), trees and trees_orig can both be the original simulated trees. variants_orig is then the variants
+        file produced when simulating. The downsampling will then remove some of the causal variants, so
+        the causal variants will automatically be a mixture of typed and untyped variants.
+
+        If you want to have a handle on how many causal variants are typed or untyped, you rely on the random
+        downsampling process to decide which variants are typed. You must then define trees_orig to be the original
+        simulated trees, trees to be the trees estimated based on the downsampled typed variants, and variants_orig
+        to be the variants file that is produced by task 'downsampleVariantsWriteShapeit'
+
+        :param samp_ids: output of tskit.sample() function. Necessary for tskit to know which variants are in the variants iterator
+        :param trees_orig: the simulated ARG
         :param args: TArgs
         :param r: TRandomGenerator
         :param logfile: IndentedLoggerAdapter
-        :param variants_orig: TVariants
+        :param variants_orig: the original variants file produced during ARG simulation, or the result of task 'downsampleVariantsWriteShapeit'. it provides 'typed' status information of variants.
         :param inds: TInds
-        :param trees: tskit.TreeSequence
+        :param trees: the simulated or estimated ARG
         :param plots_dir: str
         :return:
         """
@@ -616,7 +626,7 @@ class PhenotypesSimulated(Phenotypes):
         self.filled = True
 
     def simulate_trait_architecture(self, args: tparams, r: rg, logfile: IndentedLoggerAdapter, variants_orig: tvar,
-                                    inds: tind, trees: tskit, trees_orig: tskit, plots_dir: str, samp_ids):
+                                    inds: tind, trees: tskit, trees_orig: tskit, plots_dir: str, samp_ids: tskit.iterator):
         """
         Simulate phenotype's genetic architecture
         """
@@ -991,9 +1001,10 @@ class PhenotypesSimulated(Phenotypes):
     def simulate_causal_region(self, trees: tskit, variants: tvar, inds, left_bound: float, right_bound: float,
                                causal_mutations_effect_size_def: str, local_heritability, prop_causal_mutations: float,
                                random, min_allele_freq_causal: float,
-                               max_allele_freq_causal, logfile, allow_typed_causal_variants: bool, samp_ids):
+                               max_allele_freq_causal, logfile, allow_typed_causal_variants: bool, samp_ids: tskit.iterator):
         """
         Simulate causal effect sizes for variants within a region
+        :param samp_ids:
         :param trees:
         :param variants:
         :param inds:

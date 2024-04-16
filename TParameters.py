@@ -19,7 +19,7 @@ class TParameters:
 
         # general arguments
         parser.add_argument('--task', required=True,
-                            choices=['simulate', 'impute', 'associate', 'downsampleVariantsWriteShapeit',
+                            choices=['simulateTrees', 'impute', 'associate', 'downsampleVariantsWriteShapeit',
                                      'ARGStatistics', 'getTreeAtPosition', 'simulateMoreMutations',
                                      'covarianceCorrelations', 'simulatePhenotypes', 'makeTreeChunks',
                                      'transformToBinaryPhenotype', 'ascertainSampleBinaryPhenotype'],
