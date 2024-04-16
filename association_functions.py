@@ -110,6 +110,7 @@ def run_association_testing(args, random, logfile):
 
         if method == "GWAS":
             run_association_GWAS(trees=trees,
+                                 samp_ids=sample_ids,
                                  inds=inds,
                                  variants=variants,
                                  pheno=pheno,
@@ -170,7 +171,7 @@ def OLS(genotypes, phenotypes):
     return PVALUE
 
 
-def run_association_GWAS(trees, inds, variants: tvar, pheno: pt, args: TParameters, logfile):
+def run_association_GWAS(trees, samp_ids, inds, variants: tvar, pheno: pt, args: TParameters, logfile):
     outname = args.out + "_GWAS"
 
     if args.imputation_ref_panel_tree_file is not None:
@@ -216,7 +217,7 @@ def run_association_GWAS(trees, inds, variants: tvar, pheno: pt, args: TParamete
         logfile.info("- Using genotypes from tree file for GWAS")
         # run association tests
         GWAS = at.TAssociationTestingGWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
-        GWAS.test_with_variants_object(variants=variants, phenotypes=pheno, inds=inds, logfile=logfile)
+        GWAS.test_with_variants_object(trees=trees, samp_ids=samp_ids, variants=variants, phenotypes=pheno, inds=inds, logfile=logfile)
         GWAS.write_to_file(variants, outname, logfile)
         # GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
 
