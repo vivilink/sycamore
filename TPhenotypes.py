@@ -126,6 +126,9 @@ def ascertain_sample(pheno_file: str, sample_size: int, sample_prevalence: float
         for row in random_rows:
             pheno_file.iloc[row, pheno_column] = -9
 
+    # keep only lines without missing phenotype
+    pheno_file = pheno_file[pheno_file.iloc[:, pheno_column] != -9]
+
     # write
     logger.info(
         "- Writing ascertained sample's disease status to '" + out + "_disease_status_ascertained.phen'")
@@ -442,7 +445,7 @@ class PhenotypesBMI(Phenotypes):
     def __init__(self):
         super().__init__()
 
-    def initialize_from_file(self, filename, out, inds, logfile):
+    def initialize_from_file(self, filename, out, inds, logfile, num_phenotypes=1, phenotype_number_of_interest=1):
         if filename is None:
             raise ValueError("Provide file with BMI phenotype information using 'filename'")
         logfile.info("- Reading BMI phenotype information from " + filename)
