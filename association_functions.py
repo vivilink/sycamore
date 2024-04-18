@@ -167,7 +167,7 @@ def OLS(genotypes, phenotypes):
 
     genotypes_test = sm.tools.add_constant(genotypes)
     # phenotypes = np.delete(phenotypes, np.isnan(phenotypes))
-    PVALUE = sm.OLS(phenotypes, genotypes_test, missing='drop').fit().pvalues[1]
+    PVALUE = sm.OLS(phenotypes, genotypes_test, missing='drop').fit().pvalues.iloc[1]
     return PVALUE
 
 

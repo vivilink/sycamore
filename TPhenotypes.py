@@ -388,12 +388,14 @@ class Phenotypes:
                              "simulate phenotypes using 'simulate_phenotypes'")
         logfile.info("- Reading phenotype information from " + filename)
         header = ["0", "ID"]
-        for i in range(num_phenotypes):
+        for i in range(1, num_phenotypes + 1):
             header.append("phenotype" + str(i))
         pheno_df = pd.read_csv(filename, names=header, sep=' ')
 
         missing_in_phenotypes, added_in_phenotypes = find_missing_individuals(inds_tree=inds.names,
                                                                               inds_phenotype=pheno_df['ID'])
+        if len(missing_in_phenotypes) == len(inds.names):
+            raise ValueError("There are no individual names in common between the ARG and phenotype file")
         logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
                                                                         "and " + str(
             len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
