@@ -96,7 +96,7 @@ class TTrees:
             extract[i * 2] = haplotypes[0]
             extract[i * 2 + 1] = haplotypes[1]
 
-        self.trees.simplify(samples=extract, filter_nodes=True, filter_individuals=True)
+        self.trees = self.trees.simplify(samples=extract)
 
         sample_ids = self.trees.samples()
         N = len(sample_ids)
