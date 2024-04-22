@@ -11,7 +11,7 @@ import numpy as np
 
 
 class Individuals:
-    def __init__(self, ploidy:int, num_haplotypes:int, logfile, relate_sample_names_file):
+    def __init__(self, ploidy: int, num_haplotypes: int, logfile, relate_sample_names_file):
         """
         @param ploidy:
         @param num_haplotypes:

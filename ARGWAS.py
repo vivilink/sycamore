@@ -175,12 +175,41 @@ if args.task == "makeTreeChunks":
                     + " to " + outname)
 
 # -----------------------
+# Downsample individuals
+# -----------------------
+if args.task == "removeUnsampledInds":
+    logger.info("- TASK: Downsampling variants")
+
+    if args.pheno_file is None:
+        raise ValueError("Must provide phen file with sampled individuals using 'pheno_file'")
+    if args.tree_file is None:
+        raise ValueError("Must provide ARG file using 'tree_file'")
+
+    trees_object = tt.TTrees(tree_file=args.tree_file,
+                             trees_interval=args.trees_interval,
+                             trees_interval_start=args.trees_interval_start,
+                             trees_interval_end=args.trees_interval_end,
+                             skip_first_tree=args.skip_first_tree,
+                             logfile=logger)
+    sample_ids = trees_object.trees.samples()
+    N = len(sample_ids)
+
+    inds = tind.Individuals(ploidy=args.ploidy,
+                            num_haplotypes=N,
+                            relate_sample_names_file=args.relate_sample_names,
+                            logfile=logger)
+
+    trees_object.write_ARG_for_sample(pheno_file=args.pheno_file, inds=inds, out=args.out, logfile=logger)
+
+
+# -----------------------
 # Downsample variants
 # -----------------------
 if args.task == "downsampleVariantsWriteShapeit":
+    logger.info("- TASK: Downsampling variants")
+
     if args.prop_typed_variants is None:
         raise ValueError("Must provide downsampling probability to task 'downsampleVariantsWriteShapeit'")
-    logger.info("- TASK: Downsampling variants")
     trees_object = tt.TTrees(tree_file=args.tree_file,
                              trees_interval=args.trees_interval,
                              trees_interval_start=args.trees_interval_start,
@@ -204,7 +233,8 @@ if args.task == "downsampleVariantsWriteShapeit":
                                       args.prop_typed_variants, args.pos_float, r, logger)
     # variants = tvar.TVariantsFiltered(trees, samp_ids, 0.01, 1, 0.5, r)
     variants.write_variant_info(args.out, logger)
-    variants.write_haps(args.out, inds, args.chromosome, logger)
+    variants.write_haps(tree_object=trees_object, out=args.out, inds=inds, chrom=args.chromosome, samp_ids=sample_ids,
+                        logfile=logger)
 
     variants.write_genetic_map_relate(out=args.out, logfile=logger)
     variants.write_genetic_map_argNeedle(out=args.out, logfile=logger, chrom=args.chromosome)

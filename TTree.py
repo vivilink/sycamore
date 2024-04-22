@@ -8,11 +8,14 @@ Created on Tue Sep  7 17:43:29 2021
 import numpy as np
 import pandas as pd
 import tskit
+import re
 import TCovariance
+import TIndividuals as tind
 from egrm import varGRM_C
 from egrm import egrm_one_tree_no_normalization_C
 from arg_needle_lib import deserialize_arg
 from arg_needle_lib import arg_to_tskit
+from python_log_indenter import IndentedLoggerAdapter
 
 # ---------------------
 # read tree file
@@ -69,6 +72,37 @@ class TTrees:
         trees_extract = TTrees.remove_monomorphic(trees_extract)
 
         return trees_extract, trees_interval
+
+    def write_ARG_for_sample(self, pheno_file: str, inds: tind, out: str, logfile: IndentedLoggerAdapter):
+        """
+        Write ARG containing only individuals in pheno file. Assumes that individual names contain a number that
+        correspond to their order in the tree (the first two haplotypes of the ARG belong to individual 0, and so on,
+        see constructor of TIndividuals)
+
+        :param out:
+        :param logfile:
+        :param inds:
+        :param pheno_file:
+        :return:
+        """
+
+        pheno_file = pd.read_csv(pheno_file, delim_whitespace=True, header=None)
+        samples = pheno_file.iloc[:, 1]
+        extract = np.empty(samples.shape[0] * 2, dtype=int)
+        for i, item in enumerate(samples):
+            match = re.search(r'\d+', item)
+            number = int(match.group())
+            haplotypes = inds.get_haplotypes(number)
+            extract[i * 2] = haplotypes[0]
+            extract[i * 2 + 1] = haplotypes[1]
+
+        self.trees.simplify(samples=extract, filter_nodes=True, filter_individuals=True)
+
+        sample_ids = self.trees.samples()
+        N = len(sample_ids)
+
+        self.trees.dump(out + "_ascertained.trees")
+        logfile.info("- Wrote ascertained trees with " + str(N) + " haplotypes to " + out + "_ascertained.trees.")
 
     def remove_border_trees_if_empty(self, skip_first_tree):
         """
