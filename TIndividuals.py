@@ -91,7 +91,7 @@ class Individuals:
     def get_individual(self, haplotype):
         if haplotype > max(self._ind_assignment['haplotype']) or haplotype < min(self._ind_assignment['haplotype']):
             raise ValueError("Haplotype out of bounds")
-        return (self._ind_assignment['individual'][haplotype])['individual']
+        return self._ind_assignment['individual'][haplotype]
 
     def get_haplotypes(self, individual):
         if individual > self._num_inds or individual < 0:

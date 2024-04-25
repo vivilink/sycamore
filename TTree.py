@@ -73,6 +73,21 @@ class TTrees:
 
         return trees_extract, trees_interval
 
+    def add_inds_to_nodes_table(self, inds: tind):
+        """
+
+        :param inds:
+        :return:
+        """
+
+        # create copy of tskit tables
+        new_tables = self.trees.dump_tables()
+        sample_indeces = np.where(new_tables.nodes.flags == 1)[0]
+        for node_i in sample_indeces:
+            individual = inds.get_individual(int(node_i))
+            replacement_row = new_tables.nodes[node_i].replace(individual=individual)
+            new_tables.nodes[node_i] = replacement_row
+
     def write_ARG_for_sample(self, pheno_file: str, inds: tind, out: str, logfile: IndentedLoggerAdapter):
         """
         Write ARG containing only individuals in pheno file. Assumes that individual names contain a number that
@@ -85,6 +100,10 @@ class TTrees:
         :param pheno_file:
         :return:
         """
+
+        self.add_inds_to_nodes_table(inds=inds)
+
+        print(sum(self.trees.tables.nodes.flags == 1))
 
         pheno_file = pd.read_csv(pheno_file, delim_whitespace=True, header=None)
         samples = pheno_file.iloc[:, 1]
