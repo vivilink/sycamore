@@ -175,6 +175,20 @@ if args.task == "makeTreeChunks":
                     + " to " + outname)
 
 # -----------------------
+# Print tables
+# -----------------------
+if args.task == "printARGTables":
+    logger.info("- TASK: Printing tskit tables for ARG")
+    trees_object = tt.TTrees(tree_file=args.tree_file,
+                             trees_interval=args.trees_interval,
+                             trees_interval_start=args.trees_interval_start,
+                             trees_interval_end=args.trees_interval_end,
+                             skip_first_tree=args.skip_first_tree,
+                             logfile=logger)
+
+    trees_object.print_ARG_tables()
+
+# -----------------------
 # Downsample individuals
 # -----------------------
 if args.task == "removeUnsampledInds":

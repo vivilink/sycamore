@@ -17,6 +17,7 @@ from arg_needle_lib import deserialize_arg
 from arg_needle_lib import arg_to_tskit
 from python_log_indenter import IndentedLoggerAdapter
 
+
 # ---------------------
 # read tree file
 # ---------------------
@@ -65,20 +66,34 @@ class TTrees:
         if trees_interval != [0, trees_full.sequence_length]:
             logfile.info(
                 "- Extracting trees overlapping the following interval: " + str(trees_interval))
-            trees_extract = trees_full.keep_intervals([trees_interval], simplify=True)
+            trees_extract = trees_full.keep_intervals([trees_interval], simplify=False)
         else:
-            trees_extract = trees_full.simplify()
+            # trees_extract = trees_full.simplify()
+            trees_extract = trees_full
 
         trees_extract = TTrees.remove_monomorphic(trees_extract)
 
         return trees_extract, trees_interval
 
-    def add_inds_to_nodes_table(self, inds: tind):
+    def print_ARG_tables(self):
+        """
+
+        :return:
+        """
+
+        print("nodes table\n", self.trees.tables.nodes)
+        print("individuals table\n", self.trees.tables.individuals)
+        sample_ids = self.trees.samples()
+        print("sample_ids", sample_ids)
+
+    def add_inds_to_nodes_table(self, inds: tind, logfile: IndentedLoggerAdapter):
         """
 
         :param inds:
         :return:
         """
+
+        logfile.info("- Adding individual information to trees")
 
         # create copy of tskit tables
         new_tables = self.trees.dump_tables()
@@ -87,6 +102,15 @@ class TTrees:
             individual = inds.get_individual(int(node_i))
             replacement_row = new_tables.nodes[node_i].replace(individual=individual)
             new_tables.nodes[node_i] = replacement_row
+
+        for i in range(inds.num_inds):
+            new_tables.individuals.add_row()
+
+        new_tables.sort()
+        altered_trees = new_tables.tree_sequence()
+        # altered_trees.dump(out + "_altered.trees")
+
+        self.trees = altered_trees
 
     def write_ARG_for_sample(self, pheno_file: str, inds: tind, out: str, logfile: IndentedLoggerAdapter):
         """
@@ -101,9 +125,7 @@ class TTrees:
         :return:
         """
 
-        self.add_inds_to_nodes_table(inds=inds)
-
-        print(sum(self.trees.tables.nodes.flags == 1))
+        # self.add_inds_to_nodes_table(inds=inds, logfile=logfile)
 
         pheno_file = pd.read_csv(pheno_file, delim_whitespace=True, header=None)
         samples = pheno_file.iloc[:, 1]
@@ -115,13 +137,26 @@ class TTrees:
             extract[i * 2] = haplotypes[0]
             extract[i * 2 + 1] = haplotypes[1]
 
-        self.trees = self.trees.simplify(samples=extract)
+        nodes_flags = np.zeros(self.trees.num_nodes, dtype=np.uint32)
+        nodes_flags[extract] = 1
+
+        # create copy of tskit tables
+        new_tables = self.trees.dump_tables()
+        new_tables.nodes.flags = nodes_flags
+        new_tables.sort()
+        altered_trees = new_tables.tree_sequence()
+        self.trees = altered_trees
+
+        # self.trees = self.trees.simplify(samples=extract, filter_nodes=False, filter_individuals=False, update_sample_flags=False)
 
         sample_ids = self.trees.samples()
+        # print("sample_ids", sample_ids)
         N = len(sample_ids)
+        # print("new_tables.nodes", self.trees.tables.nodes)
+        # print("new_tables.individuals", self.trees.tables.individuals)
 
         self.trees.dump(out + "_ascertained.trees")
-        logfile.info("- Wrote ascertained trees with " + str(N) + " haplotypes to " + out + "_ascertained.trees.")
+        logfile.info("- Wrote ascertained trees with " + str(N) + " haplotypes to " + out + "_ascertained.trees")
 
     def remove_border_trees_if_empty(self, skip_first_tree):
         """
