@@ -397,7 +397,7 @@ class Phenotypes:
 
         missing_in_phenotypes, added_in_phenotypes = find_missing_individuals(inds_tree=inds.names,
                                                                               inds_phenotype=pheno_df['ID'])
-        if len(missing_in_phenotypes) == len(inds.names):
+        if len(missing_in_phenotypes) == len(inds.names) or len(added_in_phenotypes) == len(inds.names):
             raise ValueError("There are no individual names in common between the ARG and phenotype file")
         logfile.info("- There are " + str(len(missing_in_phenotypes)) + " individuals missing from the phenotypes file "
                                                                         "and " + str(

@@ -64,6 +64,7 @@ def run_association_testing(args, random, logfile):
     sample_ids = trees.samples()
     N = len(sample_ids)
     inds = tind.Individuals(ploidy=args.ploidy, num_haplotypes=N, relate_sample_names_file=args.relate_sample_names,
+                            phenotype_sample_file=args.pheno_file,
                             logfile=logfile)
 
     # -----------------------------------------

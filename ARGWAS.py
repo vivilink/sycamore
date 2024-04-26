@@ -211,6 +211,7 @@ if args.task == "removeUnsampledInds":
     inds = tind.Individuals(ploidy=args.ploidy,
                             num_haplotypes=N,
                             relate_sample_names_file=args.relate_sample_names,
+                            phenotype_sample_file=args.pheno_file,
                             logfile=logger)
 
     trees_object.write_ARG_for_sample(pheno_file=args.pheno_file, inds=inds, out=args.out, logfile=logger)
@@ -239,6 +240,7 @@ if args.task == "downsampleVariantsWriteShapeit":
     inds = tind.Individuals(ploidy=args.ploidy,
                             num_haplotypes=N,
                             relate_sample_names_file=args.relate_sample_names,
+                            phenotype_sample_file=args.pheno_file,
                             logfile=logger)
     inds.write_shapeit2_relate(args.out, logger)
     inds.write_sample_argNeedle(args.out, logger)
@@ -280,6 +282,7 @@ if args.task == "impute":
     inds = tind.Individuals(ploidy=args.ploidy,
                             num_haplotypes=N,
                             relate_sample_names_file=args.relate_sample_names,
+                            phenotype_sample_file=args.pheno_file,
                             logfile=logger)
     variants = tvar.TVariantsFiltered(tskit_object=trees_object, samp_ids=sample_ids,
                                       min_allele_freq=args.min_allele_freq,
@@ -325,6 +328,7 @@ if args.task == "simulatePhenotypes":
     #     os.mkdir(plots_dir)
     N = len(sample_ids)
     inds = tind.Individuals(ploidy=args.ploidy, num_haplotypes=N, relate_sample_names_file=args.relate_sample_names,
+                            phenotype_sample_file=args.pheno_file,
                             logfile=logger)
 
     pheno = pt.make_phenotypes(args=args,

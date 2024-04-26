@@ -11,8 +11,9 @@ import numpy as np
 
 
 class Individuals:
-    def __init__(self, ploidy: int, num_haplotypes: int, logfile, relate_sample_names_file):
+    def __init__(self, ploidy: int, num_haplotypes: int, logfile, relate_sample_names_file, phenotype_sample_file):
         """
+        Initialize individuals. NAmes come either from relate file, from phen file or are generated automatically
         @param ploidy:
         @param num_haplotypes:
         @param logfile:
@@ -39,14 +40,24 @@ class Individuals:
             if i % 2 == 0:
                 assignment += 1
             self._ind_assignment['individual'][i] = assignment
-        if relate_sample_names_file is None:
-            self._names = np.array(["id_" + str(i) for i in np.arange(0, self._num_inds)])
-        else:
+        if relate_sample_names_file:
             names_in_file = pd.read_csv(relate_sample_names_file, sep=' ').iloc[1:, :]
             if len(names_in_file['ID_1']) != self._num_inds:
                 raise ValueError("There are " + str(self._num_inds) + " haplotypes in tree but " +
                                  str(len(names_in_file['ID_1'])) + " in " + relate_sample_names_file)
             self._names = np.array(names_in_file['ID_1'])
+        elif phenotype_sample_file:
+            pheno_df = pd.read_csv(phenotype_sample_file, sep=' ')
+            num_phenotypes = pheno_df.shape[1] - 2
+            header = ["pop", "ID"]
+            for i in range(1, num_phenotypes + 1):
+                header.append("phenotype" + str(i))
+            pheno_df.columns = header
+            self._names = np.array(pheno_df['ID'])
+
+        else:
+            self._names = np.array(["id_" + str(i) for i in np.arange(0, self._num_inds)])
+
 
     @property
     def ploidy(self):

@@ -125,7 +125,7 @@ class TTrees:
         :return:
         """
 
-        # self.add_inds_to_nodes_table(inds=inds, logfile=logfile)
+        self.add_inds_to_nodes_table(inds=inds, logfile=logfile)
 
         pheno_file = pd.read_csv(pheno_file, delim_whitespace=True, header=None)
         samples = pheno_file.iloc[:, 1]
