@@ -88,25 +88,35 @@ class TTrees:
 
     def add_inds_to_nodes_table(self, inds: tind, logfile: IndentedLoggerAdapter):
         """
-
+        Add indeces of individuals to node table
         :param inds:
         :return:
         """
+
+        raise ValueError("This doesn't work when individuals are initialized with a pheno_file that has fewer "
+                         "individuals than the tree file (which is the case for task 'removeUnsampledInds'")
 
         logfile.info("- Adding individual information to trees")
 
         # create copy of tskit tables
         new_tables = self.trees.dump_tables()
         sample_indeces = np.where(new_tables.nodes.flags == 1)[0]
+
+        # add inds to nodes table
         for node_i in sample_indeces:
             individual = inds.get_individual(int(node_i))
             replacement_row = new_tables.nodes[node_i].replace(individual=individual)
             new_tables.nodes[node_i] = replacement_row
 
-        for i in range(inds.num_inds):
-            new_tables.individuals.add_row()
+        # add inds to inds table
+        basic_schema = tskit.MetadataSchema({'codec': 'json'})
+        new_tables.individuals.metadata_schema = basic_schema
+        print("num inds", inds.num_inds)
+        print("len names", len(inds.names))
+        for i in inds.names:
+            new_tables.individuals.add_row(metadata={"name": i})
 
-        new_tables.sort()
+        # new_tables.sort()
         altered_trees = new_tables.tree_sequence()
         # altered_trees.dump(out + "_altered.trees")
 
@@ -125,7 +135,9 @@ class TTrees:
         :return:
         """
 
-        self.add_inds_to_nodes_table(inds=inds, logfile=logfile)
+        # self.add_inds_to_nodes_table(inds=inds, logfile=logfile)
+        # print("old_tables.nodes\n", self.trees.tables.nodes)
+        # print("old_tables.individuals\n", self.trees.tables.individuals)
 
         pheno_file = pd.read_csv(pheno_file, delim_whitespace=True, header=None)
         samples = pheno_file.iloc[:, 1]
@@ -147,15 +159,23 @@ class TTrees:
         altered_trees = new_tables.tree_sequence()
         self.trees = altered_trees
 
-        # self.trees = self.trees.simplify(samples=extract, filter_nodes=False, filter_individuals=False, update_sample_flags=False)
+        # self.trees = self.trees.simplify(samples=extract, filter_nodes=False, filter_individuals=False,
+        #                                  update_sample_flags=True)
+        self.trees = self.trees.simplify(samples=extract)
 
         sample_ids = self.trees.samples()
         # print("sample_ids", sample_ids)
         N = len(sample_ids)
-        # print("new_tables.nodes", self.trees.tables.nodes)
-        # print("new_tables.individuals", self.trees.tables.individuals)
+        # print("new_tables.nodes\n", self.trees.tables.nodes)
+        # print("new_tables.individuals\n", self.trees.tables.individuals)
 
         self.trees.dump(out + "_ascertained.trees")
+
+        # simplified_trees = self.trees.simplify()
+        # print("simplified_trees.nodes\n", simplified_trees.tables.nodes)
+        # print("simplified_trees.individuals\n", simplified_trees.tables.individuals)
+
+
         logfile.info("- Wrote ascertained trees with " + str(N) + " haplotypes to " + out + "_ascertained.trees")
 
     def remove_border_trees_if_empty(self, skip_first_tree):
@@ -364,8 +384,8 @@ class TTree:
 
                 # off-diagonals upper triangle (this only works if ind assignment is equal to neighboring pairs!)
                 for i in range(inds.num_inds):
-                    # if i % 100 == 0:
-                    #     logfile.info("- Filling diploid covariance matrix for individual " + str(i) + " of " + str(inds.num_inds))
+                    # if i % 100 == 0: logfile.info("- Filling diploid covariance matrix for individual " + str(i) +
+                    # " of " + str(inds.num_inds))
                     i1 = i * 2
                     i2 = i1 + 1
                     for j in range(i + 1, inds.num_inds):

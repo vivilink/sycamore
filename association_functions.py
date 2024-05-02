@@ -127,6 +127,7 @@ def run_association_testing(args, random, logfile):
                                 ass_method=m,
                                 window_size=args.ass_window_size,
                                 trees_interval=trees_object.actual_trees_interval,
+                                sample_ids=sample_ids,
                                 logfile=logfile)
 
         else:
@@ -168,7 +169,7 @@ def OLS(genotypes, phenotypes):
 
     genotypes_test = sm.tools.add_constant(genotypes)
     # phenotypes = np.delete(phenotypes, np.isnan(phenotypes))
-    PVALUE = sm.OLS(phenotypes, genotypes_test, missing='drop').fit().pvalues.iloc[1]
+    PVALUE = sm.OLS(phenotypes, genotypes_test, missing='drop').fit().pvalues[1]
     return PVALUE
 
 
@@ -403,14 +404,16 @@ def test_window_for_association(covariance_obj: cov, inds: tind, AIM_methods: li
     covariance_obj.clear()
 
 
-def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_methods: list, variants: tvar,
+def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_methods: list, variants: tvar, trees: tskit.trees,
                                                   window_ends: list, window_starts: list, num_tests: int, inds: tind,
-                                                  covariances_picklefile: IO, pheno: pt,
-                                                  cholesky_global_GRM_for_cor: cov, logfile, outname: str):
+                                                  covariances_picklefile: IO, pheno: pt, sample_ids: [int],
+                                                  cholesky_global_GRM_for_cor: cov, logfile, outname: str,
+                                                  limit_association_tests: int):
     """
     Write covariance calculated based on variants within a window (can be one tree) to file and test it for association with
     phenotypes. Currently, the only covariance type based on variants is GRM.
 
+    :param limit_association_tests:
     :param covariance_obj:
     :param AIM_methods:
     :param variants:
@@ -427,13 +430,16 @@ def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_metho
     """
     window_ends_copy = window_ends.copy()
     window_starts_copy = window_starts.copy()
+    var_iterator = trees.variants(samples=sample_ids)
 
     # log progress
     start = time.time()
+    print("num tests", num_tests)
 
-    for w in range(num_tests):  #
-        covariance_obj.calculate_GRM(window_beginning=window_starts[w], window_end=window_ends[w],
-                                     variants=variants, inds=inds)
+    for w in range(min(num_tests, limit_association_tests)):  #
+        covariance_matrix, mu, var_iterator = covariance_obj.calculate_GRM(window_beginning=window_starts[w],
+                                                                           window_end=window_ends[w], variants=variants,
+                                                                           inds=inds, var_iterator=var_iterator)
         tmpCov = covariance_obj.get_covariance_matrix(inds.ploidy)
 
         if tmpCov is not None:
@@ -493,10 +499,10 @@ def loop_windows_tree_based_covariance_testing(trees, covariance_obj: cov, AIM_m
 
     # log progress
     start = time.time()
-
     # windows are given by trees
     if window_size is None:
         tree = tskit.Tree(trees)
+
         while tree.next() and window_index < limit_association_tests:
             tree_obj = tt.TTree(tree)
 
@@ -525,6 +531,7 @@ def loop_windows_tree_based_covariance_testing(trees, covariance_obj: cov, AIM_m
     # there is a window size
     else:
         tree = tskit.Tree(trees)
+
         while tree.next() and window_index < limit_association_tests:
             tree_obj = tt.TTree(tree)
 
@@ -548,6 +555,7 @@ def loop_windows_tree_based_covariance_testing(trees, covariance_obj: cov, AIM_m
                                                                   window_end=window_ends[0],
                                                                   tree_start=tree_obj.start,
                                                                   tree_end=tree_obj.end)
+
                 # print("tree is in window with index", window_index, "with proportion", proportion, ". window has coordinates", window_starts[0], window_ends[0])
 
                 if 0.0 < proportion <= 1.0:
@@ -604,8 +612,8 @@ def loop_windows_tree_based_covariance_testing(trees, covariance_obj: cov, AIM_m
                                             logfile=logfile)
 
 
-def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_size, trees_interval,
-                        logfile):
+def run_association_AIM(trees: tskit.trees, inds: tind, variants: tvar, pheno: pt, args, ass_method: str, window_size: int, trees_interval,
+                        logfile, sample_ids):
     # ----------------
     # initialize
     # ----------------
@@ -632,6 +640,11 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
     if window_size is not None:
         window_starts, window_ends = get_window_starts_and_ends(window_size=window_size, trees_interval=trees_interval)
         num_tests = len(window_ends)
+
+    # if args.limit_association_tests:
+    #     num_tests = args.limit_association_tests
+    #     window_starts = window_starts[0:num_tests]
+    #     window_ends = window_ends[0:num_tests]
 
     # initialize and write phenotypes
     if covariance == "eGRM" or covariance == "GRM":
@@ -694,6 +707,9 @@ def run_association_AIM(trees, inds, variants, pheno, args, ass_method, window_s
                                                       cholesky_global_GRM_for_cor=cholesky_global_GRM_for_cor,
                                                       pheno=pheno,
                                                       logfile=logfile,
+                                                      trees=trees,
+                                                      sample_ids=sample_ids,
+                                                      limit_association_tests=args.limit_association_tests,
                                                       outname=outname)
 
     # window based covariance (need to loop over trees)

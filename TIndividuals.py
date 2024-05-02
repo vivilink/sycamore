@@ -8,10 +8,10 @@ Created on Wed Oct 20 15:43:16 2021
 
 import pandas as pd
 import numpy as np
-
+from python_log_indenter import IndentedLoggerAdapter
 
 class Individuals:
-    def __init__(self, ploidy: int, num_haplotypes: int, logfile, relate_sample_names_file, phenotype_sample_file):
+    def __init__(self, ploidy: int, num_haplotypes: int, logfile: IndentedLoggerAdapter, relate_sample_names_file: str, phenotype_sample_file: str):
         """
         Initialize individuals. NAmes come either from relate file, from phen file or are generated automatically
         @param ploidy:
@@ -47,16 +47,20 @@ class Individuals:
                                  str(len(names_in_file['ID_1'])) + " in " + relate_sample_names_file)
             self._names = np.array(names_in_file['ID_1'])
         elif phenotype_sample_file:
-            pheno_df = pd.read_csv(phenotype_sample_file, sep=' ')
+            pheno_df = pd.read_csv(phenotype_sample_file, sep=' ', header=None)
             num_phenotypes = pheno_df.shape[1] - 2
             header = ["pop", "ID"]
             for i in range(1, num_phenotypes + 1):
                 header.append("phenotype" + str(i))
             pheno_df.columns = header
             self._names = np.array(pheno_df['ID'])
-
         else:
             self._names = np.array(["id_" + str(i) for i in np.arange(0, self._num_inds)])
+
+        if len(self._names) != self._num_inds:
+            logfile.warning("Length of ind names is " + str(len(self._names)) + " but number of individuals found in tree is " + str(self._num_inds) + ". This should only happen in task 'removeUnsampledInds'")
+
+
 
 
     @property

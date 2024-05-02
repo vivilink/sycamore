@@ -14,7 +14,9 @@ import struct
 import math
 import pickle
 from pandas_plink import read_grm
-
+import TTree as ttree
+import TIndividuals as tinds
+import tskit
 
 def get_covariance_object(covariance_name):
     covariance_obj = None
@@ -203,7 +205,7 @@ class TCovarianceeGRM(TCovariance):
 
         return True
 
-    def add_tree(self, tree_obj, proportion, inds):
+    def add_tree(self, tree_obj: ttree, proportion: float, inds: tinds):
         """
         Calculate the unnormalized and haploid eGRM (=cov) so that it can be added to window eGRM, and also its
         number of expected mutations.
@@ -278,7 +280,7 @@ class TCovarianceGRM(TCovariance):
 
         return True
 
-    def calculate_GRM(self, window_beginning, window_end, variants, inds):
+    def calculate_GRM(self, window_beginning, window_end, variants, inds, var_iterator):
         """
         Calculate GRM matrix based on variants in a window (can bee tree interval)
 
@@ -290,7 +292,8 @@ class TCovarianceGRM(TCovariance):
         inds : TInds
 
         """
-        window_variants = np.array(variants.variants)[
+
+        window_variants = np.array(variants.info['position'])[
             (variants.info['position'] >= window_beginning) &
             (variants.info['position'] < window_end) &
             (variants.info['typed'] == True) &
@@ -301,8 +304,11 @@ class TCovarianceGRM(TCovariance):
 
         # loop over variants
         M_sum = np.zeros(shape=(inds.num_inds, inds.num_inds))
-        for v_i in range(num_vars):  # range(num_vars)
-            gt_haploid = window_variants[v_i].genotypes
+        # print("------------window start ", window_beginning, " -----------------")
+        var_current = next(var_iterator)
+        while window_beginning <= var_current.site.position < window_end:
+            # print(var_current)
+            gt_haploid = var_current.genotypes
             if inds.ploidy == 1:
                 gt = gt_haploid
             else:
@@ -314,12 +320,16 @@ class TCovarianceGRM(TCovariance):
             M = np.dot(first, second)
             M = M / (inds.ploidy * af * (1 - af))
             M_sum += M
+
+            var_current = next(var_iterator)
+        # print("------------window end ", window_end, " -----------------")
+
         M_window = M_sum / float(num_vars)
         # M_window = self.remove_inds_with_missing_phenotypes(covariance_matrix=M_window, inds=inds)
         self._covariance_matrix = M_window
         self._mu = num_vars
 
-        return self._covariance_matrix, self._mu
+        return self._covariance_matrix, self._mu, var_iterator
 
     def finalize(self):
         pass

@@ -91,14 +91,13 @@ class TAssociationTestingGWAS(TAssociationTesting):
         for var in trees.variants(samples=samp_ids):
             if variants.info.loc[variants.info['var_index'] == var.site.id, 'typed'].any():
                 if inds.ploidy == 2:
-                    genotypes = inds.get_diploid_genotypes(var.genotypes)
+                    genotypes = np.array(inds.get_diploid_genotypes(var.genotypes))
                 else:
-                    genotypes = var.genotypes
-                #
-                # if len(genotypes) != len(phenotypes.y):
-                #     # TODO: remove this after debugging on real data
-                #     raise ValueError("Genotypes length (" + str(len(genotypes)) + ") is not same as phenotypes length ("
-                #                      + str(len(phenotypes.y)) + ")")
+                    genotypes = np.array(var.genotypes)
+
+                if len(genotypes) != len(phenotypes.y):  # TODO: remove this after debugging on real data raise
+                    raise ValueError("Genotypes length (" + str(len(genotypes)) + ") is not same as phenotypes length (" +
+                    str(len(phenotypes.y)) + ")")
 
                 PVALUE = af.OLS(genotypes=genotypes, phenotypes=phenotypes.y)
                 self.p_values[i] = PVALUE

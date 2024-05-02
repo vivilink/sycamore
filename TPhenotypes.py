@@ -62,7 +62,7 @@ def transform_to_binary(pheno_file: str, population_disease_prevalence: list[flo
 
 
 def ascertain_sample(pheno_file: str, sample_size: int, sample_prevalence: float, out: str, random: rg,
-                     logger: IndentedLoggerAdapter, pheno_column:int=3):
+                     logger: IndentedLoggerAdapter, pheno_column: int = 3):
     """
     Creates ascertained sample from the population file of phenotypes (e.g. .phen file produced by task
     'transformToBinaryPhenotype'). It samples cases and controls according to satisfy the sample_prevalence parameter.
@@ -95,7 +95,8 @@ def ascertain_sample(pheno_file: str, sample_size: int, sample_prevalence: float
     num_cases_required = round(np.ceil(sample_prevalence * sample_size))
     num_controls_required = sample_size - num_cases_required
     logger.info(
-        "- Keeping " + str(num_cases_required) + " cases and " + str(num_controls_required) + " controls from a total of " +
+        "- Keeping " + str(num_cases_required) + " cases and " + str(
+            num_controls_required) + " controls from a total of " +
         str(population_size) + " individuals")
     if num_controls_required <= 0:
         raise ValueError("Sample size needs to be larger than number of cases")
@@ -208,7 +209,13 @@ def sortPhenotypes(names_correct_order, pheno_df):
     return pheno_df
 
 
-def find_missing_individuals(inds_tree, inds_phenotype):
+def find_missing_individuals(inds_tree: [str], inds_phenotype: [str]):
+    """
+    Compare lists of individuals
+    :param inds_tree:
+    :param inds_phenotype:
+    :return:
+    """
     set_tree = set(inds_tree)
     set_phenotype = set(inds_phenotype)
     missing_in_phenotypes = list(sorted(set_tree - set_phenotype))
@@ -386,6 +393,8 @@ class Phenotypes:
         tmp_pheno.to_csv(out + "_phenotypes.phen", sep=' ', index=False, header=False)
 
     def initialize_from_file(self, filename, out, inds, logfile, num_phenotypes=1, phenotype_number_of_interest=1):
+
+        # read file
         if filename is None:
             raise ValueError("Provide file with phenotype information in gcta .phen format using 'pheno_file' or "
                              "simulate phenotypes using 'simulate_phenotypes'")
@@ -395,6 +404,7 @@ class Phenotypes:
             header.append("phenotype" + str(i))
         pheno_df = pd.read_csv(filename, names=header, sep=' ')
 
+        # deal with mismatch between individuals in trees and phenotype file
         missing_in_phenotypes, added_in_phenotypes = find_missing_individuals(inds_tree=inds.names,
                                                                               inds_phenotype=pheno_df['ID'])
         if len(missing_in_phenotypes) == len(inds.names) or len(added_in_phenotypes) == len(inds.names):
@@ -403,19 +413,16 @@ class Phenotypes:
                                                                         "and " + str(
             len(added_in_phenotypes)) + " individuals added. Will add missing ones with NA and "
                                         "remove added ones.")
-
         for i in missing_in_phenotypes:
             pheno_df.loc[len(pheno_df.index)] = [0, i, np.nan]
-
         for i in added_in_phenotypes:
             indexInd = pheno_df[(pheno_df['ID'] == i)].index
             pheno_df.drop(indexInd, inplace=True)
-
         self.set_missing_phenotype_status(inds=inds)
-
         pheno_df = sortPhenotypes(names_correct_order=inds.names, pheno_df=pheno_df)
         self._pheno_df = pheno_df
 
+        # set attributes
         self._num_inds = len(pheno_df['ID'])
         self._sample_IDs = np.array(pheno_df['ID'])
         self._y = np.array(pheno_df['phenotype' + str(phenotype_number_of_interest)])
@@ -569,7 +576,8 @@ class PhenotypesSimulated(Phenotypes):
     def genetic_variance(self, genetic_variance: float):
         self._genetic_variance = genetic_variance.find_missing_individuals
 
-    def simulate(self, args: tparams, r: rg, logfile, variants_orig: tvar, inds: tind, trees: tskit, trees_orig: tskit, plots_dir: str, samp_ids: list):
+    def simulate(self, args: tparams, r: rg, logfile, variants_orig: tvar, inds: tind, trees: tskit, trees_orig: tskit,
+                 plots_dir: str, samp_ids: list):
         """
         Simulate phenotypes. If this is run on simulated trees for which the variants have not yet been downsampled
         (or 'typed'), trees and trees_orig can both be the original simulated trees. variants_orig is then the variants
