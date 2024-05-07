@@ -434,25 +434,35 @@ def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_metho
 
     # log progress
     start = time.time()
-    print("num tests", num_tests)
 
     for w in range(min(num_tests, limit_association_tests)):  #
         covariance_matrix, mu, var_iterator = covariance_obj.calculate_GRM(window_beginning=window_starts[w],
                                                                            window_end=window_ends[w], variants=variants,
                                                                            inds=inds, var_iterator=var_iterator)
+
         tmpCov = covariance_obj.get_covariance_matrix(inds.ploidy)
 
         if tmpCov is not None:
-            for m in AIM_methods:
+            # for m in AIM_methods:
                 # covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile) removed
                 # because already in run association function
-                m.test(index=w,
-                       out=outname,
-                       covariance_object=covariance_obj,
-                       phenotypes_object=pheno,
-                       inds=inds,
-                       covar=None,
-                       covariances_picklefile=covariances_picklefile)
+            test_window_for_association(
+                window_index=w,
+                covariance_obj=covariance_obj,
+                outname=outname,
+                phenotypes_obj=pheno,
+                inds=inds,
+                AIM_methods=AIM_methods,
+                logfile=logfile,
+                cholesky_global_GRM_for_cor=cholesky_global_GRM_for_cor,
+                covariances_picklefile=covariances_picklefile)
+                # m.test(index=w,
+                #        out=outname,
+                #        covariance_object=covariance_obj,
+                #        phenotypes_object=pheno,
+                #        inds=inds,
+                #        covar=None,
+                #        covariances_picklefile=covariances_picklefile)
             covariance_obj.clear()
 
         # log progress

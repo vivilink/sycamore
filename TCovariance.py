@@ -49,8 +49,12 @@ class TCovariance:
         # if self._covariance_matrix is None:
         #     raise ValueError("Covariance matrix has not been calculated yet!")
         if ploidy == 2:
+            if self._covariance_matrix_diploid is None:
+                raise ValueError("diploid covariance matrix not defined")
             return self._covariance_matrix_diploid
         else:
+            if self._covariance_matrix_haploid is None:
+                raise ValueError("haploid covariance matrix not defined")
             return self._covariance_matrix_haploid
 
     def get_cholesky_decomposition(self, ploidy):
@@ -327,11 +331,15 @@ class TCovarianceGRM(TCovariance):
         M_window = M_sum / float(num_vars)
         # M_window = self.remove_inds_with_missing_phenotypes(covariance_matrix=M_window, inds=inds)
         self._covariance_matrix = M_window
+        if inds.ploidy == 2:
+            self._covariance_matrix_diploid = M_window
+        else:
+            self._covariance_matrix_haploid = M_window
         self._mu = num_vars
 
         return self._covariance_matrix, self._mu, var_iterator
 
-    def finalize(self):
+    def finalize(self, inds):
         pass
 
 
@@ -363,5 +371,5 @@ class TCovarianceScaled(TCovariance):
         cov = tree_obj.get_covariance_scaled(inds=inds)
         self._covariance_matrix_haploid += proportion * cov
 
-    def finalize(self):
+    def finalize(self, inds):
         pass
