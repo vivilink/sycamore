@@ -255,6 +255,10 @@ def get_AIM_test_object(test_name: str, phenotypes, pheno_file, num_associations
                                                           logfile=logfile)
     elif test_name == "glimix_REML":
         test_obj = at.TAssociationTestingRegionsGlimix(phenotypes, num_associations)
+    elif test_name == "pcgc":
+        test_obj = at.TAssociationTestingRegionsLADK_pcgc(phenotypes, num_associations, test_name=test_name,
+                                                          pheno_file=pheno_file, outname=outname, args=args,
+                                                          logfile=logfile)
     elif test_name == "mtg2":
         raise ValueError("mtg2 is not implemented yet!")
         # test_obj = at.TAssociationTestingRegionsMtg2(phenotypes, num_associations)

@@ -1074,6 +1074,145 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
                 + str(num_GCTA_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
 
 
+class TAssociationTestingRegionsLADK_pcgc(TAssociationTestingRegions):
+    """
+    tree-based association testing using LADK REML algorithm (https://dougspeed.com/reml-analysis/)
+    """
+
+    def __init__(self, ts_object, phenotypes, test_name, pheno_file, outname, logfile, args):
+
+        super().__init__(ts_object, phenotypes)
+        self.name = "regions_GCTA_REML"
+        self.script_name = outname + "_run_" + self.name + ".sh"
+        self.write_command_script(pheno_file=pheno_file, outname=outname, logfile=logfile, args=args)
+
+        # results containers
+        self.p_values = np.empty(self.num_associations)
+        self.p_values.fill(np.nan)
+        self.V_G = np.empty(self.num_associations)
+        self.V_G.fill(np.nan)
+        self.V_e = np.empty(self.num_associations)
+        self.V_e.fill(np.nan)
+        self.Vp = np.empty(self.num_associations)
+        self.Vp.fill(np.nan)
+        self.V_G_over_Vp = np.empty(self.num_associations)
+        self.V_G_over_Vp.fill(np.nan)
+        self.logL = np.empty(self.num_associations)
+        self.logL.fill(np.nan)
+        self.logL0 = np.empty(self.num_associations)
+        self.logL0.fill(np.nan)
+        self.LRT = np.empty(self.num_associations)
+        self.LRT.fill(np.nan)
+
+        self.V_G_SE = np.empty(self.num_associations)
+        self.V_G_SE.fill(np.nan)
+        self.V_e_SE = np.empty(self.num_associations)
+        self.V_e_SE.fill(np.nan)
+        self.Vp_SE = np.empty(self.num_associations)
+        self.Vp_SE.fill(np.nan)
+        self.V_G_over_Vp_SE = np.empty(self.num_associations)
+        self.V_G_over_Vp_SE.fill(np.nan)
+
+    def write_command_script(self, pheno_file, outname, logfile, args):
+        self.write_PCGC_command_file_grm(pheno_file=pheno_file, outname=outname)
+
+    def run_association_one_window_pcgc(self, index, out):
+        """
+        create multi_grm.txt according to https://yanglab.westlake.edu.cn/software/gcta/#GREMLinWGSorimputeddata
+        @param index: index of window or tree
+        @param out: prefix of output files
+        @param population_structure: prefix of files containing covariance matrix used to correct for population structure
+        @return:
+        """
+        # create gcta input files, run gcta and parse output
+        exit_code = subprocess.call([self.script_name])
+
+        # read results
+        result = pd.read_csv(out + ".pcgc", sep=' ', header=None)
+
+        # get p-value and other statistics
+        result_pvalue = result['Variance'].loc[result['Source'] == 'Pval'].item()
+        if result_pvalue < 0:
+            raise ValueError("Negative p-value for window with index " + str(index))
+        if result_pvalue > 1:
+            raise ValueError("p-value larger than 1 for window with index " + str(index))
+
+        self.p_values[index] = result_pvalue
+        if result_pvalue < 0:
+            raise ValueError("window index", index, "produced negative p-value with REML")
+
+        self.V_G[index] = (result['Variance'].loc[result['Source'] == 'V(G)']).item()
+        self.V_e[index] = result['Variance'].loc[result['Source'] == 'V(e)'].item()
+        self.Vp[index] = result['Variance'].loc[result['Source'] == 'Vp'].item()
+        self.V_G_over_Vp[index] = result['Variance'].loc[result['Source'] == 'V(G)/Vp'].item()
+        self.logL[index] = result['Variance'].loc[result['Source'] == 'logL'].item()
+        self.logL0[index] = result['Variance'].loc[result['Source'] == 'logL0'].item()
+        self.LRT[index] = result['Variance'].loc[result['Source'] == 'LRT'].item()
+
+        self.V_G_SE[index] = result['SE'].loc[result['Source'] == 'V(G)'].item()
+        self.V_e_SE[index] = result['SE'].loc[result['Source'] == 'V(e)'].item()
+        self.Vp_SE[index] = result['SE'].loc[result['Source'] == 'Vp'].item()
+        self.V_G_over_Vp_SE[index] = result['SE'].loc[result['Source'] == 'V(G)/Vp'].item()
+
+        # delete GCTA results file to make sure it's not used again
+        af.remove_files_with_pattern(out + '*.pcgc')
+
+    def write_association_results_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
+        table = pd.DataFrame()
+        table['start'] = window_starts
+        table['end'] = window_ends
+        table['p_values'] = self.p_values
+        table['V_G'] = self.V_G
+        table['V_e'] = self.V_e
+        table['Vp'] = self.Vp
+        table['V_G_over_Vp'] = self.V_G_over_Vp
+        table['logL'] = self.logL
+        table['logL0'] = self.logL0
+        table['LRT'] = self.LRT
+        table['V_G_SE'] = self.V_G_SE
+        table['V_e_SE'] = self.V_e_SE
+        table['Vp_SE'] = self.Vp_SE
+        table['V_G_over_Vp_SE'] = self.V_G_over_Vp_SE
+
+        table['causal'] = np.repeat("FALSE", self.num_associations)
+        table.loc[phenotypes.causal_window_indeces, 'causal'] = "TRUE"
+
+        table.to_csv(out + "_trees_GCTA_REML_results.csv", index=False, header=True)
+        logfile.info("- Wrote results from tree association tests to '" + out + "_trees_GCTA_REML_results.csv'")
+
+        stats = pd.DataFrame({'min_p_value': [np.nanmin(self.p_values)],
+                              'max_p_value': [np.nanmax(self.p_values)]
+                              })
+        stats.to_csv(out + "_trees_GCTA_REML_stats.csv", index=False, header=True)
+        logfile.info("- Wrote stats from tree association tests to '" + out + "_trees_GCTA_REML_stats.csv'")
+
+
+    def write_PCGC_command_file_grm(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence):
+        """
+        Write executable bash script for running association test with only the local eGRM as random effects using GCTA
+
+        @param testing_method:
+        @param outname:
+        @param pheno_file:
+        @param outfile:
+        @param GCTA:
+        @param num_GCTA_threads:
+        @return:
+        """
+
+        with (open(self.script_name, 'w') as f):
+            f.write("#!/bin/bash\n")
+            string = LDAK + " --pcgc " + outname + " --grm " + outname + " --pheno "
+            + pheno_file + "_REML --kinship-details NO --prevalence " + str(population_prevalence)
+
+            if additional_ldak_params is not None:
+                for p in additional_ldak_params:
+                    string += " --" + p
+            f.write(string + " > " + outname + "_tmp.out\n")
+
+
+
+
 class TTreeAssociationMantel(TAssociationTestingRegions):
 
     def __init__(self, ts_object, phenotypes):
