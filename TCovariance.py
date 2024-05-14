@@ -219,7 +219,6 @@ class TCovarianceeGRM(TCovariance):
         @param inds: TInds
         @return: np.array, float
         """
-
         cov, mu = tree_obj.get_unnormalized_eGRM(tree_obj=tree_obj, inds=inds)
         if cov is None:
             return None
@@ -325,7 +324,10 @@ class TCovarianceGRM(TCovariance):
             M = M / (inds.ploidy * af * (1 - af))
             M_sum += M
 
-            var_current = next(var_iterator)
+            try:
+                var_current = next(var_iterator)
+            except StopIteration:
+                break
         # print("------------window end ", window_end, " -----------------")
 
         M_window = M_sum / float(num_vars)

@@ -256,7 +256,7 @@ def get_AIM_test_object(test_name: str, phenotypes, pheno_file, num_associations
     elif test_name == "glimix_REML":
         test_obj = at.TAssociationTestingRegionsGlimix(phenotypes, num_associations)
     elif test_name == "pcgc":
-        test_obj = at.TAssociationTestingRegionsLADK_pcgc(phenotypes, num_associations, test_name=test_name,
+        test_obj = at.TAssociationTestingRegionsLDAK_pcgc(phenotypes, num_associations, test_name=test_name,
                                                           pheno_file=pheno_file, outname=outname, args=args,
                                                           logfile=logfile)
     elif test_name == "mtg2":
@@ -366,7 +366,7 @@ def test_window_for_association(covariance_obj: cov, inds: tind, AIM_methods: li
     covariance_obj.finalize(inds=inds)
 
     for m in AIM_methods:
-        if m.name == "regions_glimix":
+        if m.name == "regions_glimix" or m.name == "regions_mtg2":
             m.test(index=window_index,
                    out=outname,
                    inds=inds,
@@ -375,16 +375,16 @@ def test_window_for_association(covariance_obj: cov, inds: tind, AIM_methods: li
                    covar=None,
                    covariances_picklefile=None,
                    )
-        elif m.name == "regions_mtg2":
-            m.test(index=window_index,
-                   out=outname,
-                   inds=inds,
-                   phenotypes_object=phenotypes_obj,
-                   covariance_object=covariance_obj,
-                   covar=None,
-                   covariances_picklefile=None,
-                   )
-        elif m.name == "regions_GCTA_HE" or m.name == "regions_GCTA_REML":
+        # elif m.name == "regions_mtg2":
+        #     m.test(index=window_index,
+        #            out=outname,
+        #            inds=inds,
+        #            phenotypes_object=phenotypes_obj,
+        #            covariance_object=covariance_obj,
+        #            covar=None,
+        #            covariances_picklefile=None,
+        #            )
+        elif m.name == "regions_GCTA_HE" or m.name == "regions_GCTA_REML" or m.name == "regions_LDAK_pcgc":
 
             if write_matrices_for_testing(cholesky_global_GRM_for_cor=cholesky_global_GRM_for_cor,
                                           covariance_obj=covariance_obj,

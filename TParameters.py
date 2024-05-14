@@ -232,10 +232,14 @@ class TParameters:
                                 "Zhou et al. 2023)")
         assoc.add_argument('--GCTA', type=str, default="gcta-1.94.1-linux-kernel-3-x86_64/gcta-1.94.1",
                            help="path to GCTA executable")
+        assoc.add_argument('--LDAK', type=str, default="./ldak5.2.linux",
+                           help="path to GCTA executable")
         assoc.add_argument("--num_gcta_threads", type=int, default=2,
                            help="number of threads on which to run GCTA. Going from 2 to 8 roughly doubles the speed")
         assoc.add_argument("--additional_gcta_params", type=str, nargs='+',
                            help="additional arguments to be passed to GCTA")
+        assoc.add_argument("--additional_ldak_params", type=str, nargs='+',
+                           help="additional arguments to be passed to LDAK")
         assoc.add_argument("--additional_mtg2_params", type=str, nargs='+',
                            help="additional arguments to be passed to mtg2")
         assoc.add_argument("--limit_association_tests", type=int, default=1000000000,
