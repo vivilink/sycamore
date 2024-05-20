@@ -13,6 +13,8 @@ Setting up sycamore
 
 * Download [GCTA](https://yanglab.westlake.edu.cn/software/gcta/#Overview) into sycamore repository https://yanglab.westlake.edu.cn/software/gcta/#Download
 
+* Download [LDAK](https://dougspeed.com/downloads/) into sycamore repository 
+
 Creating conda environment
 -------------------------
 
