@@ -23,7 +23,7 @@ class TParameters:
                                      'ARGStatistics', 'getTreeAtPosition', 'simulateMoreMutations',
                                      'covarianceCorrelations', 'simulatePhenotypes', 'makeTreeChunks',
                                      'transformToBinaryPhenotype', 'ascertainSampleBinaryPhenotype',
-                                     'removeUnsampledInds', 'printARGTables'],
+                                     'removeUnsampledInds', 'printARGTables', 'writeVCF'],
                             help='The task to be executed (simulate or associate)')
         parser.add_argument('--out', required=True, type=str,
                             help='Prefix of all output files')

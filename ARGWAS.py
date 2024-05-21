@@ -101,7 +101,8 @@ if args.task == "simulateTrees":
     inds = tind.Individuals(ploidy=args.ploidy,
                             num_haplotypes=N,
                             relate_sample_names_file=args.relate_sample_names,
-                            logfile=logger)
+                            logfile=logger,
+                            phenotype_sample_file=args.pheno_file)
     variants = tvar.TVariants(tskit_object=trees, samp_ids=sample_ids)
     variants.fill_info(tskit_object=trees, samp_ids=sample_ids, pos_float=args.pos_float, logfile=logger)
     variants.write_variant_info(out=args.out, logfile=logger)
@@ -187,6 +188,29 @@ if args.task == "printARGTables":
                              logfile=logger)
 
     trees_object.print_ARG_tables()
+
+# -----------------------
+# Print tables
+# -----------------------
+if args.task == "writeVCF":
+    logger.info("- TASK: Write ARG to VCF")
+    trees_object = tt.TTrees(tree_file=args.tree_file,
+                             trees_interval=args.trees_interval,
+                             trees_interval_start=args.trees_interval_start,
+                             trees_interval_end=args.trees_interval_end,
+                             skip_first_tree=args.skip_first_tree,
+                             logfile=logger)
+
+    sample_ids = trees_object.trees.samples()
+    N = len(sample_ids)
+
+    inds = tind.Individuals(ploidy=args.ploidy,
+                            num_haplotypes=N,
+                            relate_sample_names_file=args.relate_sample_names,
+                            phenotype_sample_file=args.pheno_file,
+                            logfile=logger)
+
+    trees_object.write_VCF(out=args.out, inds=inds, logfile=logger)
 
 # -----------------------
 # Downsample individuals

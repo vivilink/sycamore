@@ -1017,9 +1017,10 @@ class PhenotypesSimulated(Phenotypes):
         return beta
 
     def simulate_causal_region(self, trees: tskit, variants: tvar, inds, left_bound: float, right_bound: float,
-                               causal_mutations_effect_size_def: str, local_heritability, prop_causal_mutations: float,
-                               random, min_allele_freq_causal: float,
-                               max_allele_freq_causal, logfile, allow_typed_causal_variants: bool, samp_ids: list):
+                               causal_mutations_effect_size_def: str, local_heritability: float,
+                               prop_causal_mutations: float, random: rg, min_allele_freq_causal: float,
+                               max_allele_freq_causal: float, logfile: IndentedLoggerAdapter,
+                               allow_typed_causal_variants: bool, samp_ids: list[int]):
         """
         Simulate causal effect sizes for variants within a region
         :param samp_ids:
@@ -1055,6 +1056,9 @@ class PhenotypesSimulated(Phenotypes):
         # remove typed variants
         if not allow_typed_causal_variants:
             info_window = info_window.loc[info_window['typed'] == False]
+            logfile.info("- Not allowing typed variants to be causal")
+        else:
+            logfile.info("- Allowing typed variants to be causal")
 
         if len(info_window.index) < 1:
             raise ValueError("Found no variants in causal region. Are you restricting to only typed or untyped "
@@ -1098,13 +1102,12 @@ class PhenotypesSimulated(Phenotypes):
         self.filled = True
 
     @staticmethod
-    def get_beta_normal(random, sd_beta_causal_mutations):
+    def get_beta_normal(random: rg, sd_beta_causal_mutations: float):
         """
         Draw effect size from normal distribution
-
-        @param sd_beta_causal_mutations: float
-        @param random: TRandom
-        @return: float
+        :param random:
+        :param sd_beta_causal_mutations:
+        :return:
         """
         beta = random.random.normal(loc=0, scale=sd_beta_causal_mutations, size=1)[0]
         return beta
@@ -1125,12 +1128,13 @@ class PhenotypesSimulated(Phenotypes):
     def write_sim_params_to_file(self, variants, inds, out, logfile):
         """
         Provide phenotypic variance partitioning information, and information related to each variant's phenotypic effect
-
-        Returns
-        -------
-        None.
-
+        :param variants:
+        :param inds:
+        :param out:
+        :param logfile:
+        :return:
         """
+
         logfile.info("- Writing phenotype data '" + out + "_pheno_causal_vars.csv'")
 
         # results for each variant

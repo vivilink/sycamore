@@ -86,6 +86,18 @@ class TTrees:
         sample_ids = self.trees.samples()
         print("sample_ids", sample_ids)
 
+    def write_VCF(self, out, inds, logfile):
+        """
+        Write tskit trees file to VCF
+        :return:
+        """
+        self.add_inds_to_nodes_table(inds=inds, logfile=logfile)
+
+        file = open(out + ".vcf", 'w')
+        self.trees.write_vcf(file, individual_names=inds.names)
+        file.close()
+
+
     def add_inds_to_nodes_table(self, inds: tind, logfile: IndentedLoggerAdapter):
         """
         Add indeces of individuals to node table
@@ -93,7 +105,7 @@ class TTrees:
         :return:
         """
 
-        raise ValueError("This doesn't work when individuals are initialized with a pheno_file that has fewer "
+        logfile.info("This doesn't work when individuals are initialized with a pheno_file that has fewer "
                          "individuals than the tree file (which is the case for task 'removeUnsampledInds'")
 
         logfile.info("- Adding individual information to trees")

@@ -44,14 +44,16 @@ class TVariants:
         """
         if len(list(tskit_object.variants(samples=samp_ids))) < 1:
             logfile.info("WARNING: Found no variants")
-        for v, var in enumerate(list(tskit_object.variants(samples=samp_ids))):
+
+        last_var_site_id = -1
+        for var in tskit_object.variants(samples=samp_ids):
             tmp = sum(var.genotypes) / len(var.genotypes)
 
             if len(np.bincount(var.genotypes)) > 2:
                 print(var.genotypes)
                 print(var.alleles)
                 print("af is: ", tmp, "expected homo alt: ", tmp * tmp)
-                print("Invalid genotypes encountered at variant index ", v,
+                print("Invalid genotypes encountered at variant index ", var.site.id,
                       ". Currently we cannot accept simulated individuals to be diploid. Genotype counts are ",
                       np.bincount(var.genotypes))
             af = min(tmp, 1 - tmp)
@@ -60,15 +62,17 @@ class TVariants:
             pos = -1
             if not pos_float:
                 pos = round(var.site.position)
-                if v > 0 and pos <= self._positions[v - 1]:
+                if var.site.id > 0 and pos <= self._positions[var.site.id - 1]:
                     # logfile.info("WARNING: Pos (" + str(pos) + ") is smaller than previous one ("
                     #              + str(self._positions[v - 1]) + "). Setting to " + str(self._positions[v - 1] + 1))
-                    pos = self._positions[v - 1] + 1
+                    pos = self._positions[var.site.id - 1] + 1
             else:
                 pos = var.site.position
 
-            self._positions[v] = pos
-            self._alleleFreq[v] = af
+            self._positions[var.site.id] = pos
+            self._alleleFreq[var.site.id] = af
+
+            last_var_site_id = var.site.id
 
         self._info['var_index'] = np.arange(self._number)
         self._info['position'] = self._positions
@@ -78,6 +82,10 @@ class TVariants:
         # set indeces of trees the variants belong to, digitize starts at 1 but tree indeces at 0
         self._info['tree_index'] = np.digitize(self._info['position'], tskit_object.breakpoints(as_array=True)) - 1
         self._info['causal_region'] = "FALSE"
+
+        # # remove extra lines in self._info
+        # print("last_var_site_id", last_var_site_id)
+        # self._info = self._info.head(last_var_site_id + 1)
 
     # @property
     # def variants(self):
@@ -132,6 +140,7 @@ class TVariants:
         map_file = open(outname, 'a')
         map_file.write("pos COMBINED_rate Genetic_Map\n")
         for index, row in self._info.iterrows():
+            print("row in variants", row)
             if row['typed']:
                 string = str(int(row['position'])) + " " + str(1) + " "
                 string = string + str(row['position'] / 1000000) + "\n"

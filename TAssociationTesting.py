@@ -1229,14 +1229,14 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         table['causal'] = np.repeat("FALSE", self.num_associations)
         table.loc[phenotypes.causal_window_indeces, 'causal'] = "TRUE"
 
-        table.to_csv(out + "_trees_GCTA_REML_results.csv", index=False, header=True)
-        logfile.info("- Wrote results from tree association tests to '" + out + "_trees_GCTA_REML_results.csv'")
+        table.to_csv(out + "_trees_pcgc_results.csv", index=False, header=True)
+        logfile.info("- Wrote results from tree association tests to '" + out + "_trees_pcgc_results.csv'")
 
         stats = pd.DataFrame({'min_p_value': [np.nanmin(self.p_values)],
                               'max_p_value': [np.nanmax(self.p_values)]
                               })
-        stats.to_csv(out + "_trees_GCTA_REML_stats.csv", index=False, header=True)
-        logfile.info("- Wrote stats from tree association tests to '" + out + "_trees_GCTA_REML_stats.csv'")
+        stats.to_csv(out + "_trees_pcgc_stats.csv", index=False, header=True)
+        logfile.info("- Wrote stats from tree association tests to '" + out + "_trees_pcgc_stats.csv'")
 
     def write_PCGC_command_file_grm(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence):
         """
