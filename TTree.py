@@ -106,7 +106,7 @@ class TTrees:
         """
 
         logfile.info("This doesn't work when individuals are initialized with a pheno_file that has fewer "
-                         "individuals than the tree file (which is the case for task 'removeUnsampledInds'")
+                         "individuals than the tree file (which is the case for task 'removeUnsampledInds')")
 
         logfile.info("- Adding individual information to trees")
 

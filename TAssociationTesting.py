@@ -85,9 +85,14 @@ class TAssociationTestingGWAS(TAssociationTesting):
         :param logfile:
         :return:
         """
+        #also run logistic regression?
+        is_binary = np.all(np.isin(phenotypes.y, [0, 1]))
+        if is_binary:
+            logfile.info("- Detected binary phenotype (all values are zero or one). Will use logistic regression.")
+            num_variants_not_converged = 0
+
         # counter respective to typed variants
         i = 0
-
         for var in trees.variants(samples=samp_ids):
             if variants.info.loc[variants.info['var_index'] == var.site.id, 'typed'].any():
                 if inds.ploidy == 2:
@@ -100,10 +105,18 @@ class TAssociationTestingGWAS(TAssociationTesting):
                         "Genotypes length (" + str(len(genotypes)) + ") is not same as phenotypes length (" +
                         str(len(phenotypes.y)) + ")")
 
-                PVALUE = af.OLS(genotypes=genotypes, phenotypes=phenotypes.y)
+                if is_binary:
+                    PVALUE = af.LR(genotypes=genotypes, phenotypes=phenotypes.y)
+                    if PVALUE is 'nan':
+                        num_variants_not_converged += 1
+                else:
+                    PVALUE = af.OLS(genotypes=genotypes, phenotypes=phenotypes.y)
                 self.p_values[i] = PVALUE
                 i += 1
-        logfile.info("- Ran OLS for " + str(variants.num_typed) + " variants")
+        if is_binary:
+            logfile.info("- Ran logistic regression for " + str(variants.num_typed) + " variants. It did not converge for " + str(num_variants_not_converged) + " variants")
+        else:
+            logfile.info("- Ran OLS for " + str(variants.num_typed) + " variants")
 
     def test_with_positions_from_X_matrix(self, X, positions, variants_sample, phenotypes, logfile):
         # counter respective to typed variants

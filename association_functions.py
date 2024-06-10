@@ -22,7 +22,7 @@ import glob
 import TParameters
 from typing import IO
 from python_log_indenter import IndentedLoggerAdapter
-
+import warnings
 
 def run_association_testing(args, random, logfile):
     """
@@ -174,6 +174,18 @@ def OLS(genotypes, phenotypes):
     return PVALUE
 
 
+def LR(genotypes, phenotypes):
+    genotypes = genotypes[~np.isnan(genotypes)]
+    genotypes = sm.tools.add_constant(genotypes)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            PVALUE = sm.Logit(phenotypes, genotypes).fit(disp=False).pvalues[1]
+        return PVALUE
+    except np.linalg.LinAlgError:
+        return 'nan'
+
+
 def run_association_GWAS(trees, samp_ids, inds, variants: tvar, pheno: pt, args: TParameters, logfile):
     outname = args.out + "_GWAS"
 
@@ -220,7 +232,8 @@ def run_association_GWAS(trees, samp_ids, inds, variants: tvar, pheno: pt, args:
         logfile.info("- Using genotypes from tree file for GWAS")
         # run association tests
         GWAS = at.TAssociationTestingGWAS(phenotypes=pheno, num_typed_variants=variants.num_typed)
-        GWAS.test_with_variants_object(trees=trees, samp_ids=samp_ids, variants=variants, phenotypes=pheno, inds=inds, logfile=logfile)
+        GWAS.test_with_variants_object(trees=trees, samp_ids=samp_ids, variants=variants, phenotypes=pheno, inds=inds,
+                                       logfile=logfile)
         GWAS.write_to_file(variants, outname, logfile)
         # GWAS.manhattan_plot(variant_positions=variants.info['position'], plots_dir=plots_dir)
 
@@ -326,7 +339,6 @@ def get_proportion_of_tree_within_window(window_start: int, window_end: int, tre
 
 def write_matrices_for_testing(cholesky_global_GRM_for_cor: cov, covariance_obj: cov, inds: tind, outname: str,
                                covariances_picklefile: IO, index: int, logfile: IndentedLoggerAdapter):
-
     if covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile):
         if cholesky_global_GRM_for_cor:
             # calculate cholesky of local GRM --> get A
@@ -394,7 +406,6 @@ def test_window_for_association(covariance_obj: cov, inds: tind, AIM_methods: li
                                           index=window_index,
                                           covariances_picklefile=covariances_picklefile,
                                           logfile=logfile):
-
                 m.test(index=window_index,
                        out=outname,
                        inds=inds,
@@ -409,7 +420,8 @@ def test_window_for_association(covariance_obj: cov, inds: tind, AIM_methods: li
     covariance_obj.clear()
 
 
-def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_methods: list, variants: tvar, trees: tskit.trees,
+def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_methods: list, variants: tvar,
+                                                  trees: tskit.trees,
                                                   window_ends: list, window_starts: list, num_tests: int, inds: tind,
                                                   covariances_picklefile: IO, pheno: pt, sample_ids: [int],
                                                   cholesky_global_GRM_for_cor: cov, logfile, outname: str,
@@ -449,8 +461,8 @@ def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_metho
 
         if tmpCov is not None:
             # for m in AIM_methods:
-                # covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile) removed
-                # because already in run association function
+            # covariance_obj.write(out=outname, inds=inds, covariances_picklefile=covariances_picklefile) removed
+            # because already in run association function
             test_window_for_association(
                 window_index=w,
                 covariance_obj=covariance_obj,
@@ -461,13 +473,13 @@ def loop_windows_variant_based_covariance_testing(covariance_obj: cov, AIM_metho
                 logfile=logfile,
                 cholesky_global_GRM_for_cor=cholesky_global_GRM_for_cor,
                 covariances_picklefile=covariances_picklefile)
-                # m.test(index=w,
-                #        out=outname,
-                #        covariance_object=covariance_obj,
-                #        phenotypes_object=pheno,
-                #        inds=inds,
-                #        covar=None,
-                #        covariances_picklefile=covariances_picklefile)
+            # m.test(index=w,
+            #        out=outname,
+            #        covariance_object=covariance_obj,
+            #        phenotypes_object=pheno,
+            #        inds=inds,
+            #        covar=None,
+            #        covariances_picklefile=covariances_picklefile)
             covariance_obj.clear()
 
         # log progress
@@ -627,7 +639,8 @@ def loop_windows_tree_based_covariance_testing(trees, covariance_obj: cov, AIM_m
                                             logfile=logfile)
 
 
-def run_association_AIM(trees: tskit.trees, inds: tind, variants: tvar, pheno: pt, args, ass_method: str, window_size: int, trees_interval,
+def run_association_AIM(trees: tskit.trees, inds: tind, variants: tvar, pheno: pt, args, ass_method: str,
+                        window_size: int, trees_interval,
                         logfile, sample_ids):
     # ----------------
     # initialize
