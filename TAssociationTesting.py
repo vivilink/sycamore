@@ -143,7 +143,7 @@ class TAssociationTestingGWAS(TAssociationTesting):
         # table['causal'] = np.repeat("FALSE", self.num_associations)
         # table.loc[self.phenotypes.causal_variant_indeces, 'causal'] = "TRUE"
         # table['betas'] = self.phenotypes.betas
-        logfile.info("- Writing results from OLS to '" + name + "_variants_results.csv'")
+        logfile.info("- Writing results from GWAS to '" + name + "_variants_results.csv'")
         table.to_csv(name + "_variants_results.csv", index=False, header=True)
 
         # summary statistics
@@ -168,14 +168,14 @@ class TAssociationTestingGWAS(TAssociationTesting):
         # table['causal'] = np.repeat("FALSE", self.num_associations)
         # table.loc[self.phenotypes.causal_variant_indeces, 'causal'] = "TRUE"
         # table['betas'] = self.phenotypes.betas 
-        logfile.info("- Writing results from OLS to '" + name + "_variants_results.csv'")
+        logfile.info("- Writing results from GWAS to '" + name + "_variants_results.csv'")
         table.to_csv(name + "_variants_results.csv", index=False, header=True)
 
         # summary statistics
         stats = pd.DataFrame({'min_p_value': [np.nanmin(self.p_values)],
                               'max_p_value': [np.nanmax(self.p_values)]
                               })
-        logfile.info("- Writing stats from OLS to '" + name + "_variants_stats.csv'")
+        logfile.info("- Writing stats from GWAS to '" + name + "_variants_stats.csv'")
         stats.to_csv(name + "_variants_stats.csv", index=False, header=True)
 
     def manhattan_plot_subset(self, variant_positions, phenotypes, subplot, index_min, index_max, size=1,
