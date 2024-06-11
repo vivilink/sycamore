@@ -114,7 +114,7 @@ class TAssociationTestingGWAS(TAssociationTesting):
                 self.p_values[i] = PVALUE
                 i += 1
         if is_binary:
-            logfile.info("- Ran logistic regression for " + str(variants.num_typed) + " variants. It did not converge for " + str(num_variants_not_converged) + " variants")
+            logfile.info("- Ran logistic regression for " + str(variants.num_typed) + " variants. It did not result in p-value for " + str(num_variants_not_converged) + " variants")
         else:
             logfile.info("- Ran OLS for " + str(variants.num_typed) + " variants")
 
