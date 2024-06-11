@@ -49,16 +49,16 @@ if(CLUSTER==TRUE){
 }
 colnames(regions) <- c("chr", "start", "end", "type")
 
-# png(paste("hawaiians_BMI_all_chromosomes_residuals.png", sep=''), width=5, height=50, units="in", res=400)
-png(paste("hawaiians_BMI_chr5.png", sep=''), width=8, height=4, units="in", res=600)
+png(paste("hawaiians_BMI_all_chromosomes_residuals.png", sep=''), width=5, height=50, units="in", res=400)
+# png(paste("hawaiians_BMI_chr5.png", sep=''), width=8, height=4, units="in", res=600)
 
-# par(mfrow=c(22,1))
-par(mfrow=c(1,1))
+par(mfrow=c(22,1))
+# par(mfrow=c(1,1))
 
 
-# for(CHROM in seq(1,22,1)){
+for(CHROM in seq(1,22,1)){
 
-for(CHROM in 5){
+# for(CHROM in 5){
   
 
   if(CLUSTER==TRUE){

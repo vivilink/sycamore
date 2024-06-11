@@ -71,11 +71,11 @@ par(mfrow=c(1,1))
         power_results <- read.table(paste("binary/true_trees/oneRegion/eGRM_GRM/window_based/", ws_causal,"/tested",ws_testing, "/", allowTyped, "/propCausal", propCausal, "/h", h, "/power_results.txt", sep=''), header=TRUE)
       
         
-        # # REML GWAS
-        # points(y=power_results$power_GWAS, x=x_pos-offset, pch=1, col=org)
-        # power <- power_results$power_GWAS
-        # std <- sqrt(power*(1-power)/nreps)
-        # segments(x0=x_pos-offset, y0=power - std, y1=power + std, col=org)
+        # GWAS
+        points(y=power_results$power_GWAS, x=x_pos-offset, pch=1, col=org)
+        power <- power_results$power_GWAS
+        std <- sqrt(power*(1-power)/nreps)
+        segments(x0=x_pos-offset, y0=power - std, y1=power + std, col=org)
         # 
         # REML eGRM
         points(y=power_results$power_REML_eGRM, x=x_pos+0*offset, pch=1, col=blu)

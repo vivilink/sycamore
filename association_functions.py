@@ -180,9 +180,12 @@ def LR(genotypes, phenotypes):
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            PVALUE = sm.Logit(phenotypes, genotypes).fit(disp=False).pvalues[1]
+            try:
+                PVALUE = sm.Logit(phenotypes, genotypes).fit(disp=False).pvalues[1]
+            except IndexError: # sometimes only one p-value for intercept is produced
+                return 'nan'
         return PVALUE
-    except np.linalg.LinAlgError:
+    except np.linalg.LinAlgError: # sometimes optimization does not converge
         return 'nan'
 
 
