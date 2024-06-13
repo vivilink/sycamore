@@ -114,7 +114,9 @@ class TAssociationTestingGWAS(TAssociationTesting):
                 self.p_values[i] = PVALUE
                 i += 1
         if is_binary:
-            logfile.info("- Ran logistic regression for " + str(variants.num_typed) + " variants. It did not result in p-value for " + str(num_variants_not_converged) + " variants")
+            logfile.info("- Ran logistic regression for " + str(
+                variants.num_typed) + " variants. It did not result in p-value for " + str(
+                num_variants_not_converged) + " variants")
         else:
             logfile.info("- Ran OLS for " + str(variants.num_typed) + " variants")
 
@@ -322,6 +324,20 @@ class TAssociationTestingRegions(TAssociationTesting):
             subplot.plot(variant_positions[index_min:index_max], low, color="red")
 
         subplot.axhline(y=8, color="red", lw=0.5)
+
+    def write_multi_grm_file(self, outname, logfile, global_grms: list):
+        """
+        Write file with prefixes of local GRM and global GRM (population structure) so that GCTA includes both in the model
+        :param outname: str
+        :param logfile: TLog
+        :param global_grms: list of str, prefix of global GRM in binary format
+        :return: None
+        """
+        logfile.info("- Writing multi grm file to '" + outname + "_multi_grm.txt'")
+        with open(outname + '_multi_grm.txt', 'w') as f:
+            f.write(outname + '\n')
+            for g in global_grms:
+                f.write(g + '\n')
 
     def test(self, covariance_object, phenotypes_object, inds, index, covar, covariances_picklefile, out):
         raise ValueError("Function not defined for base class")
@@ -545,20 +561,6 @@ class TAssociationTestingRegionsGCTA(TAssociationTestingRegions):
                                     additional_gcta_params,
                                     num_GCTA_threads):
         raise ValueError("write_GCTA_command_file_grm() not defined for GCTA base class!")
-
-    def write_multi_grm_file(self, outname, logfile, global_grms: list):
-        """
-        Write file with prefixes of local GRM and global GRM (population structure) so that GCTA includes both in the model
-        :param outname: str
-        :param logfile: TLog
-        :param global_grms: list of str, prefix of global GRM in binary format
-        :return: None
-        """
-        logfile.info("- Writing multi grm file to '" + outname + "_multi_grm.txt'")
-        with open(outname + '_multi_grm.txt', 'w') as f:
-            f.write(outname + '\n')
-            for g in global_grms:
-                f.write(g + '\n')
 
 
 class TAssociationTestingRegionsGCTA_HE(TAssociationTestingRegionsGCTA):
@@ -1149,9 +1151,20 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         elif len(args.population_disease_prevalence) > 1:
             raise ValueError("Currently only accepting one population disease prevalence value. "
                              "This will change when multiple phenotypes can be tested at once.")
-        self.write_PCGC_command_file_grm(pheno_file=pheno_file, outname=outname,
-                                         additional_ldak_params=args.additional_ldak_params,
-                                         population_prevalence=args.population_disease_prevalence, LDAK=args.LDAK)
+
+        if args.population_structure_matrix and args.population_structure_pca_num_eigenvectors is None:
+            logfile.info("- Writing gcta command file to test a model containing the local GRM and a global GRM as "
+                         "random effects")
+            self.write_PCGC_command_file_mgrm(pheno_file=pheno_file, outname=outname,
+                                              additional_ldak_params=args.additional_ldak_params,
+                                              population_prevalence=args.population_disease_prevalence, LDAK=args.LDAK,
+                                              population_structure_grm_prefix=args.population_structure_matrix,
+                                              logfile=logfile)
+
+        else:
+            self.write_PCGC_command_file_grm(pheno_file=pheno_file, outname=outname,
+                                             additional_ldak_params=args.additional_ldak_params,
+                                             population_prevalence=args.population_disease_prevalence, LDAK=args.LDAK)
 
         st = os.stat(outname + "_run_" + self.name + ".sh")
         os.chmod(outname + "_run_" + self.name + ".sh", st.st_mode | stat.S_IEXEC)
@@ -1171,9 +1184,27 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
 
         # read results
         result_1 = pd.read_csv(out + "_pcgc_result_1.txt", sep=' ', header=None, names=['Parameter', 'Value'])
-        result_1_marginal = pd.read_csv(out + "_pcgc_result_1_marginal.txt", sep=' ', header=None, names=['Parameter', 'Value'])
-        result_2 = pd.read_csv(out + "_pcgc_result_2.txt", sep=' ')
-        result_2_marginal = pd.read_csv(out + "_pcgc_result_2_marginal.txt", sep=' ')
+        result_1_marginal = pd.read_csv(out + "_pcgc_result_1_marginal.txt", sep=' ', header=None,
+                                        names=['Parameter', 'Value'])
+        try:
+            result_2 = pd.read_csv(out + "_pcgc_result_2.txt", sep=' ')
+            result_2_marginal = pd.read_csv(out + "_pcgc_result_2_marginal.txt", sep=' ')
+
+            # get other statistics from results_2
+            self.V_G[index] = (result_2['Heritability'].loc[result_2['Component'] == 'Her_K1']).item()
+            self.V_G_SD[index] = result_2['SD'].loc[result_2['Component'] == 'Her_K1'].item()
+            self.V_G[index] = (result_2['Heritability'].loc[result_2['Component'] == 'Her_K1']).item()
+            self.V_G_SD[index] = result_2['SD'].loc[result_2['Component'] == 'Her_K1'].item()
+
+            self.V_G_marginal[index] = (
+            result_2_marginal['Heritability'].loc[result_2_marginal['Component'] == 'Her_K1']).item()
+            self.V_G_SD_marginal[index] = result_2_marginal['SD'].loc[result_2_marginal['Component'] == 'Her_K1'].item()
+            self.V_G_marginal[index] = (
+            result_2_marginal['Heritability'].loc[result_2_marginal['Component'] == 'Her_K1']).item()
+            self.V_G_SD_marginal[index] = result_2_marginal['SD'].loc[result_2_marginal['Component'] == 'Her_K1'].item()
+
+        except pd.errors.EmptyDataError:
+            pass
 
         # get p-value and other from results_1
         result_pvalue = float(result_1['Value'].loc[result_1['Parameter'] == 'LRT_P'].item())
@@ -1193,16 +1224,7 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         self.p_values[index] = result_pvalue
         self.LRT[index] = result_1_marginal['Value'].loc[result_1_marginal['Parameter'] == 'LRT_Stat'].item()
 
-        # get other statistics from results_2
-        self.V_G[index] = (result_2['Heritability'].loc[result_2['Component'] == 'Her_K1']).item()
-        self.V_G_SD[index] = result_2['SD'].loc[result_2['Component'] == 'Her_K1'].item()
-        self.V_G[index] = (result_2['Heritability'].loc[result_2['Component'] == 'Her_K1']).item()
-        self.V_G_SD[index] = result_2['SD'].loc[result_2['Component'] == 'Her_K1'].item()
 
-        self.V_G_marginal[index] = (result_2_marginal['Heritability'].loc[result_2_marginal['Component'] == 'Her_K1']).item()
-        self.V_G_SD_marginal[index] = result_2_marginal['SD'].loc[result_2_marginal['Component'] == 'Her_K1'].item()
-        self.V_G_marginal[index] = (result_2_marginal['Heritability'].loc[result_2_marginal['Component'] == 'Her_K1']).item()
-        self.V_G_SD_marginal[index] = result_2_marginal['SD'].loc[result_2_marginal['Component'] == 'Her_K1'].item()
 
         # self.V_e[index] = result['Variance'].loc[result['Source'] == 'V(e)'].item()
         # self.Vp[index] = result['Variance'].loc[result['Source'] == 'Vp'].item()
@@ -1215,8 +1237,8 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         # self.V_G_over_Vp_SE[index] = result['SE'].loc[result['Source'] == 'V(G)/Vp'].item()
 
         # delete GCTA results file to make sure it's not used again
-        af.remove_files_with_pattern(out + '*.pcgc')
-        af.remove_files_with_pattern(out + '*.pcgc_marginal')
+        # af.remove_files_with_pattern(out + '*.pcgc')
+        # af.remove_files_with_pattern(out + '*.pcgc_marginal')
 
     def write_association_results_to_file(self, window_starts, window_ends, out, phenotypes, logfile):
         table = pd.DataFrame()
@@ -1274,11 +1296,52 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
                     string += " --" + p
             f.write(string + " > " + outname + "_tmp.out\n")
 
-            f.write("sed -n '1,13p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1.txt\n")
-            f.write("sed -n '14,17p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2.txt\n")
+            f.write(
+                "sed -n '1,13p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1.txt\n")
+            f.write(
+                "sed -n '14,17p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2.txt\n")
 
-            f.write("sed -n '1,13p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1_marginal.txt\n")
-            f.write("sed -n '14,17p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
+            f.write(
+                "sed -n '1,13p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1_marginal.txt\n")
+            f.write(
+                "sed -n '14,17p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
+
+    def write_PCGC_command_file_mgrm(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence,
+                                     population_structure_grm_prefix, logfile):
+        """
+        Write executable bash script for running association test with multiple random effects using pcgc
+
+        @param testing_method:
+        @param outname:
+        @param pheno_file:
+        @param outfile:
+        @param GCTA:
+        @param num_GCTA_threads:
+        @return:
+        """
+        self.write_multi_grm_file(outname=outname, logfile=logfile,
+                                  global_grms=[population_structure_grm_prefix])
+
+        with (open(self.script_name, 'w') as f):
+            f.write("#!/bin/bash\n")
+            string = LDAK + " --pcgc " + outname + " --pheno " \
+                     + pheno_file + " --kinship-details NO --prevalence " + str(population_prevalence[0]) \
+                     + " --mgrm " + outname + "_multi_grm.txt"
+
+            if additional_ldak_params is not None:
+                for p in additional_ldak_params:
+                    string += " --" + p
+            f.write(string + " > " + outname + "_tmp.out\n")
+
+            f.write(
+                "sed -n '1,13p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1.txt\n")
+            f.write(
+                "sed -n '14,17p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2.txt\n")
+
+            f.write(
+                "sed -n '1,13p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1_marginal.txt\n")
+            f.write(
+                "sed -n '14,17p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
 
 
 class TTreeAssociationMantel(TAssociationTestingRegions):
