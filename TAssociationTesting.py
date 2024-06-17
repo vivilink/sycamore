@@ -1152,7 +1152,7 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
             raise ValueError("Currently only accepting one population disease prevalence value. "
                              "This will change when multiple phenotypes can be tested at once.")
 
-        if args.population_structure_matrix and args.population_structure_pca_num_eigenvectors is None:
+        if args.population_structure_matrix and args.covar is None:
             logfile.info("- Writing gcta command file to test a model containing the local GRM and a global GRM as "
                          "random effects")
             self.write_PCGC_command_file_mgrm(pheno_file=pheno_file, outname=outname,
@@ -1161,8 +1161,7 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
                                               population_structure_grm_prefix=args.population_structure_matrix,
                                               logfile=logfile)
 
-        elif args.population_structure_matrix and args.covar \
-                and not args.global_GRM_and_PCs_model:
+        elif args.population_structure_matrix and args.covar and not args.global_GRM_and_PCs_model:
             logfile.info(
                 "- Writing pcgc command file to run a PCA on the population structure GRM, and then test a "
                 "model containing the local GRM as a random effect, and the PCs as fixed effects")
