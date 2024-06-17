@@ -1347,14 +1347,14 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
             f.write(string + " > " + outname + "_tmp.out\n")
 
             f.write(
-                "sed -n '1,13p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1.txt\n")
+                "sed -n '1,13p' " + outname + ".covar.pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1.txt\n")
             f.write(
-                "sed -n '14,17p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2.txt\n")
+                "sed -n '14,17p' " + outname + ".covar.pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2.txt\n")
 
             f.write(
-                "sed -n '1,13p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1_marginal.txt\n")
+                "sed -n '1,13p' " + outname + ".covar.pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1_marginal.txt\n")
             f.write(
-                "sed -n '14,17p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
+                "sed -n '14,17p' " + outname + ".covar.pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
 
     def write_PCGC_command_file_mgrm(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence,
                                      population_structure_grm_prefix, logfile):
