@@ -226,6 +226,8 @@ class TParameters:
         assoc.add_argument('--global_GRM_and_PCs_model', action='store_true',
                            help="Correct for stratification with global GRM provided with '--population_strucure' and "
                                 "also with PCs")
+        assoc.add_argument('--covar', type=str,
+                           help="File containing covariates in PLINK format, e.g. PCs")
         assoc.add_argument('--coreGREML_model', action='store_true',
                            help="Correct for stratification with global GRM provided with '--population_structure' and "
                                 "also the correlation between the local and global GRMs (this is the coreGREML model of "

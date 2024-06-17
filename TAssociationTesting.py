@@ -1161,6 +1161,18 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
                                               population_structure_grm_prefix=args.population_structure_matrix,
                                               logfile=logfile)
 
+        elif args.population_structure_matrix and args.population_structure_pca_num_eigenvectors \
+                and not args.global_GRM_and_PCs_model:
+            logfile.info(
+                "- Writing pcgc command file to run a PCA on the population structure GRM, and then test a "
+                "model containing the local GRM as a random effect, and the PCs as fixed effects")
+            self.write_pcgc_command_file_grm_pca(outname=outname,
+                                                 pheno_file=pheno_file,
+                                                 pc_file=args.covar,
+                                                 population_structure_grm_prefix=args.population_structure_matrix,
+                                                 additional_ldak_params=args.additional_ldak_params,
+                                                 population_prevalence=args.population_disease_prevalence,
+                                                 LDAK=args.LDAK)
         else:
             self.write_PCGC_command_file_grm(pheno_file=pheno_file, outname=outname,
                                              additional_ldak_params=args.additional_ldak_params,
@@ -1197,10 +1209,10 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
             self.V_G_SD[index] = result_2['SD'].loc[result_2['Component'] == 'Her_K1'].item()
 
             self.V_G_marginal[index] = (
-            result_2_marginal['Heritability'].loc[result_2_marginal['Component'] == 'Her_K1']).item()
+                result_2_marginal['Heritability'].loc[result_2_marginal['Component'] == 'Her_K1']).item()
             self.V_G_SD_marginal[index] = result_2_marginal['SD'].loc[result_2_marginal['Component'] == 'Her_K1'].item()
             self.V_G_marginal[index] = (
-            result_2_marginal['Heritability'].loc[result_2_marginal['Component'] == 'Her_K1']).item()
+                result_2_marginal['Heritability'].loc[result_2_marginal['Component'] == 'Her_K1']).item()
             self.V_G_SD_marginal[index] = result_2_marginal['SD'].loc[result_2_marginal['Component'] == 'Her_K1'].item()
 
         except pd.errors.EmptyDataError:
@@ -1223,8 +1235,6 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
             raise ValueError("p-value larger than 1 for window with index " + str(index))
         self.p_values[index] = result_pvalue
         self.LRT[index] = result_1_marginal['Value'].loc[result_1_marginal['Parameter'] == 'LRT_Stat'].item()
-
-
 
         # self.V_e[index] = result['Variance'].loc[result['Source'] == 'V(e)'].item()
         # self.Vp[index] = result['Variance'].loc[result['Source'] == 'Vp'].item()
@@ -1306,10 +1316,11 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
             f.write(
                 "sed -n '14,17p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
 
-    def write_PCGC_command_file_mgrm(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence,
-                                     population_structure_grm_prefix, logfile):
+    def write_pcgc_command_file_grm_pca(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence,
+                                        population_structure_grm_prefix, pc_file):
+
         """
-        Write executable bash script for running association test with multiple random effects using pcgc
+        Write executable bash script for running association test with PCs using pcgc
 
         @param testing_method:
         @param outname:
@@ -1319,6 +1330,48 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         @param num_GCTA_threads:
         @return:
         """
+
+        with (open(self.script_name, 'w') as f):
+            f.write("#!/bin/bash\n")
+
+            # first adjust kinship http://dougspeed.com/adjust-kinships/
+            string = LDAK + " --adjust-grm " + outname + ".covar --grm " + population_structure_grm_prefix + " --covar " + pc_file
+            f.write(string + "\n")
+
+            string = LDAK + " --pcgc " + outname + ".covar --pheno " \
+                     + pheno_file + " --kinship-details NO --prevalence " + str(population_prevalence[0]) \
+                     + " --covar " + pc_file
+
+            if additional_ldak_params is not None:
+                for p in additional_ldak_params:
+                    string += " --" + p
+            f.write(string + " > " + outname + "_tmp.out\n")
+
+            f.write(
+                "sed -n '1,13p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1.txt\n")
+            f.write(
+                "sed -n '14,17p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2.txt\n")
+
+            f.write(
+                "sed -n '1,13p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1_marginal.txt\n")
+            f.write(
+                "sed -n '14,17p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
+
+    def write_PCGC_command_file_mgrm(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence,
+                                     population_structure_grm_prefix, logfile):
+        """
+        Write executable bash script for running association test with multiple random effects using pcgc
+
+        :param outname:
+        :param pheno_file:
+        :param LDAK:
+        :param additional_ldak_params:
+        :param population_prevalence:
+        :param population_structure_grm_prefix:
+        :param logfile:
+        :return:
+        """
+
         self.write_multi_grm_file(outname=outname, logfile=logfile,
                                   global_grms=[population_structure_grm_prefix])
 
