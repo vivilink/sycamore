@@ -1216,6 +1216,8 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
 
         except pd.errors.EmptyDataError:
             pass
+        except ValueError:
+            pass
 
         # get p-value and other from results_1
         result_pvalue = float(result_1['Value'].loc[result_1['Parameter'] == 'LRT_P'].item())
