@@ -1161,7 +1161,7 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
                                               population_structure_grm_prefix=args.population_structure_matrix,
                                               logfile=logfile)
 
-        elif args.population_structure_matrix and args.population_structure_pca_num_eigenvectors \
+        elif args.population_structure_matrix and args.covar \
                 and not args.global_GRM_and_PCs_model:
             logfile.info(
                 "- Writing pcgc command file to run a PCA on the population structure GRM, and then test a "
