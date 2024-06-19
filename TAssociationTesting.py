@@ -1107,8 +1107,12 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         self.write_command_script(pheno_file=pheno_file, outname=outname, logfile=logfile, args=args)
 
         # results containers
-        self.p_values = np.empty(self.num_associations)
-        self.p_values.fill(np.nan)
+        self.p_values_reported = np.empty(self.num_associations)
+        self.p_values_reported.fill(np.nan)
+        self.p_values_heritability = np.empty(self.num_associations)
+        self.p_values_heritability.fill(np.nan)
+        self.p_values_LRT = np.empty(self.num_associations)
+        self.p_values_LRT.fill(np.nan)
         self.V_G = np.empty(self.num_associations)
         self.V_G.fill(np.nan)
         self.V_e = np.empty(self.num_associations)
@@ -1121,8 +1125,8 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         self.logL.fill(np.nan)
         self.logL0 = np.empty(self.num_associations)
         self.logL0.fill(np.nan)
-        self.LRT = np.empty(self.num_associations)
-        self.LRT.fill(np.nan)
+        self.LRT_reported = np.empty(self.num_associations)
+        self.LRT_reported.fill(np.nan)
 
         self.V_G_SD = np.empty(self.num_associations)
         self.V_G_SD.fill(np.nan)
@@ -1133,12 +1137,12 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         self.V_G_over_Vp_SE = np.empty(self.num_associations)
         self.V_G_over_Vp_SE.fill(np.nan)
 
-        self.p_values_marginal = np.empty(self.num_associations)
-        self.p_values_marginal.fill(np.nan)
+        self.p_values_reported_marginal = np.empty(self.num_associations)
+        self.p_values_reported_marginal.fill(np.nan)
         self.V_G_marginal = np.empty(self.num_associations)
         self.V_G_marginal.fill(np.nan)
-        self.LRT_marginal = np.empty(self.num_associations)
-        self.LRT_marginal.fill(np.nan)
+        self.LRT_reported_marginal = np.empty(self.num_associations)
+        self.LRT_reported_marginal.fill(np.nan)
         self.V_G_SD_marginal = np.empty(self.num_associations)
         self.V_G_SD_marginal.fill(np.nan)
 
@@ -1172,6 +1176,17 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
                                                  additional_ldak_params=args.additional_ldak_params,
                                                  population_prevalence=args.population_disease_prevalence,
                                                  LDAK=args.LDAK)
+        elif args.coreGREML_model:
+            logfile.info(
+                "- Writing gcta command file to test a model containing the local GRM and a global GRM and "
+                "their correlation as random effects")
+            self.write_pcgc_command_file_mgrm_cor(outname=outname,
+                                                  pheno_file=pheno_file,
+                                                  LDAK=args.LDAK,
+                                                  population_structure_grm_prefix=args.population_structure_matrix,
+                                                  covariance_grm_prefix=outname + "_cov",
+                                                  logfile=logfile,
+                                                  additional_ldak_params=args.additional_ldak_params)
         else:
             self.write_PCGC_command_file_grm(pheno_file=pheno_file, outname=outname,
                                              additional_ldak_params=args.additional_ldak_params,
@@ -1197,57 +1212,59 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         result_1 = pd.read_csv(out + "_pcgc_result_1.txt", sep=' ', header=None, names=['Parameter', 'Value'])
         result_1_marginal = pd.read_csv(out + "_pcgc_result_1_marginal.txt", sep=' ', header=None,
                                         names=['Parameter', 'Value'])
-        try:
-            result_2 = pd.read_csv(out + "_pcgc_result_2.txt", sep=' ')
-            result_2_marginal = pd.read_csv(out + "_pcgc_result_2_marginal.txt", sep=' ')
+        result_2 = pd.read_csv(out + "_pcgc_result_2.txt", sep=' ')
+        result_2_marginal = pd.read_csv(out + "_pcgc_result_2_marginal.txt", sep=' ')
 
-            # get other statistics from results_2
-            self.V_G[index] = (result_2['Heritability'].loc[result_2['Component'] == 'Her_K1']).item()
-            self.V_G_SD[index] = result_2['SD'].loc[result_2['Component'] == 'Her_K1'].item()
-            self.V_G[index] = (result_2['Heritability'].loc[result_2['Component'] == 'Her_K1']).item()
-            self.V_G_SD[index] = result_2['SD'].loc[result_2['Component'] == 'Her_K1'].item()
+        # get heritability statistics from results_2
+        self.V_G[index] = (result_2['Heritability'].loc[result_2['Component'] == 'Her_K1']).item()
+        self.V_G_SD[index] = result_2['SD'].loc[result_2['Component'] == 'Her_K1'].item()
+        self.V_G_marginal[index] = (
+            result_2_marginal['Heritability'].loc[result_2_marginal['Component'] == 'Her_K1']).item()
+        self.V_G_SD_marginal[index] = result_2_marginal['SD'].loc[result_2_marginal['Component'] == 'Her_K1'].item()
 
-            self.V_G_marginal[index] = (
-                result_2_marginal['Heritability'].loc[result_2_marginal['Component'] == 'Her_K1']).item()
-            self.V_G_SD_marginal[index] = result_2_marginal['SD'].loc[result_2_marginal['Component'] == 'Her_K1'].item()
-            self.V_G_marginal[index] = (
-                result_2_marginal['Heritability'].loc[result_2_marginal['Component'] == 'Her_K1']).item()
-            self.V_G_SD_marginal[index] = result_2_marginal['SD'].loc[result_2_marginal['Component'] == 'Her_K1'].item()
+        # get reported LRT
+        self.LRT_reported[index] = result_1['Value'].loc[result_1['Parameter'] == 'LRT_Stat'].item()
+        self.LRT_reported_marginal[index] = result_1_marginal['Value'].loc[
+            result_1_marginal['Parameter'] == 'LRT_Stat'].item()
 
-        except pd.errors.EmptyDataError:
-            pass
-        except ValueError:
-            pass
-
-        # get p-value and other from results_1
+        # get reported p-value
         result_pvalue = float(result_1['Value'].loc[result_1['Parameter'] == 'LRT_P'].item())
         if result_pvalue < 0:
             raise ValueError("Negative p-value for window with index " + str(index))
         if result_pvalue > 1:
             raise ValueError("p-value larger than 1 for window with index " + str(index))
-        self.p_values[index] = result_pvalue
-        self.LRT[index] = result_1['Value'].loc[result_1['Parameter'] == 'LRT_Stat'].item()
+        self.p_values_reported[index] = result_pvalue
 
-        # get p-value and other from results_1_marginal
+        # get reported p-value and other from results_1_marginal
         result_pvalue = float(result_1_marginal['Value'].loc[result_1_marginal['Parameter'] == 'LRT_P'].item())
         if result_pvalue < 0:
             raise ValueError("Negative p-value for window with index " + str(index))
         if result_pvalue > 1:
             raise ValueError("p-value larger than 1 for window with index " + str(index))
-        self.p_values[index] = result_pvalue
-        self.LRT[index] = result_1_marginal['Value'].loc[result_1_marginal['Parameter'] == 'LRT_Stat'].item()
+        self.p_values_reported_marginal[index] = result_pvalue
 
-        # self.V_e[index] = result['Variance'].loc[result['Source'] == 'V(e)'].item()
-        # self.Vp[index] = result['Variance'].loc[result['Source'] == 'Vp'].item()
-        # self.V_G_over_Vp[index] = result['Variance'].loc[result['Source'] == 'V(G)/Vp'].item()
-        # self.logL[index] = result['Variance'].loc[result['Source'] == 'logL'].item()
-        # self.logL0[index] = result['Variance'].loc[result['Source'] == 'logL0'].item()
-        #
-        # self.V_e_SE[index] = result['SE'].loc[result['Source'] == 'V(e)'].item()
-        # self.Vp_SE[index] = result['SE'].loc[result['Source'] == 'Vp'].item()
-        # self.V_G_over_Vp_SE[index] = result['SE'].loc[result['Source'] == 'V(G)/Vp'].item()
+        # calculate p-value based on Z-score
+        z_score = self.V_G[index] / self.V_G_SD[index]
+        result_pvalue = scipy.stats.norm.cdf(z_score, loc=0, scale=1)
+        self.p_values_heritability[index] = result_pvalue
 
-        # delete GCTA results file to make sure it's not used again
+        # calculate p-value based on LRT
+        try:
+            # Attempt to open the file
+            result_1 = pd.read_csv(out + "_null_pcgc_result_1.txt", sep=' ', header=None, names=['Parameter', 'Value'])
+            print("found null model!!")
+            LL_null = float(result_1['Value'].loc[result_1['Parameter'] == 'LRT_Stat'].item())
+            print("LL_null", type(LL_null))
+            print("self.LRT_reported[index]", type(self.LRT_reported[index]))
+
+            LRT = 2 * (self.LRT_reported[index] - LL_null)
+            result_pvalue_chi2 = 1 - scipy.stats.chi2.cdf(LRT, df=2, loc=0, scale=1)
+            self.p_values_LRT[index] = result_pvalue_chi2
+
+        except FileNotFoundError:
+            pass
+
+        # delete .pcgc results file to make sure it's not used again
         # af.remove_files_with_pattern(out + '*.pcgc')
         # af.remove_files_with_pattern(out + '*.pcgc_marginal')
 
@@ -1255,8 +1272,10 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         table = pd.DataFrame()
         table['start'] = window_starts
         table['end'] = window_ends
-        table['p_values'] = self.p_values
-        table['p_values_marginal'] = self.p_values_marginal
+        table['p_values_reported'] = self.p_values_reported
+        table['p_values_reported_marginal'] = self.p_values_reported_marginal
+        table['p_values_LRT'] = self.p_values_LRT
+        table['p_values_heritability'] = self.p_values_heritability
         table['V_G'] = self.V_G
         table['V_G_marginal'] = self.V_G_marginal
         table['V_e'] = self.V_e
@@ -1264,8 +1283,8 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         table['V_G_over_Vp'] = self.V_G_over_Vp
         table['logL'] = self.logL
         table['logL0'] = self.logL0
-        table['LRT'] = self.LRT
-        table['LRT_marginal'] = self.LRT_marginal
+        table['LRT_reported'] = self.LRT_reported
+        table['LRT_reported_marginal'] = self.LRT_reported_marginal
         table['V_G_SD'] = self.V_G_SD
         table['V_G_SD_marginal'] = self.V_G_SD_marginal
         table['V_e_SE'] = self.V_e_SE
@@ -1278,8 +1297,8 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         table.to_csv(out + "_trees_pcgc_results.csv", index=False, header=True)
         logfile.info("- Wrote results from tree association tests to '" + out + "_trees_pcgc_results.csv'")
 
-        stats = pd.DataFrame({'min_p_value': [np.nanmin(self.p_values)],
-                              'max_p_value': [np.nanmax(self.p_values)]
+        stats = pd.DataFrame({'min_p_value': [np.nanmin(self.p_values_reported)],
+                              'max_p_value': [np.nanmax(self.p_values_reported)]
                               })
         stats.to_csv(out + "_trees_pcgc_stats.csv", index=False, header=True)
         logfile.info("- Wrote stats from tree association tests to '" + out + "_trees_pcgc_stats.csv'")
@@ -1299,6 +1318,8 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
 
         with (open(self.script_name, 'w') as f):
             f.write("#!/bin/bash\n")
+            f.write("rm " + outname + ".pcgc\n")
+
             string = LDAK + " --pcgc " + outname + " --grm " + outname + " --pheno " \
                      + pheno_file + " --kinship-details NO --prevalence " + str(population_prevalence[0])
 
@@ -1358,6 +1379,28 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
             f.write(
                 "sed -n '14,17p' " + outname + ".covar.pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
 
+    def write_null_model(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence, file,
+                         population_structure_grm_prefix):
+
+        string = LDAK + " --pcgc " + outname + " --grm " + population_structure_grm_prefix + " --pheno " \
+                 + pheno_file + " --kinship-details NO --prevalence " + str(population_prevalence[0])
+
+        if additional_ldak_params is not None:
+            for p in additional_ldak_params:
+                string += " --" + p
+        file.write(string + " > " + outname + "_tmp.out\n")
+
+    def write_extraction_part(self, outname, file):
+        file.write(
+            "sed -n '1,13p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1.txt\n")
+        file.write(
+            "sed -n '14,17p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2.txt\n")
+
+        file.write(
+            "sed -n '1,13p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1_marginal.txt\n")
+        file.write(
+            "sed -n '14,17p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
+
     def write_PCGC_command_file_mgrm(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence,
                                      population_structure_grm_prefix, logfile):
         """
@@ -1378,24 +1421,30 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
 
         with (open(self.script_name, 'w') as f):
             f.write("#!/bin/bash\n")
-            string = LDAK + " --pcgc " + outname + " --pheno " \
+            f.write("rm " + outname + ".pcgc\n")
+
+            # alternative model
+            outname_alt_model = outname
+
+            string = LDAK + " --pcgc " + outname_alt_model + " --pheno " \
                      + pheno_file + " --kinship-details NO --prevalence " + str(population_prevalence[0]) \
-                     + " --mgrm " + outname + "_multi_grm.txt"
+                     + " --mgrm " + outname_alt_model + "_multi_grm.txt"
 
             if additional_ldak_params is not None:
                 for p in additional_ldak_params:
                     string += " --" + p
-            f.write(string + " > " + outname + "_tmp.out\n")
+            f.write(string + " > " + outname_alt_model + "_tmp.out\n")
+            self.write_extraction_part(outname=outname_alt_model, file=f)
 
-            f.write(
-                "sed -n '1,13p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1.txt\n")
-            f.write(
-                "sed -n '14,17p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2.txt\n")
+            # null model
+            outname_null_model = outname + "_null"
+            f.write("rm " + outname_null_model + ".pcgc\n")
 
-            f.write(
-                "sed -n '1,13p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1_marginal.txt\n")
-            f.write(
-                "sed -n '14,17p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
+            self.write_null_model(outname=outname_null_model, pheno_file=pheno_file, LDAK=LDAK, file=f,
+                                  additional_ldak_params=additional_ldak_params,
+                                  population_prevalence=population_prevalence,
+                                  population_structure_grm_prefix=population_structure_grm_prefix)
+            self.write_extraction_part(file=f, outname=outname_null_model)
 
 
 class TTreeAssociationMantel(TAssociationTestingRegions):
