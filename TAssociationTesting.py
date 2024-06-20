@@ -1150,6 +1150,8 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         self.run_association_one_window_pcgc(index=index, out=out)
 
     def write_command_script(self, pheno_file, outname, logfile, args):
+        logfile.info("WARRNING: If null model file from test with LOCO GRM exists it will be used for LRT, "
+                     "even if not running pcgc mgrm")
         if args.population_disease_prevalence is None:
             raise ValueError("Need to provide population disease prevalence with 'population_disease_prevalence'")
         elif len(args.population_disease_prevalence) > 1:
@@ -1445,6 +1447,10 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
                                   population_prevalence=population_prevalence,
                                   population_structure_grm_prefix=population_structure_grm_prefix)
             self.write_extraction_part(file=f, outname=outname_null_model)
+
+    def write_pcgc_command_file_mgrm_cor(self, outname, pheno_file, LDAK, population_structure_grm_prefix,
+                                         covariance_grm_prefix, logfile, additional_ldak_params):
+        raise ValueError("mgrm_cor not implemented for pcgc")
 
 
 class TTreeAssociationMantel(TAssociationTestingRegions):
