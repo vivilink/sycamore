@@ -1094,15 +1094,19 @@ class TAssociationTestingRegionsGCTA_REML(TAssociationTestingRegionsGCTA):
                 + str(num_GCTA_threads) + " --reml-maxit 500  > " + outname + "_tmp.out\n")
 
 
-class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
+class TAssociationTestingRegionsLDAK(TAssociationTestingRegions):
     """
-    tree-based association testing using LADK REML algorithm (https://dougspeed.com/reml-analysis/)
+    tree-based association testing using LADK pcgc or REML algorithm (https://dougspeed.com/reml-analysis/)
     """
 
     def __init__(self, ts_object, phenotypes, test_name, pheno_file, outname, logfile, args):
 
         super().__init__(ts_object, phenotypes)
-        self.name = "regions_LDAK_pcgc"
+        if test_name == "LDAK_pcgc":
+            self.test_name = "pcgc"
+        elif test_name == "LDAK_REML":
+            self.test_name = "reml"
+        self.name = "regions_" + test_name
         self.script_name = outname + "_run_" + self.name + ".sh"
         self.write_command_script(pheno_file=pheno_file, outname=outname, logfile=logfile, args=args)
 
@@ -1151,7 +1155,7 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
 
     def write_command_script(self, pheno_file, outname, logfile, args):
         logfile.info("WARRNING: If null model file from test with LOCO GRM exists it will be used for LRT, "
-                     "even if not running pcgc mgrm")
+                     "even if not running LDAK mgrm")
         if args.population_disease_prevalence is None:
             raise ValueError("Need to provide population disease prevalence with 'population_disease_prevalence'")
         elif len(args.population_disease_prevalence) > 1:
@@ -1159,7 +1163,7 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
                              "This will change when multiple phenotypes can be tested at once.")
 
         if args.population_structure_matrix and args.covar is None:
-            logfile.info("- Writing gcta command file to test a model containing the local GRM and a global GRM as "
+            logfile.info("- Writing LDAK command file to test a model containing the local GRM and a global GRM as "
                          "random effects")
             self.write_PCGC_command_file_mgrm(pheno_file=pheno_file, outname=outname,
                                               additional_ldak_params=args.additional_ldak_params,
@@ -1169,7 +1173,7 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
 
         elif args.population_structure_matrix and args.covar and not args.global_GRM_and_PCs_model:
             logfile.info(
-                "- Writing pcgc command file to run a PCA on the population structure GRM, and then test a "
+                "- Writing LDAK command file to run a PCA on the population structure GRM, and then test a "
                 "model containing the local GRM as a random effect, and the PCs as fixed effects")
             self.write_pcgc_command_file_grm_pca(outname=outname,
                                                  pheno_file=pheno_file,
@@ -1208,14 +1212,15 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         # create pcgc input files, run pcgc and parse output
         exit_code = subprocess.call([self.script_name])
         if exit_code != 0:
-            raise ValueError("There was an error running pcgc")
+            raise ValueError("There was an error running LDAK")
 
         # read results
-        result_1 = pd.read_csv(out + "_pcgc_result_1.txt", sep=' ', header=None, names=['Parameter', 'Value'])
-        result_1_marginal = pd.read_csv(out + "_pcgc_result_1_marginal.txt", sep=' ', header=None,
+        result_1 = pd.read_csv(out + "_" + self.test_name + "_result_1.txt", sep=' ', header=None,
+                               names=['Parameter', 'Value'])
+        result_1_marginal = pd.read_csv(out + "_" + self.test_name + "_result_1_marginal.txt", sep=' ', header=None,
                                         names=['Parameter', 'Value'])
         result_2 = pd.read_csv(out + "_pcgc_result_2.txt", sep=' ')
-        result_2_marginal = pd.read_csv(out + "_pcgc_result_2_marginal.txt", sep=' ')
+        result_2_marginal = pd.read_csv(out + "_" + self.test_name + "_result_2_marginal.txt", sep=' ')
 
         # get heritability statistics from results_2
         self.V_G[index] = (result_2['Heritability'].loc[result_2['Component'] == 'Her_K1']).item()
@@ -1253,7 +1258,8 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         # calculate p-value based on LRT
         try:
             # Attempt to open the file
-            result_1 = pd.read_csv(out + "_null_pcgc_result_1.txt", sep=' ', header=None, names=['Parameter', 'Value'])
+            result_1 = pd.read_csv(out + "_null_" + self.test_name + "_result_1.txt", sep=' ', header=None,
+                                   names=['Parameter', 'Value'])
             print("found null model!!")
             LL_null = float(result_1['Value'].loc[result_1['Parameter'] == 'LRT_Stat'].item())
             print("LL_null", type(LL_null))
@@ -1296,14 +1302,16 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
         table['causal'] = np.repeat("FALSE", self.num_associations)
         table.loc[phenotypes.causal_window_indeces, 'causal'] = "TRUE"
 
-        table.to_csv(out + "_trees_pcgc_results.csv", index=False, header=True)
-        logfile.info("- Wrote results from tree association tests to '" + out + "_trees_pcgc_results.csv'")
+        table.to_csv(out + "_trees_" + self.test_name + "_results.csv", index=False, header=True)
+        logfile.info(
+            "- Wrote results from tree association tests to '" + out + "_trees_" + self.test_name + "_results.csv'")
 
         stats = pd.DataFrame({'min_p_value': [np.nanmin(self.p_values_reported)],
                               'max_p_value': [np.nanmax(self.p_values_reported)]
                               })
-        stats.to_csv(out + "_trees_pcgc_stats.csv", index=False, header=True)
-        logfile.info("- Wrote stats from tree association tests to '" + out + "_trees_pcgc_stats.csv'")
+        stats.to_csv(out + "_trees_" + self.test_name + "_stats.csv", index=False, header=True)
+        logfile.info(
+            "- Wrote stats from tree association tests to '" + out + "_trees_" + self.test_name + "_stats.csv'")
 
     def write_PCGC_command_file_grm(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence):
         """
@@ -1320,9 +1328,9 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
 
         with (open(self.script_name, 'w') as f):
             f.write("#!/bin/bash\n")
-            f.write("rm " + outname + ".pcgc\n")
+            f.write("rm " + outname + "." + self.test_name + "\n")
 
-            string = LDAK + " --pcgc " + outname + " --grm " + outname + " --pheno " \
+            string = LDAK + " --" + self.test_name + " " + outname + " --grm " + outname + " --pheno " \
                      + pheno_file + " --kinship-details NO --prevalence " + str(population_prevalence[0])
 
             if additional_ldak_params is not None:
@@ -1331,20 +1339,20 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
             f.write(string + " > " + outname + "_tmp.out\n")
 
             f.write(
-                "sed -n '1,13p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1.txt\n")
+                "sed -n '1,13p' " + outname + "." + self.test_name + " | unexpand -a | tr -s \'\t\' > " + outname + "_" + self.test_name + "_result_1.txt\n")
             f.write(
-                "sed -n '14,17p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2.txt\n")
+                "sed -n '14,17p' " + outname + "." + self.test_name + " | unexpand -a | tr -s \'\t\' > " + outname + "_" + self.test_name + "_result_2.txt\n")
 
             f.write(
-                "sed -n '1,13p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1_marginal.txt\n")
+                "sed -n '1,13p' " + outname + "." + self.test_name + ".marginal | unexpand -a | tr -s \'\t\' > " + outname + "_" + self.test_name + "_result_1_marginal.txt\n")
             f.write(
-                "sed -n '14,17p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
+                "sed -n '14,17p' " + outname + "." + self.test_name + ".marginal | unexpand -a | tr -s \'\t\' > " + outname + "_" + self.test_name + "_result_2_marginal.txt\n")
 
     def write_pcgc_command_file_grm_pca(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence,
                                         population_structure_grm_prefix, pc_file):
 
         """
-        Write executable bash script for running association test with PCs using pcgc
+        Write executable bash script for running association test with PCs using LDAK
 
         @param testing_method:
         @param outname:
@@ -1362,7 +1370,7 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
             string = LDAK + " --adjust-grm " + outname + ".covar --grm " + population_structure_grm_prefix + " --covar " + pc_file
             f.write(string + "\n")
 
-            string = LDAK + " --pcgc " + outname + ".covar --pheno " \
+            string = LDAK + " --" + self.test_name + " " + outname + ".covar --pheno " \
                      + pheno_file + " --kinship-details NO --prevalence " + str(population_prevalence[0]) \
                      + " --covar " + pc_file
 
@@ -1372,19 +1380,19 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
             f.write(string + " > " + outname + "_tmp.out\n")
 
             f.write(
-                "sed -n '1,13p' " + outname + ".covar.pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1.txt\n")
+                "sed -n '1,13p' " + outname + ".covar." + self.test_name + " | unexpand -a | tr -s \'\t\' > " + outname + "_" + self.test_name + "_result_1.txt\n")
             f.write(
-                "sed -n '14,17p' " + outname + ".covar.pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2.txt\n")
+                "sed -n '14,17p' " + outname + ".covar." + self.test_name + " | unexpand -a | tr -s \'\t\' > " + outname + "_" + self.test_name + "_result_2.txt\n")
 
             f.write(
-                "sed -n '1,13p' " + outname + ".covar.pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1_marginal.txt\n")
+                "sed -n '1,13p' " + outname + ".covar." + self.test_name + ".marginal | unexpand -a | tr -s \'\t\' > " + outname + "_" + self.test_name + "_result_1_marginal.txt\n")
             f.write(
-                "sed -n '14,17p' " + outname + ".covar.pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
+                "sed -n '14,17p' " + outname + ".covar." + self.test_name + ".marginal | unexpand -a | tr -s \'\t\' > " + outname + "_" + self.test_name + "_result_2_marginal.txt\n")
 
     def write_null_model(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence, file,
                          population_structure_grm_prefix):
 
-        string = LDAK + " --pcgc " + outname + " --grm " + population_structure_grm_prefix + " --pheno " \
+        string = LDAK + " --" + self.test_name + " " + outname + " --grm " + population_structure_grm_prefix + " --pheno " \
                  + pheno_file + " --kinship-details NO --prevalence " + str(population_prevalence[0])
 
         if additional_ldak_params is not None:
@@ -1394,14 +1402,14 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
 
     def write_extraction_part(self, outname, file):
         file.write(
-            "sed -n '1,13p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1.txt\n")
+            "sed -n '1,13p' " + outname + "." + self.test_name + " | unexpand -a | tr -s \'\t\' > " + outname + "_" + self.test_name + "_result_1.txt\n")
         file.write(
-            "sed -n '14,17p' " + outname + ".pcgc | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2.txt\n")
+            "sed -n '14,17p' " + outname + "." + self.test_name + " | unexpand -a | tr -s \'\t\' > " + outname + "_" + self.test_name + "_result_2.txt\n")
 
         file.write(
-            "sed -n '1,13p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_1_marginal.txt\n")
+            "sed -n '1,13p' " + outname + "." + self.test_name + ".marginal | unexpand -a | tr -s \'\t\' > " + outname + "_" + self.test_name + "_result_1_marginal.txt\n")
         file.write(
-            "sed -n '14,17p' " + outname + ".pcgc.marginal | unexpand -a | tr -s \'\t\' > " + outname + "_pcgc_result_2_marginal.txt\n")
+            "sed -n '14,17p' " + outname + "." + self.test_name + ".marginal | unexpand -a | tr -s \'\t\' > " + outname + "_" + self.test_name + "_result_2_marginal.txt\n")
 
     def write_PCGC_command_file_mgrm(self, outname, pheno_file, LDAK, additional_ldak_params, population_prevalence,
                                      population_structure_grm_prefix, logfile):
@@ -1423,12 +1431,12 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
 
         with (open(self.script_name, 'w') as f):
             f.write("#!/bin/bash\n")
-            f.write("rm " + outname + ".pcgc\n")
+            f.write("rm " + outname + "." + self.test_name + "\n")
 
             # alternative model
             outname_alt_model = outname
 
-            string = LDAK + " --pcgc " + outname_alt_model + " --pheno " \
+            string = LDAK + " --" + self.test_name + " " + outname_alt_model + " --pheno " \
                      + pheno_file + " --kinship-details NO --prevalence " + str(population_prevalence[0]) \
                      + " --mgrm " + outname_alt_model + "_multi_grm.txt"
 
@@ -1440,7 +1448,7 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
 
             # null model
             outname_null_model = outname + "_null"
-            f.write("rm " + outname_null_model + ".pcgc\n")
+            f.write("rm " + outname_null_model + "." + self.test_name + "\n")
 
             self.write_null_model(outname=outname_null_model, pheno_file=pheno_file, LDAK=LDAK, file=f,
                                   additional_ldak_params=additional_ldak_params,
@@ -1450,7 +1458,7 @@ class TAssociationTestingRegionsLDAK_pcgc(TAssociationTestingRegions):
 
     def write_pcgc_command_file_mgrm_cor(self, outname, pheno_file, LDAK, population_structure_grm_prefix,
                                          covariance_grm_prefix, logfile, additional_ldak_params):
-        raise ValueError("mgrm_cor not implemented for pcgc")
+        raise ValueError("mgrm_cor not implemented for LDAK")
 
 
 class TTreeAssociationMantel(TAssociationTestingRegions):

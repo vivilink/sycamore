@@ -190,6 +190,10 @@ class TParameters:
                            help="Provide association method [AIM, GWAS] and for AIM covariance type [eGRM, GRM, "
                                 "scaled] with the following format: 'method:covariance'")
         assoc.add_argument("--AIM_method", type=str, nargs='+',
+                           help="Provide association algorithm to be used by AIM [GCTA_HE, GCTA_REML, glimix_REML, "
+                                "pcgc, LDAK_REML] "
+                                "or any combination of these to test the local GRM for association")
+        assoc.add_argument("--PCGC_method", type=str, nargs='+',
                            help="Provide association algorithm to be used by AIM [GCTA_HE, GCTA_REML, glimix_REML] "
                                 "or any combination of these to test the local GRM for association")
         assoc.add_argument('--no_clean_up', action='store_true',

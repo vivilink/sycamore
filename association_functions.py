@@ -272,15 +272,15 @@ def get_AIM_test_object(test_name: str, phenotypes, pheno_file, num_associations
                                                           logfile=logfile)
     elif test_name == "glimix_REML":
         test_obj = at.TAssociationTestingRegionsGlimix(phenotypes, num_associations)
-    elif test_name == "pcgc":
-        test_obj = at.TAssociationTestingRegionsLDAK_pcgc(phenotypes, num_associations, test_name=test_name,
-                                                          pheno_file=pheno_file, outname=outname, args=args,
-                                                          logfile=logfile)
+    elif test_name == "LDAK_pcgc" or test_name == "LDAK_REML":
+        test_obj = at.TAssociationTestingRegionsLDAK(phenotypes, num_associations, test_name=test_name,
+                                                     pheno_file=pheno_file, outname=outname, args=args,
+                                                     logfile=logfile)
     elif test_name == "mtg2":
         raise ValueError("mtg2 is not implemented yet!")
         # test_obj = at.TAssociationTestingRegionsMtg2(phenotypes, num_associations)
     else:
-        raise ValueError("Did not recognize " + str(test_name) + " as a association test type")
+        raise ValueError("Did not recognize " + str(test_name) + " as an AIM method type")
 
     return test_obj
 
@@ -400,7 +400,7 @@ def test_window_for_association(covariance_obj: cov, inds: tind, AIM_methods: li
         #            covar=None,
         #            covariances_picklefile=None,
         #            )
-        elif m.name == "regions_GCTA_HE" or m.name == "regions_GCTA_REML" or m.name == "regions_LDAK_pcgc":
+        elif m.name == "regions_GCTA_HE" or m.name == "regions_GCTA_REML" or m.name == "regions_LDAK_pcgc" or m.name == "regions_LDAK_REML":
 
             if write_matrices_for_testing(cholesky_global_GRM_for_cor=cholesky_global_GRM_for_cor,
                                           covariance_obj=covariance_obj,
