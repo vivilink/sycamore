@@ -212,6 +212,22 @@ We then used these phenotypes to test the variants and trees for association. Th
 
 The R script used to calculate the association power is 2a_calculate_power.R, which calls 2b_calculate_power_one_experiment.R. It uses the output of R_scripts/1_calculate_significance_cutoffs.R. The results can be plotted with R_scripts/3_plot_with_error_bars_aH.R and R_scripts/3_plot_with_error_bars_oneVariant.R.
 
+More details on the association task
+-------------------------------------
+
+Sycamore has only been adequately tested on continuous traits. There are different methods to test the GRM for association with the phenotypes. Use the parameter AIM_method to specify which one you want. The possibilities are the following:
+- GCTA_REML
+- GCTA_HE
+- glimix
+- LDAK_pcgc
+- (LDAK_REML)
+
+LDAK_pcgc is for binary traits.
+
+In order to decide which type of GRM you want to test for association, use parameter ass_method in the following way:
+- AIM:eGRM for testing tree-based eGRM
+- AIM:GRM for testing variant based GRM
+
 Analyzing BMI data
 --------------------
 
