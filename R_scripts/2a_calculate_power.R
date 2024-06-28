@@ -230,7 +230,7 @@ for(propCausal in c(0.5)){ #0.1, 0.2, 0.5, 0.8
                 results_file <- paste(folder, "h", hsquared, "/power_results.txt", sep='')
               }
               print(paste(hsquared, file.exists(results_file)))
-              if(!file.exists(results_file) == TRUE){
+              if(file.exists(results_file) == TRUE){
                 pheno_file_dir <- paste("/data/ARGWAS/power_sims/stdpopsim/relate_trees/oneRegion/eGRM_GRM/", region_type, "/", ws_causal, "/tested", ws_causal, "/onlyUntyped/propCausal", propCausal, "/" ,sep="")
                 power_one_experiment(hsquared = hsquared, REPS = 100, folder=folder, tree_type=tree_type, region_type=region_type, window_size_testing=ws_testing, window_size_causal=ws_causal, pheno_file_dir=pheno_file_dir, run_acat=run_acat)
               }

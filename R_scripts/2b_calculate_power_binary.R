@@ -9,10 +9,10 @@ plot_one <- function(method, rep, df_REML, cutoff_REML, cutoff_GWAS, out_dir, df
   
   
   #plot REML
-  if(sum(df_REML$p_values == 0, na.rm = TRUE) > 0){
-    df_REML$p_values[which(df_REML$p_values == 0)] <- .Machine$double.xmin
+  if(sum(df_REML$p_values_heritability == 0, na.rm = TRUE) > 0){
+    df_REML$p_values_heritability[which(df_REML$p_values_heritability == 0)] <- .Machine$double.xmin
   }
-  plot(df_REML$start, -log10(df_REML$p_values), main=paste("REML rep", rep), xlab="position", ylab="-log10(p)", ylim=c(0,15))
+  plot(df_REML$start, -log10(df_REML$p_values_heritability), main=paste("REML rep", rep), xlab="position", ylab="-log10(p)", ylim=c(0,15))
   abline(v=causal_pos_pos, col = adjustcolor("red", alpha = 0.2))
   abline(v=causal_pos_neg, col = adjustcolor("blue", alpha = 0.2))
   abline(h=cutoff_REML, col="gray")
@@ -135,11 +135,11 @@ power_one_experiment <- function(hsquared, REPS, folder, tree_type, region_type,
       # read REML results
       df_REML <- read.csv(paste(out_dir,"/rep", rep, "/sim_", rep, "_", covariance_types[[i]], "_trees_pcgc_results.csv", sep=''))
         df_REML <- df_REML[which(df_REML$start > position_interval[1] & df_REML$start < position_interval[2]),]
-      df_REML$p_values[df_REML$p_values == 0] <- .Machine$double.xmin
+      df_REML$p_values_heritability[df_REML$p_values_heritability == 0] <- .Machine$double.xmin
       
       # minimum distance REML
-      result_matrices[[i]]$REML[rep] <- -log10(min(df_REML$p_values, na.rm = TRUE))
-      pos_with_min_p <- df_REML$start[which(df_REML$p_values == min(df_REML$p_values, na.rm = TRUE))]
+      result_matrices[[i]]$REML[rep] <- -log10(min(df_REML$p_values_heritability, na.rm = TRUE))
+      pos_with_min_p <- df_REML$start[which(df_REML$p_values_heritability == min(df_REML$p_values_heritability, na.rm = TRUE))]
       distances <- abs(pos_with_min_p - causal_pos)
       result_matrices[[i]]$distance_min_p_to_causal_REML[rep] <- min(distances)
       
