@@ -1260,10 +1260,7 @@ class TAssociationTestingRegionsLDAK(TAssociationTestingRegions):
             # Attempt to open the file
             result_1 = pd.read_csv(out + "_null_" + self.test_name + "_result_1.txt", sep=' ', header=None,
                                    names=['Parameter', 'Value'])
-            print("found null model!!")
             LL_null = float(result_1['Value'].loc[result_1['Parameter'] == 'LRT_Stat'].item())
-            print("LL_null", type(LL_null))
-            print("self.LRT_reported[index]", type(self.LRT_reported[index]))
 
             LRT = 2 * (self.LRT_reported[index] - LL_null)
             result_pvalue_chi2 = 1 - scipy.stats.chi2.cdf(LRT, df=2, loc=0, scale=1)
